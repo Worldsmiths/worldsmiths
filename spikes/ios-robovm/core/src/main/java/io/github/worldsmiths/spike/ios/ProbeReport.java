@@ -32,9 +32,12 @@ public final class ProbeReport {
     }
 
     private static void line(PrintStream out, String name) {
+        // Flush per probe so a native crash in one probe still leaves the earlier lines.
+        out.flush();
         out.print("S3PROBE ");
         out.print(name);
         out.print(": ");
+        out.flush();
     }
 
     private static void failure(PrintStream out, Throwable t) {

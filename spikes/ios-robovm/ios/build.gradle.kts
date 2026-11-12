@@ -33,7 +33,7 @@ listOf("createIPA", "robovmArchive", "robovmInstall", "launchIPhoneSimulator").f
 }
 
 tasks.named<IPhoneSimulatorTask>("launchIPhoneSimulator") {
-    setArgs("--s3-probes")
+    setArgs(providers.gradleProperty("simulatorArgs").getOrElse("--s3-probes"))
 }
 
 dependencies {

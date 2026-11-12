@@ -64,6 +64,14 @@ jobs:
           # The app prints one S3PROBE line per probe and exits before UIKit starts.
           perl -e 'alarm shift; exec @ARGV' 1200 ./gradlew :ios:launchIPhoneSimulator $GRADLE_ARGS 2>&1 | tee simulator.log
           grep -q "S3PROBE done" simulator.log
+      - name: Smoke-run the libGDX app in iPhone simulator
+        if: matrix.probe == 'none' && matrix.release == '8'
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          # Starts UIKit and libGDX (MetalANGLE), renders 60 frames, prints S3SMOKE and exits.
+          perl -e 'alarm shift; exec @ARGV' 600 ./gradlew :ios:launchIPhoneSimulator $GRADLE_ARGS -PsimulatorArgs=--s3-smoke 2>&1 | tee smoke.log
+          grep -q "S3SMOKE rendered" smoke.log
       - name: Summarize
         if: always()
         run: |
@@ -80,6 +88,10 @@ jobs:
             echo '```'
             grep -E "S3PROBE|what went wrong|Exception" simulator.log 2>/dev/null | head -40 || true
             echo '```'
+            echo "Simulator smoke run:"
+            echo '```'
+            grep -E "S3|what went wrong|Exception" smoke.log 2>/dev/null | head -20 || true
+            echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
       - uses: actions/upload-artifact@v4
         if: always()
@@ -89,4 +101,5 @@ jobs:
             spikes/ios-robovm/dist/*.ipa
             spikes/ios-robovm/build.log
             spikes/ios-robovm/simulator.log
+            spikes/ios-robovm/smoke.log
           if-no-files-found: warn
