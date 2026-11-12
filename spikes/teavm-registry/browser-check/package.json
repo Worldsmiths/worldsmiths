@@ -1,0 +1,12 @@
+{
+  "name": "teavm-registry-browser-check",
+  "private": true,
+  "type": "module",
+  "description": "Loads the gdx-teavm webapp in headless Chrome and checks the deserialized scene it prints.",
+  "scripts": {
+    "check": "node check.mjs"
+  },
+  "dependencies": {
+    "playwright-core": "1.65.0"
+  }
+}

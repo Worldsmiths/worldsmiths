@@ -1,0 +1,48 @@
+name: Spike TeaVM registry
+
+# Spike S2 (ADR-0007). Standalone build under spikes/teavm-registry; not a required check.
+on:
+  pull_request:
+    paths:
+      - "spikes/teavm-registry/**"
+      - ".github/workflows/spike-teavm.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  teavm-browser:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: spikes/teavm-registry
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: "21"
+      - uses: gradle/actions/setup-gradle@v6
+      - name: JVM tests, then TeaVM JS and Wasm builds
+        run: ./gradlew build :web:gdx_teavm_web_js_build :web:gdx_teavm_web_wasm_build --no-daemon
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+      - name: Load both builds in headless Chrome and check the deserialized scene
+        working-directory: spikes/teavm-registry/browser-check
+        run: |
+          npm ci --no-audit --no-fund
+          CHROME="$(command -v google-chrome)" node check.mjs ../web/build/dist/js/webapp ../web/build/dist/wasm/webapp
+      - if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: browser-evidence
+          path: |
+            spikes/teavm-registry/browser-check/build/
+            spikes/teavm-registry/*/build/reports/tests/
+          if-no-files-found: ignore
