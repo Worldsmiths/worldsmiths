@@ -1,6 +1,7 @@
 package io.github.worldsmiths.gradle;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
@@ -27,7 +28,7 @@ class SettingsPluginFunctionalTest {
     @BeforeEach
     void createGameProject() throws IOException {
         write("settings.gradle.kts",
-                "plugins { id(\"io.github.worldsmiths.settings\") }\n"
+                "plugins { id(\"io.github.worldsmiths.engine\") }\n"
                         + "dependencyResolutionManagement { repositories { mavenCentral() } }\n"
                         + "rootProject.name = \"starfall\"\n"
                         + "include(\":game\")\n"
@@ -87,6 +88,94 @@ class SettingsPluginFunctionalTest {
     }
 
     @Test
+    void retiredSettingsPluginIdIsRejected() throws IOException {
+        String settings = new String(Files.readAllBytes(projectDir.resolve("settings.gradle.kts")),
+                StandardCharsets.UTF_8);
+        write("settings.gradle.kts", settings.replace(
+                "io.github.worldsmiths.engine", "io.github.worldsmiths.settings"));
+
+        BuildResult result = runner("help").buildAndFail();
+
+        assertTrue(result.getOutput().contains(
+                "Plugin [id: 'io.github.worldsmiths.settings'] was not found"), result.getOutput());
+    }
+
+    @Test
+    void configuringAGameDoesNotAddAPublishTask() {
+        BuildResult result = runner("tasks", "--all").build();
+
+        assertFalse(result.getOutput().contains("publish"), result.getOutput());
+    }
+
+    @Test
+    void gameCompiledAboveJava8FailsConfiguration() throws IOException {
+        rewriteGameRelease(17);
+
+        BuildResult result = runner("help").buildAndFail();
+
+        assertTrue(result.getOutput().contains("worldsmiths.gameModule ':game' compiles for Java 17"),
+                result.getOutput());
+        assertTrue(result.getOutput().contains("Worldsmiths requires Java 8"), result.getOutput());
+    }
+
+    @Test
+    void raisingTheGameReleaseIsNotHiddenByTheConfigurationCache() throws IOException {
+        runner("help").build();
+        rewriteGameRelease(17);
+
+        BuildResult result = runner("help").buildAndFail();
+
+        assertTrue(result.getOutput().contains("worldsmiths.gameModule ':game' compiles for Java 17"),
+                result.getOutput());
+        assertFalse(result.getOutput().contains(REUSED), result.getOutput());
+    }
+
+    @Test
+    void coreModuleCompiledForJava8Configures() throws IOException {
+        useModuleEvaluatedBeforeDesktop();
+
+        BuildResult result = runner("help").build();
+
+        assertEquals(TaskOutcome.SUCCESS, result.task(":help").getOutcome());
+        assertFalse(result.getOutput().contains("already evaluated"), result.getOutput());
+    }
+
+    @Test
+    void coreModuleCompiledAboveJava8FailsConfiguration() throws IOException {
+        useModuleEvaluatedBeforeDesktop();
+        rewriteRelease("core/build.gradle.kts", 17);
+
+        BuildResult result = runner("help").buildAndFail();
+
+        assertTrue(result.getOutput().contains("worldsmiths.gameModule ':core' compiles for Java 17"),
+                result.getOutput());
+        assertFalse(result.getOutput().contains("already evaluated"), result.getOutput());
+    }
+
+    @Test
+    void coreModuleTargetCompatibilityAboveJava8FailsConfiguration() throws IOException {
+        useModuleEvaluatedBeforeDesktop();
+        write("core/build.gradle.kts",
+                "plugins { `java-library` }\n"
+                        + "java { targetCompatibility = JavaVersion.VERSION_17 }\n"
+                        + "dependencies { implementation(\"org.apache.commons:commons-lang3:3.17.0\") }\n");
+
+        BuildResult result = runner("help").buildAndFail();
+
+        assertTrue(result.getOutput().contains("worldsmiths.gameModule ':core' compiles for Java 17"),
+                result.getOutput());
+    }
+
+    @Test
+    void gameModuleWithoutJavaIsNotChecked() throws IOException {
+        write("game/build.gradle.kts", "");
+
+        BuildResult result = runner("help").build();
+
+        assertEquals(TaskOutcome.SUCCESS, result.task(":help").getOutcome());
+    }
+
+    @Test
     void unknownGameModuleFailsWithClearMessage() throws IOException {
         String settings = new String(Files.readAllBytes(projectDir.resolve("settings.gradle.kts")),
                 StandardCharsets.UTF_8);
@@ -107,6 +196,27 @@ class SettingsPluginFunctionalTest {
                 .withPluginClasspath()
                 .withArguments(args)
                 .forwardOutput();
+    }
+
+    private void useModuleEvaluatedBeforeDesktop() throws IOException {
+        String settings = new String(Files.readAllBytes(projectDir.resolve("settings.gradle.kts")),
+                StandardCharsets.UTF_8);
+        write("settings.gradle.kts", settings.replace(":game", ":core"));
+        String build = new String(Files.readAllBytes(projectDir.resolve("game/build.gradle.kts")),
+                StandardCharsets.UTF_8);
+        write("core/build.gradle.kts", build);
+        String source = new String(Files.readAllBytes(
+                projectDir.resolve("game/src/main/java/com/example/Game.java")), StandardCharsets.UTF_8);
+        write("core/src/main/java/com/example/Game.java", source);
+    }
+
+    private void rewriteGameRelease(int release) throws IOException {
+        rewriteRelease("game/build.gradle.kts", release);
+    }
+
+    private void rewriteRelease(String buildFile, int release) throws IOException {
+        String build = new String(Files.readAllBytes(projectDir.resolve(buildFile)), StandardCharsets.UTF_8);
+        write(buildFile, build.replace("options.release.set(8)", "options.release.set(" + release + ")"));
     }
 
     private void writeGameClass(String message) throws IOException {

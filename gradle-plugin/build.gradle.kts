@@ -23,10 +23,6 @@ gradlePlugin {
     plugins {
         create("engine") {
             id = "io.github.worldsmiths.engine"
-            implementationClass = "io.github.worldsmiths.gradle.EnginePlugin"
-        }
-        create("settings") {
-            id = "io.github.worldsmiths.settings"
             implementationClass = "io.github.worldsmiths.gradle.WorldsmithsSettingsPlugin"
         }
         create("desktop") {
