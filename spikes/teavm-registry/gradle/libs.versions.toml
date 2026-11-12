@@ -1,0 +1,13 @@
+[versions]
+gdx = "1.14.2"
+gdx-teavm = "1.6.2"
+junit = "5.11.4"
+junit-platform = "1.11.4"
+
+[libraries]
+gdx = { module = "com.badlogicgames.gdx:gdx", version.ref = "gdx" }
+junit-jupiter = { module = "org.junit.jupiter:junit-jupiter", version.ref = "junit" }
+junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher", version.ref = "junit-platform" }
+
+[plugins]
+gdx-teavm = { id = "com.github.xpenatan.gdx-teavm", version.ref = "gdx-teavm" }
