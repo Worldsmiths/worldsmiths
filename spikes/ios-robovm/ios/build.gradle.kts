@@ -1,30 +1,39 @@
 import org.robovm.gradle.RoboVMPluginExtension
+import org.robovm.gradle.tasks.IPhoneSimulatorTask
 
 buildscript {
-    val robovmVersion: String by project
     repositories {
         mavenCentral()
     }
     dependencies {
-        classpath("com.mobidevelop.robovm:robovm-gradle-plugin:$robovmVersion")
+        classpath("com.mobidevelop.robovm:robovm-gradle-plugin:${project.property("robovmVersion")}")
     }
 }
 
 apply(plugin = "robovm")
 
-val gdxVersion: String by project
-val robovmVersion: String by project
+val gdxVersion = providers.gradleProperty("gdxVersion").get()
+val robovmVersion = providers.gradleProperty("robovmVersion").get()
 
 extra["mainClassName"] = "io.github.worldsmiths.spike.ios.IOSLauncher"
 
 configure<RoboVMPluginExtension> {
+    // RoboVM 3 dropped the Harmony security providers that the 2.3 config force-links.
+    if (robovmVersion.startsWith("3.")) {
+        configFile = file("robovm-3.xml").absolutePath
+    }
     // No Apple signing identity exists, so CI builds an unsigned arm64 device IPA.
     isIosSkipSigning = true
     archs = "arm64"
+    arch = "arm64"
 }
 
-listOf("createIPA", "robovmArchive", "robovmInstall").forEach { name ->
+listOf("createIPA", "robovmArchive", "robovmInstall", "launchIPhoneSimulator").forEach { name ->
     tasks.named(name) { dependsOn("build") }
+}
+
+tasks.named<IPhoneSimulatorTask>("launchIPhoneSimulator") {
+    setArgs("--s3-probes")
 }
 
 dependencies {

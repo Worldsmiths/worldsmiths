@@ -9,38 +9,44 @@ import java.io.InputStream;
  * newer bytecode for the same source: indy string concatenation (9+) and nestmates (11+).
  */
 final class LanguageProbes {
+    static final String[] NAMES = {"lambda", "string-concat", "nested-private-access", "try-with-resources", "switch-on-string"};
+
     private LanguageProbes() {
     }
 
-    static String run() {
-        final StringBuilder out = new StringBuilder();
-        Runnable lambda = () -> out.append("lambda;");
-        lambda.run();
-
-        int n = out.length();
-        out.append("concat=" + n + "/" + System.nanoTime() % 2 + ";");
-
-        out.append(new Inner().secret()).append(';');
-
-        try (InputStream in = new ByteArrayInputStream(new byte[] {1})) {
-            out.append("twr=").append(in.read()).append(';');
-        } catch (IOException e) {
-            out.append("twr-failed;");
-        }
-
-        switch (out.length() > 0 ? "yes" : "no") {
-            case "yes":
-                out.append("switch-string;");
-                break;
+    static Object run(int probe) throws Exception {
+        switch (probe) {
+            case 0:
+                final StringBuilder out = new StringBuilder();
+                Runnable lambda = () -> out.append("ok");
+                lambda.run();
+                return out;
+            case 1:
+                int n = (int) (System.nanoTime() % 2);
+                return "ok " + n;
+            case 2:
+                return new Inner().secret();
+            case 3:
+                try (InputStream in = new ByteArrayInputStream(new byte[] {1})) {
+                    return Integer.valueOf(in.read());
+                } catch (IOException e) {
+                    throw e;
+                }
+            case 4:
+                switch (NAMES[probe]) {
+                    case "switch-on-string":
+                        return "ok";
+                    default:
+                        return "wrong branch";
+                }
             default:
-                break;
+                throw new IllegalArgumentException();
         }
-        return out.toString();
     }
 
     private static final class Inner {
         private String secret() {
-            return "nested-private";
+            return "ok";
         }
     }
 }

@@ -13,6 +13,12 @@ public class IOSLauncher extends IOSApplication.Delegate {
     }
 
     public static void main(String[] argv) {
+        for (String arg : argv) {
+            if ("--s3-probes".equals(arg)) {
+                ProbeReport.print(System.out);
+                System.exit(0);
+            }
+        }
         NSAutoreleasePool pool = new NSAutoreleasePool();
         UIApplication.main(argv, null, IOSLauncher.class);
         pool.close();

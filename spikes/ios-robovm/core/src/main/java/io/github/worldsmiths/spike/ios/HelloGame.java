@@ -7,8 +7,7 @@ import com.badlogic.gdx.utils.ScreenUtils;
 public class HelloGame extends ApplicationAdapter {
     @Override
     public void create() {
-        Gdx.app.log("S3", "language probes: " + LanguageProbes.run());
-        Gdx.app.log("S3", "extra probes: " + ExtraProbes.run());
+        Gdx.app.log("S3", "hello from libGDX " + com.badlogic.gdx.Version.VERSION);
     }
 
     @Override

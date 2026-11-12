@@ -21,11 +21,18 @@ jobs:
           - { robovm: "2.3.27", release: "11", probe: "none", experiment: true }
           - { robovm: "2.3.27", release: "17", probe: "none", experiment: true }
           - { robovm: "3.0.0", release: "8", probe: "none", experiment: true }
+          - { robovm: "3.0.0", release: "8", probe: "java8api", experiment: true }
           - { robovm: "3.0.0", release: "11", probe: "java11", experiment: true }
           - { robovm: "3.0.0", release: "17", probe: "none", experiment: true }
     defaults:
       run:
         working-directory: spikes/ios-robovm
+    env:
+      GRADLE_ARGS: >-
+        --no-daemon --stacktrace
+        -ProbovmVersion=${{ matrix.robovm }}
+        -PjavaRelease=${{ matrix.release }}
+        -Pprobe=${{ matrix.probe }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
@@ -43,10 +50,13 @@ jobs:
       - name: Build unsigned IPA
         run: |
           set -o pipefail
-          ./gradlew :ios:createIPA --no-daemon --stacktrace \
-            -ProbovmVersion=${{ matrix.robovm }} \
-            -PjavaRelease=${{ matrix.release }} \
-            -Pprobe=${{ matrix.probe }} 2>&1 | tee build.log
+          ./gradlew :ios:createIPA $GRADLE_ARGS 2>&1 | tee build.log
+      - name: Run probes in iPhone simulator
+        run: |
+          set -o pipefail
+          # The app prints one S3PROBE line per probe and exits before UIKit starts.
+          perl -e 'alarm shift; exec @ARGV' 1200 ./gradlew :ios:launchIPhoneSimulator $GRADLE_ARGS 2>&1 | tee simulator.log
+          grep -q "S3PROBE done" simulator.log
       - name: Summarize
         if: always()
         run: |
@@ -55,8 +65,13 @@ jobs:
             echo
             ls -la ios/build/robovm/*.ipa 2>/dev/null || echo "No IPA produced."
             echo
+            echo "Build warnings:"
             echo '```'
-            grep -iE "warn|error|unresolved|NoClassDefFound|NoSuchMethod|unsupported|class file|StringConcat|nest" build.log | grep -v "^\s*at " | head -60 || true
+            grep -iE "phantom|warn|error|what went wrong" build.log 2>/dev/null | grep -v "^\s*at " | head -40 || true
+            echo '```'
+            echo "Simulator probes:"
+            echo '```'
+            grep -E "S3PROBE|what went wrong|Exception" simulator.log 2>/dev/null | head -40 || true
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
       - uses: actions/upload-artifact@v4
@@ -66,4 +81,5 @@ jobs:
           path: |
             spikes/ios-robovm/ios/build/robovm/*.ipa
             spikes/ios-robovm/build.log
+            spikes/ios-robovm/simulator.log
           if-no-files-found: warn
