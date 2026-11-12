@@ -1,6 +1,7 @@
 package io.github.worldsmiths.gradle;
 
 import java.util.Collections;
+import org.gradle.api.GradleException;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 import org.gradle.api.plugins.ApplicationPlugin;
@@ -47,5 +48,45 @@ public final class DesktopPlugin implements Plugin<Project> {
             task.setDescription("Run the game on desktop");
             task.dependsOn("run");
         });
+
+        // The extension is filled in by the generated script after apply() returns.
+        // A module that sorts before :desktop, such as :core, is already evaluated by then.
+        project.afterEvaluate(desktop -> {
+            Project game = desktop.project(extension.getGameModule().get());
+            if (game.getState().getExecuted()) {
+                requireJava8(game);
+            } else {
+                game.afterEvaluate(DesktopPlugin::requireJava8);
+            }
+        });
+    }
+
+    /**
+     * The launcher calls the game class directly and compiles at release 8, so a newer game
+     * would build on desktop and fail on the other platforms. A module that does not compile
+     * Java is left alone.
+     */
+    private static void requireJava8(Project game) {
+        if (!game.getPluginManager().hasPlugin("java")) {
+            return;
+        }
+        game.getTasks().withType(JavaCompile.class).forEach(compile -> {
+            Integer release = compile.getOptions().getRelease().getOrNull();
+            int level = release != null ? release.intValue() : javaMajor(compile.getTargetCompatibility());
+            if (level > 8) {
+                throw new GradleException("worldsmiths.gameModule '" + game.getPath()
+                        + "' compiles for Java " + level
+                        + ". Worldsmiths requires Java 8 so the same game can run on every platform.");
+            }
+        });
+    }
+
+    private static int javaMajor(String version) {
+        String major = version.startsWith("1.") ? version.substring(2) : version;
+        int dot = major.indexOf('.');
+        if (dot >= 0) {
+            major = major.substring(0, dot);
+        }
+        return Integer.parseInt(major);
     }
 }
