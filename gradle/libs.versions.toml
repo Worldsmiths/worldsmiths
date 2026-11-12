@@ -1,0 +1,12 @@
+[versions]
+group = "io.github.worldsmiths"
+engine = "0.0.1-SNAPSHOT"
+junit = "5.11.4"
+junit-platform = "1.11.4"
+
+[libraries]
+junit-jupiter = { module = "org.junit.jupiter:junit-jupiter", version.ref = "junit" }
+junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher", version.ref = "junit-platform" }
+
+[plugins]
+engine = { id = "io.github.worldsmiths.engine", version.ref = "engine" }
