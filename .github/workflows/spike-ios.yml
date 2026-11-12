@@ -19,11 +19,11 @@ jobs:
           - { robovm: "2.3.27", release: "8", probe: "none", experiment: false }
           - { robovm: "2.3.27", release: "8", probe: "java8api", experiment: true }
           - { robovm: "2.3.27", release: "11", probe: "none", experiment: true }
-          - { robovm: "2.3.27", release: "17", probe: "none", experiment: true }
+          - { robovm: "2.3.27", release: "17", probe: "java17", experiment: true }
           - { robovm: "3.0.0", release: "8", probe: "none", experiment: true }
           - { robovm: "3.0.0", release: "8", probe: "java8api", experiment: true }
           - { robovm: "3.0.0", release: "11", probe: "java11", experiment: true }
-          - { robovm: "3.0.0", release: "17", probe: "none", experiment: true }
+          - { robovm: "3.0.0", release: "17", probe: "java17", experiment: true }
     defaults:
       run:
         working-directory: spikes/ios-robovm
@@ -51,6 +51,11 @@ jobs:
         run: |
           set -o pipefail
           ./gradlew :ios:createIPA $GRADLE_ARGS 2>&1 | tee build.log
+          # The simulator build below reuses ios/build/robovm, so keep the IPA elsewhere.
+          mkdir -p dist
+          find ios/build -name '*.ipa' -exec cp {} dist/ \;
+          ls -la dist
+          test -n "$(ls dist/*.ipa)"
       - name: Run probes in iPhone simulator
         run: |
           set -o pipefail
@@ -63,7 +68,7 @@ jobs:
           {
             echo "### RoboVM ${{ matrix.robovm }}, --release ${{ matrix.release }}, probe ${{ matrix.probe }}"
             echo
-            ls -la ios/build/robovm/*.ipa 2>/dev/null || echo "No IPA produced."
+            ls -la dist/*.ipa 2>/dev/null || echo "No IPA produced."
             echo
             echo "Build warnings:"
             echo '```'
@@ -79,7 +84,7 @@ jobs:
         with:
           name: ios-robovm${{ matrix.robovm }}-release${{ matrix.release }}-${{ matrix.probe }}
           path: |
-            spikes/ios-robovm/ios/build/robovm/*.ipa
+            spikes/ios-robovm/dist/*.ipa
             spikes/ios-robovm/build.log
             spikes/ios-robovm/simulator.log
           if-no-files-found: warn
