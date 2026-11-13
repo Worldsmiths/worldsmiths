@@ -26,6 +26,10 @@ public class HelloGame extends ApplicationAdapter {
     public void render() {
         ScreenUtils.clear(0.15f, 0.2f, 0.35f, 1f);
         frames++;
+        if (exitAfterFrames > 0 && frames == 1) {
+            System.out.println("S3SMOKE first frame");
+            System.out.flush();
+        }
         if (exitAfterFrames > 0 && frames == exitAfterFrames) {
             System.out.println("S3SMOKE rendered " + frames + " frames, GL " + Gdx.gl.glGetString(com.badlogic.gdx.graphics.GL20.GL_VERSION));
             System.out.flush();

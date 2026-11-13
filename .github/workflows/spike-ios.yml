@@ -72,6 +72,13 @@ jobs:
           # Starts UIKit and libGDX (MetalANGLE), renders 60 frames, prints S3SMOKE and exits.
           perl -e 'alarm shift; exec @ARGV' 600 ./gradlew :ios:launchIPhoneSimulator $GRADLE_ARGS -PsimulatorArgs=--s3-smoke 2>&1 | tee smoke.log
           grep -q "S3SMOKE rendered" smoke.log
+      - name: Collect simulator crash reports
+        if: always()
+        run: |
+          mkdir -p crash
+          find ~/Library/Logs/DiagnosticReports -name 'IOSLauncher*' -exec cp {} crash/ \; 2>/dev/null || true
+          ls -la crash
+          for f in crash/*; do [ -f "$f" ] && head -c 6000 "$f"; echo; done
       - name: Summarize
         if: always()
         run: |
@@ -102,4 +109,5 @@ jobs:
             spikes/ios-robovm/build.log
             spikes/ios-robovm/simulator.log
             spikes/ios-robovm/smoke.log
+            spikes/ios-robovm/crash/
           if-no-files-found: warn
