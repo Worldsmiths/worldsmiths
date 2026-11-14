@@ -1,7 +1,9 @@
 package io.github.worldsmiths.desktop;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
 
+import io.github.worldsmiths.core.Scene;
 import io.github.worldsmiths.core.WorldsmithsGame;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -11,13 +13,14 @@ import org.junit.jupiter.api.Test;
 class DesktopGameListenerTest {
 
     @Test
-    void createForwardsToTheGame() {
+    void createCallsCreateSceneThenCreateAndRetainsReturnedScene() {
         RecordingGame game = new RecordingGame();
         DesktopGameListener listener = new DesktopGameListener(game);
 
         listener.create();
 
-        assertEquals(Arrays.asList("create"), game.calls);
+        assertEquals(Arrays.asList("createScene", "create"), game.calls);
+        assertSame(game.scene, listener.retainedScene());
     }
 
     @Test
@@ -32,6 +35,13 @@ class DesktopGameListenerTest {
 
     private static final class RecordingGame implements WorldsmithsGame {
         final List<String> calls = new ArrayList<String>();
+        final Scene scene = new Scene("recording");
+
+        @Override
+        public Scene createScene() {
+            calls.add("createScene");
+            return scene;
+        }
 
         @Override
         public void create() {

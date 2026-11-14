@@ -1,5 +1,6 @@
 package io.github.worldsmiths.samples.minimal;
 
+import io.github.worldsmiths.core.Scene;
 import io.github.worldsmiths.core.WorldsmithsGame;
 
 /**
@@ -7,6 +8,11 @@ import io.github.worldsmiths.core.WorldsmithsGame;
  * this class only satisfies the {@link WorldsmithsGame} contract.
  */
 public final class MinimalGame implements WorldsmithsGame {
+
+    @Override
+    public Scene createScene() {
+        return new Scene();
+    }
 
     @Override
     public void create() {}

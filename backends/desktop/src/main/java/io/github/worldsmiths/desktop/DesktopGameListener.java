@@ -3,15 +3,18 @@ package io.github.worldsmiths.desktop;
 import com.badlogic.gdx.ApplicationListener;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.GL20;
+import io.github.worldsmiths.core.Scene;
 import io.github.worldsmiths.core.WorldsmithsGame;
 
 /**
  * LibGDX {@link ApplicationListener} that drives a {@link WorldsmithsGame} and clears the
- * framebuffer each frame.
+ * framebuffer each frame. Retains the scene from {@link WorldsmithsGame#createScene()} for later
+ * drawing (D2 shape renderer lands in a follow-up task).
  */
 public final class DesktopGameListener implements ApplicationListener {
 
     private final WorldsmithsGame game;
+    private Scene scene;
 
     public DesktopGameListener(WorldsmithsGame game) {
         if (game == null) {
@@ -22,7 +25,15 @@ public final class DesktopGameListener implements ApplicationListener {
 
     @Override
     public void create() {
+        scene = game.createScene();
         game.create();
+    }
+
+    /**
+     * Scene retained from {@link WorldsmithsGame#createScene()}. Package-visible for unit tests.
+     */
+    Scene retainedScene() {
+        return scene;
     }
 
     @Override

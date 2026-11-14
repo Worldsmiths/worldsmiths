@@ -1,6 +1,8 @@
 package io.github.worldsmiths.core;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.Test;
 
@@ -17,7 +19,22 @@ class WorldsmithsGameTest {
         });
     }
 
+    @Test
+    void createSceneReturnsASceneInstance() {
+        WorldsmithsGame game = new StubGame();
+
+        Scene scene = game.createScene();
+
+        assertNotNull(scene);
+        assertTrue(scene.nodes.isEmpty());
+    }
+
     private static final class StubGame implements WorldsmithsGame {
+        @Override
+        public Scene createScene() {
+            return new Scene();
+        }
+
         @Override
         public void create() {}
 

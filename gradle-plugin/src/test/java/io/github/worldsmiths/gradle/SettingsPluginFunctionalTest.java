@@ -245,9 +245,11 @@ class SettingsPluginFunctionalTest {
     private void writeGameClass(String message) throws IOException {
         write("game/src/main/java/com/example/Game.java",
                 "package com.example;\n"
+                        + "import io.github.worldsmiths.core.Scene;\n"
                         + "import io.github.worldsmiths.core.WorldsmithsGame;\n"
                         + "import org.apache.commons.lang3.StringUtils;\n"
                         + "public class Game implements WorldsmithsGame {\n"
+                        + "    @Override public Scene createScene() { return new Scene(); }\n"
                         + "    @Override public void create() {}\n"
                         + "    @Override public void update(float delta) {}\n"
                         + "    @Override public void render() {}\n"
