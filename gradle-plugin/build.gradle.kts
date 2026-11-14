@@ -10,6 +10,7 @@ tasks.withType<JavaCompile>().configureEach {
 }
 
 dependencies {
+    implementation("com.github.xpenatan.gdx-teavm:gdx-teavm-plugin:1.6.2")
     testImplementation("org.junit.jupiter:junit-jupiter:5.11.4")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher:1.11.4")
     testImplementation(gradleTestKit())
@@ -30,6 +31,10 @@ gradlePlugin {
         create("desktop") {
             id = "io.github.worldsmiths.desktop"
             implementationClass = "io.github.worldsmiths.gradle.DesktopPlugin"
+        }
+        create("web") {
+            id = "io.github.worldsmiths.web"
+            implementationClass = "io.github.worldsmiths.gradle.WebPlugin"
         }
     }
 }

@@ -8,8 +8,8 @@ import io.github.worldsmiths.core.WorldsmithsGame;
  * Entry point for the TeaVM / gdx-teavm web application.
  *
  * <p>{@link WebApplicationConfiguration} exposes width and height but not a window title; {@link
- * WebConfig#getTitle()} is retained for API parity with desktop and for generated {@code
- * htmlTitle} in later milestones.
+ * WebConfig#getTitle()} is retained for API parity with desktop. The generated web module maps the
+ * same title to gdx-teavm {@code htmlTitle}.
  */
 public final class WebBackend {
 

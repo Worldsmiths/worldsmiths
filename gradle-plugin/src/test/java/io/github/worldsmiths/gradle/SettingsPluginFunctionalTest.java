@@ -209,6 +209,59 @@ class SettingsPluginFunctionalTest {
         assertTrue(result.getOutput().contains("worldsmiths.gameModule ':nope' is not included"), result.getOutput());
     }
 
+    @Test
+    void withoutTargetsWebDoesNotIncludeWebProject() {
+        BuildResult result = runner("projects").build();
+
+        assertTrue(result.getOutput().contains("Project ':desktop'"), result.getOutput());
+        assertFalse(result.getOutput().contains("Project ':web'"), result.getOutput());
+        assertFalse(Files.isRegularFile(projectDir.resolve(".worldsmiths/gen/web/build.gradle.kts")));
+    }
+
+    @Test
+    void withTargetsWebIncludesWebProjectWithReflectionOff() throws IOException {
+        write("settings.gradle.kts", defaultSettings(""
+                + "    targets {\n"
+                + "        desktop {\n"
+                + "            title.set(\"Starfall\")\n"
+                + "            width.set(1024)\n"
+                + "            height.set(768)\n"
+                + "        }\n"
+                + "        web {\n"
+                + "            title.set(\"Starfall Web\")\n"
+                + "            width.set(960)\n"
+                + "            height.set(540)\n"
+                + "        }\n"
+                + "    }\n"));
+
+        BuildResult result = runner(
+                "projects",
+                ":web:wsGenerateLauncher",
+                ":web:wsPrintTeaVmFlags",
+                ":web:tasks",
+                "--all").build();
+
+        assertTrue(result.getOutput().contains("Project ':web'"), result.getOutput());
+        assertTrue(Files.isRegularFile(projectDir.resolve(".worldsmiths/gen/web/build.gradle.kts")));
+
+        String script = read(".worldsmiths/gen/web/build.gradle.kts");
+        assertTrue(script.contains("id(\"io.github.worldsmiths.web\")"), script);
+        assertTrue(script.contains("title = \"Starfall Web\""), script);
+        assertTrue(script.contains("width = 960"), script);
+        assertTrue(script.contains("height = 540"), script);
+
+        assertTrue(result.getOutput().contains("ws-teavm-reflectionEnabled=false"), result.getOutput());
+        assertTrue(result.getOutput().contains("ws-teavm-reflectionDefaults=false"), result.getOutput());
+        assertTrue(result.getOutput().contains("gdx_teavm_web_js_build"), result.getOutput());
+        assertTrue(result.getOutput().contains("gdx_teavm_web_wasm_build"), result.getOutput());
+
+        String launcher = read(".worldsmiths/gen/web/build/generated/sources/ws-launcher/"
+                + "io/github/worldsmiths/generated/web/WebMain.java");
+        assertTrue(launcher.contains("WorldsmithsGame game = new com.example.Game()"), launcher);
+        assertTrue(launcher.contains("WebBackend.start"), launcher);
+        assertTrue(launcher.contains("new WebConfig(\"Starfall Web\", 960, 540)"), launcher);
+    }
+
     private GradleRunner runner(String... tasks) {
         String[] args = new String[tasks.length + 2];
         System.arraycopy(tasks, 0, args, 0, tasks.length);
@@ -267,6 +320,8 @@ class SettingsPluginFunctionalTest {
                 + "    dependencySubstitution {\n"
                 + "        substitute(module(\"io.github.worldsmiths:backends-desktop\"))"
                 + ".using(project(\":backends:desktop\"))\n"
+                + "        substitute(module(\"io.github.worldsmiths:backends-web\"))"
+                + ".using(project(\":backends:web\"))\n"
                 + "        substitute(module(\"io.github.worldsmiths:ws-core\"))"
                 + ".using(project(\":runtime:ws-core\"))\n"
                 + "    }\n"
