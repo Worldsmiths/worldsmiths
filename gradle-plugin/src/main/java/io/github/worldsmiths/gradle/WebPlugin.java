@@ -14,7 +14,7 @@ import org.gradle.api.tasks.compile.JavaCompile;
 public final class WebPlugin implements Plugin<Project> {
 
     /** Maven coordinate of the engine web backend; version matches the plugin. */
-    static final String BACKENDS_WEB = "io.github.worldsmiths:backends-web:0.0.1-SNAPSHOT";
+    static final String BACKENDS_WEB = EngineModuleCoordinates.BACKENDS_WEB_NOTATION;
 
     @Override
     public void apply(Project project) {

@@ -7,7 +7,7 @@ Empty Worldsmiths game that opens a desktop window (clear/blank frame). Use this
 - JDK 21 or newer to run Gradle (same as the engine monorepo).
 - The game module compiles for **Java 8** (`options.release = 8`), as required by the engine plugin.
 
-This sample is a nested Gradle project. It applies `io.github.worldsmiths.engine` via `includeBuild` of the monorepo `gradle-plugin`, and resolves `ws-core` / `backends-desktop` from the monorepo root with `includeBuild` + dependency substitution (not Maven Central).
+This sample is a nested Gradle project. It applies `io.github.worldsmiths.engine` via `includeBuild` of the monorepo `gradle-plugin`, and resolves `ws-core` / `backends-desktop` from the monorepo root with `includeBuild` + dependency substitution (not Maven Central). Desktop-only samples may omit the `backends-web` substitute; the full consumer snippet is in [`docs/includebuild-substitutions.md`](../../docs/includebuild-substitutions.md).
 
 ## Build / compile (no window)
 

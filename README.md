@@ -6,6 +6,8 @@ The Gradle plugin id is `io.github.worldsmiths.engine`. A game applies it in `se
 
 Group id and package: `io.github.worldsmiths`, from `gradle/libs.versions.toml`.
 
+External consumers resolve engine modules with `includeBuild` + `dependencySubstitution` (not Maven Central). See [`docs/includebuild-substitutions.md`](docs/includebuild-substitutions.md).
+
 A web upload zip (the page, the script and the assets, for itch.io and similar hosts) is not produced by this build yet. Decisions are recorded in `docs/adr/`.
 
 ## Build
