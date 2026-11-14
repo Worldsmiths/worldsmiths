@@ -56,3 +56,34 @@ jobs:
           path: |
             samples/snake/browser-check/build/
           if-no-files-found: ignore
+
+  # Ship archives: desktop distZip + itch-style web zip; fail closed if the assets marker is missing.
+  snake-ship:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: "21"
+      - uses: gradle/actions/setup-gradle@v6
+      - name: Build Snake ship archives
+        run: ./gradlew -p samples/snake :desktop:distZip :web:wsItchWebZip --no-daemon
+      - name: Assert ship marker in both archives
+        run: |
+          set -euo pipefail
+          marker="ws-ship-marker.txt"
+          desk_zip="$(find samples/snake/.worldsmiths/gen/desktop/build/distributions -name '*.zip' | head -n 1)"
+          web_zip="samples/snake/.worldsmiths/gen/web/build/distributions/web-itch.zip"
+          test -n "$desk_zip"
+          test -f "$web_zip"
+          unzip -l "$desk_zip" | grep -F "$marker"
+          unzip -l "$web_zip" | grep -F "$marker"
+          unzip -l "$web_zip" | grep -E '(^|/)index\.html$'
+      - uses: actions/upload-artifact@v7
+        with:
+          name: snake-ship-archives
+          path: |
+            samples/snake/.worldsmiths/gen/desktop/build/distributions/*.zip
+            samples/snake/.worldsmiths/gen/web/build/distributions/web-itch.zip
+

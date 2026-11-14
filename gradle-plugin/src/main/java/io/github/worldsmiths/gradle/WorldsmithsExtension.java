@@ -13,6 +13,12 @@ public abstract class WorldsmithsExtension {
     /** Fully qualified game class the desktop launcher instantiates. */
     public abstract Property<String> getGameClass();
 
+    /**
+     * Game assets directory relative to the settings root. Defaults to {@code "assets"}.
+     * Wired into desktop run/dist and gdx-teavm {@code assets()}.
+     */
+    public abstract Property<String> getAssetsDir();
+
     @Nested
     public abstract TargetsExtension getTargets();
 

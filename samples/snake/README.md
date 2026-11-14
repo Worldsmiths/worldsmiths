@@ -43,9 +43,28 @@ Opens a real desktop window — run locally, not in CI:
 ./gradlew -p samples/snake :desktop:run
 ```
 
-On macOS the plugin adds `-XstartOnFirstThread` for LWJGL.
+On macOS the plugin adds `-XstartOnFirstThread` for LWJGL. The run task uses the sample
+`assets/` directory as its working directory (`worldsmiths.assetsDir`, default `"assets"`).
 
 Close the window to exit.
+
+## Ship archives (desktop + web)
+
+Desktop uses the Application plugin distribution tasks. Web packaging is a Worldsmiths itch-style
+zip of the TeaVM JS webapp (`index.html` at the zip root):
+
+```bash
+# Desktop install layout + zip (includes assets/ contents such as ws-ship-marker.txt)
+./gradlew -p samples/snake :desktop:installDist :desktop:distZip
+
+# TeaVM JS build + itch-style zip
+./gradlew -p samples/snake :web:wsItchWebZip
+```
+
+Outputs:
+
+- Desktop zip: `.worldsmiths/gen/desktop/build/distributions/*.zip`
+- Web itch zip: `.worldsmiths/gen/web/build/distributions/web-itch.zip`
 
 ## Build / run web
 

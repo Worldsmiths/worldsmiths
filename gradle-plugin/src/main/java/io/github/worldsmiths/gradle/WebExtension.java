@@ -9,6 +9,9 @@ public abstract class WebExtension {
 
     public abstract Property<String> getGameClass();
 
+    /** Assets directory relative to the settings / root project directory. */
+    public abstract Property<String> getAssetsDir();
+
     public abstract Property<String> getTitle();
 
     public abstract Property<Integer> getWidth();

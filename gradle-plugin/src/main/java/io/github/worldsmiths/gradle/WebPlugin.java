@@ -5,7 +5,9 @@ import com.github.xpenatan.gdx.teavm.gradle.GdxTeaVMGradlePlugin;
 import java.util.Collections;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
+import org.gradle.api.file.Directory;
 import org.gradle.api.plugins.JavaPluginExtension;
+import org.gradle.api.provider.Provider;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.TaskProvider;
 import org.gradle.api.tasks.compile.JavaCompile;
@@ -15,6 +17,8 @@ public final class WebPlugin implements Plugin<Project> {
 
     /** Maven coordinate of the engine web backend; version matches the plugin. */
     static final String BACKENDS_WEB = "io.github.worldsmiths:backends-web:0.0.1-SNAPSHOT";
+
+    static final String TEA_VM_JS_BUILD = "gdx_teavm_web_js_build";
 
     @Override
     public void apply(Project project) {
@@ -46,6 +50,7 @@ public final class WebPlugin implements Plugin<Project> {
         GdxTeaVMExtension teavm = project.getExtensions().getByType(GdxTeaVMExtension.class);
         teavm.getReflectionEnabled().set(false);
         teavm.getReflectionDefaults().set(false);
+        teavm.assets(extension.getAssetsDir().map(path -> project.getRootProject().file(path)));
         teavm.webDefaults(defaults -> {
             defaults.getMainClass().set(GenerateWebLauncher.MAIN_CLASS);
             defaults.getHtmlTitle().set(extension.getTitle());
@@ -54,6 +59,13 @@ public final class WebPlugin implements Plugin<Project> {
         });
         teavm.js(js -> {});
         teavm.wasm(wasm -> {});
+
+        Provider<Directory> webappDir = project.getLayout().getBuildDirectory().dir("dist/js/webapp");
+        project.getTasks().register(WsItchWebZip.TASK_NAME, WsItchWebZip.class, task -> {
+            task.dependsOn(TEA_VM_JS_BUILD);
+            task.getWebappDirectory().set(webappDir);
+            task.getDestinationDirectory().set(project.getLayout().getBuildDirectory().dir("distributions"));
+        });
 
         project.getTasks().register("wsPrintTeaVmFlags", PrintTeaVmFlags.class, task -> {
             task.setGroup("worldsmiths");

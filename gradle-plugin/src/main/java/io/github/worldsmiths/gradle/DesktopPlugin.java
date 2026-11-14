@@ -1,12 +1,17 @@
 package io.github.worldsmiths.gradle;
 
+import java.io.File;
 import java.util.Collections;
 import java.util.Locale;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
+import org.gradle.api.distribution.DistributionContainer;
+import org.gradle.api.distribution.plugins.DistributionPlugin;
+import org.gradle.api.file.FileCollection;
 import org.gradle.api.plugins.ApplicationPlugin;
 import org.gradle.api.plugins.JavaApplication;
 import org.gradle.api.plugins.JavaPluginExtension;
+import org.gradle.api.provider.Provider;
 import org.gradle.api.tasks.JavaExec;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.TaskProvider;
@@ -50,10 +55,27 @@ public final class DesktopPlugin implements Plugin<Project> {
         project.getExtensions().getByType(JavaApplication.class).getMainClass()
                 .set(GenerateDesktopLauncher.MAIN_CLASS);
 
-        if (isMacOs()) {
-            project.getTasks().named(ApplicationPlugin.TASK_RUN_NAME, JavaExec.class, run ->
-                    run.jvmArgs("-XstartOnFirstThread"));
-        }
+        Provider<File> assetsDir = extension.getAssetsDir()
+                .map(path -> project.getRootProject().file(path));
+        Provider<FileCollection> assetsContents = assetsDir.map(dir ->
+                dir.isDirectory() ? project.fileTree(dir) : project.files());
+
+        project.getTasks().named(ApplicationPlugin.TASK_RUN_NAME, JavaExec.class, run -> {
+            run.getWorkingDirectory().set(project.getLayout().dir(assetsDir));
+            run.doFirst(task -> {
+                File dir = assetsDir.get();
+                if (!dir.exists() && !dir.mkdirs()) {
+                    throw new IllegalStateException("Cannot create assets directory: " + dir);
+                }
+            });
+            if (isMacOs()) {
+                run.jvmArgs("-XstartOnFirstThread");
+            }
+        });
+
+        project.getExtensions().configure(DistributionContainer.class, distributions ->
+                distributions.named(DistributionPlugin.MAIN_DISTRIBUTION_NAME, distribution ->
+                        distribution.getContents().from(assetsContents)));
 
         project.getTasks().register("wsPrintRuntimeClasspath", PrintRuntimeClasspath.class, task ->
                 task.getClasspath().from(main.getRuntimeClasspath()));

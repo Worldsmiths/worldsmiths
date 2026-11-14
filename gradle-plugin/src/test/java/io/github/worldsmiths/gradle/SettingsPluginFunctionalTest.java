@@ -5,11 +5,16 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Comparator;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.stream.Stream;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
 import org.gradle.testkit.runner.BuildResult;
 import org.gradle.testkit.runner.GradleRunner;
 import org.gradle.testkit.runner.TaskOutcome;
@@ -83,6 +88,77 @@ class SettingsPluginFunctionalTest {
         assertTrue(script.contains("title = \"Worldsmiths\""), script);
         assertTrue(script.contains("width = 800"), script);
         assertTrue(script.contains("height = 600"), script);
+    }
+
+    @Test
+    void assetsDirDefaultsToAssetsInGeneratedDesktopScript() throws IOException {
+        write("settings.gradle.kts", defaultSettings(""));
+
+        BuildResult result = runner("projects").build();
+
+        assertEquals(TaskOutcome.SUCCESS, result.task(":projects").getOutcome());
+        String script = read(".worldsmiths/gen/desktop/build.gradle.kts");
+        assertTrue(script.contains("assetsDir = \"assets\""), script);
+    }
+
+    @Test
+    void assetsDirOverrideReachesGeneratedDesktopAndWebScripts() throws IOException {
+        write("settings.gradle.kts", defaultSettings(""
+                + "    assetsDir = \"game-assets\"\n"
+                + "    targets {\n"
+                + "        desktop {}\n"
+                + "        web {}\n"
+                + "    }\n"));
+
+        BuildResult result = runner("projects").build();
+
+        assertEquals(TaskOutcome.SUCCESS, result.task(":projects").getOutcome());
+        assertTrue(read(".worldsmiths/gen/desktop/build.gradle.kts").contains("assetsDir = \"game-assets\""));
+        assertTrue(read(".worldsmiths/gen/web/build.gradle.kts").contains("assetsDir = \"game-assets\""));
+    }
+
+    @Test
+    void desktopDistZipIncludesMarkerFromAssetsDir() throws IOException {
+        write("assets/ws-ship-marker.txt", "worldsmiths-ship-marker\n");
+
+        BuildResult result = runner(":desktop:distZip").build();
+
+        assertEquals(TaskOutcome.SUCCESS, result.task(":desktop:distZip").getOutcome());
+        Path distZip = findSingleZip(projectDir.resolve(".worldsmiths/gen/desktop/build/distributions"));
+        Set<String> entries = zipEntryNames(distZip);
+        assertTrue(entries.stream().anyMatch(name -> name.endsWith("ws-ship-marker.txt")),
+                "distZip entries: " + entries);
+    }
+
+    @Test
+    void emptyAssetsDirDoesNotBreakDesktopDistZip() throws IOException {
+        Files.createDirectories(projectDir.resolve("assets"));
+
+        BuildResult result = runner(":desktop:distZip").build();
+
+        assertEquals(TaskOutcome.SUCCESS, result.task(":desktop:distZip").getOutcome());
+    }
+
+    @Test
+    void itchWebZipPutsIndexHtmlAtRootAndIncludesMarker() throws IOException {
+        write("settings.gradle.kts", defaultSettings(""
+                + "    targets {\n"
+                + "        desktop {}\n"
+                + "        web {}\n"
+                + "    }\n"));
+        write("assets/ws-ship-marker.txt", "worldsmiths-ship-marker\n");
+        write(".worldsmiths/gen/web/build/dist/js/webapp/index.html", "<html></html>\n");
+        write(".worldsmiths/gen/web/build/dist/js/webapp/ws-ship-marker.txt", "worldsmiths-ship-marker\n");
+
+        BuildResult result = runner(":web:wsItchWebZip", "-x", "gdx_teavm_web_js_build").build();
+
+        assertEquals(TaskOutcome.SUCCESS, result.task(":web:wsItchWebZip").getOutcome());
+        Path itchZip = projectDir.resolve(".worldsmiths/gen/web/build/distributions/web-itch.zip");
+        assertTrue(Files.isRegularFile(itchZip), "missing " + itchZip);
+        Set<String> entries = zipEntryNames(itchZip);
+        assertTrue(entries.contains("index.html"), "itch zip entries: " + entries);
+        assertTrue(entries.stream().anyMatch(name -> name.endsWith("ws-ship-marker.txt")),
+                "itch zip entries: " + entries);
     }
 
     @Test
@@ -378,5 +454,24 @@ class SettingsPluginFunctionalTest {
         Path file = projectDir.resolve(relativePath);
         Files.createDirectories(file.getParent());
         Files.write(file, content.getBytes(StandardCharsets.UTF_8));
+    }
+
+    private static Path findSingleZip(Path directory) throws IOException {
+        try (Stream<Path> paths = Files.list(directory)) {
+            return paths.filter(path -> path.getFileName().toString().endsWith(".zip"))
+                    .findFirst()
+                    .orElseThrow(() -> new AssertionError("No zip in " + directory));
+        }
+    }
+
+    private static Set<String> zipEntryNames(Path zip) throws IOException {
+        Set<String> names = new HashSet<>();
+        try (InputStream in = Files.newInputStream(zip);
+                ZipInputStream zipIn = new ZipInputStream(in)) {
+            for (ZipEntry entry = zipIn.getNextEntry(); entry != null; entry = zipIn.getNextEntry()) {
+                names.add(entry.getName());
+            }
+        }
+        return names;
     }
 }

@@ -6,7 +6,9 @@ The Gradle plugin id is `io.github.worldsmiths.engine`. A game applies it in `se
 
 Group id and package: `io.github.worldsmiths`, from `gradle/libs.versions.toml`.
 
-A web upload zip (the page, the script and the assets, for itch.io and similar hosts) is not produced by this build yet. Decisions are recorded in `docs/adr/`.
+Ship archives: desktop `:desktop:distZip` / `:desktop:installDist`, and web `:web:wsItchWebZip`
+(itch-style zip with `index.html` at the root). Game assets come from `worldsmiths.assetsDir`
+(default `"assets"`). Decisions are recorded in `docs/adr/`.
 
 ## Build
 
