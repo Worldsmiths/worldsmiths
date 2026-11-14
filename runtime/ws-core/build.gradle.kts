@@ -7,11 +7,17 @@ version = libs.versions.engine.get()
 
 tasks.withType<JavaCompile>().configureEach {
     options.release.set(8)
-    options.compilerArgs.add("-Xlint:-options")
+    options.compilerArgs.addAll(
+        listOf(
+            "-Xlint:-options",
+            "-Aws.registry.package=io.github.worldsmiths.core.generated",
+        ),
+    )
 }
 
 dependencies {
     api(libs.gdx)
+    annotationProcessor(project(":processor"))
     testImplementation(libs.junit.jupiter)
     testRuntimeOnly(libs.junit.platform.launcher)
 }
