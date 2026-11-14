@@ -22,6 +22,15 @@ public abstract class GenerateDesktopLauncher extends DefaultTask {
     @Input
     public abstract Property<String> getGameClass();
 
+    @Input
+    public abstract Property<String> getTitle();
+
+    @Input
+    public abstract Property<Integer> getWidth();
+
+    @Input
+    public abstract Property<Integer> getHeight();
+
     @OutputDirectory
     public abstract DirectoryProperty getOutputDir();
 
@@ -29,12 +38,21 @@ public abstract class GenerateDesktopLauncher extends DefaultTask {
     public void generate() {
         Path source = getOutputDir().get().getAsFile().toPath()
                 .resolve(MAIN_CLASS.replace('.', '/') + ".java");
+        String gameClass = getGameClass().get();
+        String title = getTitle().get().replace("\\", "\\\\").replace("\"", "\\\"");
+        int width = getWidth().get();
+        int height = getHeight().get();
         String code = "package io.github.worldsmiths.generated.desktop;\n"
+                + "\n"
+                + "import io.github.worldsmiths.core.WorldsmithsGame;\n"
+                + "import io.github.worldsmiths.desktop.DesktopBackend;\n"
+                + "import io.github.worldsmiths.desktop.DesktopConfig;\n"
                 + "\n"
                 + "public final class DesktopMain {\n"
                 + "    public static void main(String[] args) {\n"
-                + "        Object game = new " + getGameClass().get() + "();\n"
-                + "        System.out.println(\"Worldsmiths desktop launched: \" + game);\n"
+                + "        WorldsmithsGame game = new " + gameClass + "();\n"
+                + "        DesktopBackend.start(game, new DesktopConfig(\"" + title + "\", "
+                + width + ", " + height + "));\n"
                 + "    }\n"
                 + "}\n";
         try {
