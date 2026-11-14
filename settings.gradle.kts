@@ -13,3 +13,4 @@ rootProject.name = "worldsmiths"
 include("runtime:ws-core")
 include("backends:desktop")
 include("bom")
+include("processor")
