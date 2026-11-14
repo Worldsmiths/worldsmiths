@@ -1,6 +1,14 @@
 # Snake sample
 
-Partial 2D Snake for D2: a visible grid, one head node with `Transform2D` + colored `Sprite` (engine-drawn), discrete grid movement on a step timer, and turns via arrow keys or WASD (`Gdx.input`). No body, food, or score yet.
+Fuller 2D Snake for D3: a visible grid, head + body segment nodes + food node with `Transform2D` +
+colored `Sprite` (engine-drawn), discrete grid movement on a step timer, grow on eat, wall/self
+collision ends the run, score in the window title (`Snake — score: N`), and restart without
+relaunching.
+
+## Controls
+
+- **Move:** arrow keys or WASD (ignored while dead)
+- **Restart after death:** `R` or Space
 
 ## Requirements
 
@@ -23,7 +31,7 @@ Or from this directory (using the monorepo wrapper):
 ../../gradlew :desktop:compileJava
 ```
 
-## Run (manual AC4)
+## Run (manual smoke)
 
 Opens a real desktop window — run locally, not in CI:
 
