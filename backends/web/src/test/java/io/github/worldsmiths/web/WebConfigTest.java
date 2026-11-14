@@ -1,23 +1,24 @@
 package io.github.worldsmiths.web;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import org.junit.jupiter.api.Test;
 
 class WebConfigTest {
 
     @Test
-    void defaultsProvideTitleWidthAndHeight() {
+    void defaultsProvideWidthAndHeight() {
         WebConfig config = new WebConfig();
 
-        assertEquals("Worldsmiths", config.getTitle());
         assertEquals(800, config.getWidth());
         assertEquals(600, config.getHeight());
     }
 
     @Test
-    void rejectsNullTitle() {
-        assertThrows(NullPointerException.class, () -> new WebConfig(null, 640, 480));
+    void storesExplicitWidthAndHeight() {
+        WebConfig config = new WebConfig(640, 480);
+
+        assertEquals(640, config.getWidth());
+        assertEquals(480, config.getHeight());
     }
 }

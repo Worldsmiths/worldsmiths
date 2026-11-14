@@ -23,9 +23,6 @@ public abstract class GenerateWebLauncher extends DefaultTask {
     public abstract Property<String> getGameClass();
 
     @Input
-    public abstract Property<String> getTitle();
-
-    @Input
     public abstract Property<Integer> getWidth();
 
     @Input
@@ -39,7 +36,6 @@ public abstract class GenerateWebLauncher extends DefaultTask {
         Path source = getOutputDir().get().getAsFile().toPath()
                 .resolve(MAIN_CLASS.replace('.', '/') + ".java");
         String gameClass = getGameClass().get();
-        String title = getTitle().get().replace("\\", "\\\\").replace("\"", "\\\"");
         int width = getWidth().get();
         int height = getHeight().get();
         String code = "package io.github.worldsmiths.generated.web;\n"
@@ -51,7 +47,7 @@ public abstract class GenerateWebLauncher extends DefaultTask {
                 + "public final class WebMain {\n"
                 + "    public static void main(String[] args) {\n"
                 + "        WorldsmithsGame game = new " + gameClass + "();\n"
-                + "        WebBackend.start(game, new WebConfig(\"" + title + "\", "
+                + "        WebBackend.start(game, new WebConfig("
                 + width + ", " + height + "));\n"
                 + "    }\n"
                 + "}\n";

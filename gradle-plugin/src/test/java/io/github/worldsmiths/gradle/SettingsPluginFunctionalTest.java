@@ -259,7 +259,8 @@ class SettingsPluginFunctionalTest {
                 + "io/github/worldsmiths/generated/web/WebMain.java");
         assertTrue(launcher.contains("WorldsmithsGame game = new com.example.Game()"), launcher);
         assertTrue(launcher.contains("WebBackend.start"), launcher);
-        assertTrue(launcher.contains("new WebConfig(\"Starfall Web\", 960, 540)"), launcher);
+        assertTrue(launcher.contains("new WebConfig(960, 540)"), launcher);
+        assertFalse(launcher.contains("Starfall Web"), launcher);
     }
 
     private GradleRunner runner(String... tasks) {

@@ -19,7 +19,7 @@ Desktop and browser (TeaVM / gdx-teavm) share the same `:game` sources.
 - Browser run: a modern Chromium-based browser (Chrome recommended). The Playwright check needs
   Google Chrome installed (or set `CHROME` to a Chromium binary).
 
-This sample is a nested Gradle project. It applies `io.github.worldsmiths.engine` via `includeBuild` of the monorepo `gradle-plugin`, and resolves `ws-core` / `backends-desktop` / `backends-web` from the monorepo root with `includeBuild` + dependency substitution (not Maven Central). Game sources may use LibGDX core (`Gdx`, shapes) but must not import `com.badlogic.gdx.backends`.
+This sample is a nested Gradle project. It applies `io.github.worldsmiths.engine` via `includeBuild` of the monorepo `gradle-plugin`, and resolves `ws-core` / `backends-desktop` / `backends-web` from the monorepo root with `includeBuild` + dependency substitution (not Maven Central). Game sources may use LibGDX core (`Gdx`, shapes) but must not import `com.badlogic.gdx.backends`, `com.github.xpenatan.gdx.teavm.backends`, or any `*ApplicationConfiguration` type.
 
 ## Build / compile (no window)
 

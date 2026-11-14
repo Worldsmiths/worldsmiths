@@ -24,7 +24,6 @@ public final class WebPlugin implements Plugin<Project> {
         TaskProvider<GenerateWebLauncher> generate = project.getTasks()
                 .register("wsGenerateLauncher", GenerateWebLauncher.class, task -> {
                     task.getGameClass().set(extension.getGameClass());
-                    task.getTitle().set(extension.getTitle());
                     task.getWidth().set(extension.getWidth());
                     task.getHeight().set(extension.getHeight());
                     task.getOutputDir().set(project.getLayout().getBuildDirectory().dir("generated/sources/ws-launcher"));
