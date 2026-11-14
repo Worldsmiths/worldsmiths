@@ -25,3 +25,5 @@ jobs:
           java-version: "21"
       - uses: gradle/actions/setup-gradle@v6
       - run: ./gradlew build --no-daemon
+      - name: Compile and test samples/snake
+        run: ./gradlew -p samples/snake :desktop:compileJava :game:test --no-daemon
