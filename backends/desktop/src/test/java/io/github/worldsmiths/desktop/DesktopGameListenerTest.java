@@ -2,8 +2,12 @@ package io.github.worldsmiths.desktop;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import io.github.worldsmiths.core.Node;
 import io.github.worldsmiths.core.Scene;
+import io.github.worldsmiths.core.Sprite;
+import io.github.worldsmiths.core.Transform2D;
 import io.github.worldsmiths.core.WorldsmithsGame;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -31,6 +35,42 @@ class DesktopGameListenerTest {
         listener.updateAndRender(0.016f);
 
         assertEquals(Arrays.asList("update:0.016", "render"), game.calls);
+    }
+
+    @Test
+    void updateAndRenderDrawsRetainedSceneAfterGameRender() {
+        RecordingGame game = new RecordingGame();
+        Sprite sprite = new Sprite("head.png");
+        sprite.r = 0.1f;
+        sprite.g = 0.2f;
+        sprite.b = 0.3f;
+        sprite.a = 1f;
+        game.scene.add(new Node("head").add(new Transform2D(1f, 2f)).add(sprite));
+
+        SceneShapeRenderer recorder = SceneShapeRenderer.recordingOnly();
+        DesktopGameListener listener = new DesktopGameListener(game, recorder);
+        listener.create();
+
+        listener.updateAndRender(0.016f);
+
+        assertEquals(
+                Arrays.asList("createScene", "create", "update:0.016", "render"), game.calls);
+        List<ShapeDrawCommand> draws = recorder.lastDrawCommands();
+        assertEquals(1, draws.size());
+        assertEquals(1f * SceneShapeRenderer.CELL_SIZE, draws.get(0).x, 0.001f);
+        assertEquals(2f * SceneShapeRenderer.CELL_SIZE, draws.get(0).y, 0.001f);
+        assertEquals(0.1f, draws.get(0).r, 0.001f);
+    }
+
+    @Test
+    void disposeDisposesSceneShapeRenderer() {
+        RecordingGame game = new RecordingGame();
+        SceneShapeRenderer recorder = SceneShapeRenderer.recordingOnly();
+        DesktopGameListener listener = new DesktopGameListener(game, recorder);
+
+        listener.dispose();
+
+        assertTrue(recorder.isDisposed());
     }
 
     private static final class RecordingGame implements WorldsmithsGame {

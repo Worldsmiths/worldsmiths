@@ -7,20 +7,29 @@ import io.github.worldsmiths.core.Scene;
 import io.github.worldsmiths.core.WorldsmithsGame;
 
 /**
- * LibGDX {@link ApplicationListener} that drives a {@link WorldsmithsGame} and clears the
- * framebuffer each frame. Retains the scene from {@link WorldsmithsGame#createScene()} for later
- * drawing (D2 shape renderer lands in a follow-up task).
+ * LibGDX {@link ApplicationListener} that drives a {@link WorldsmithsGame}, clears the framebuffer
+ * each frame, and draws visible scene sprites as filled rects via {@link SceneShapeRenderer}.
  */
 public final class DesktopGameListener implements ApplicationListener {
 
     private final WorldsmithsGame game;
     private Scene scene;
+    private SceneShapeRenderer sceneRenderer;
 
     public DesktopGameListener(WorldsmithsGame game) {
+        this(game, null);
+    }
+
+    /**
+     * Package-visible constructor so unit tests can inject a recording {@link SceneShapeRenderer}
+     * without constructing a real libGDX {@code ShapeRenderer} (no LWJGL / display).
+     */
+    DesktopGameListener(WorldsmithsGame game, SceneShapeRenderer sceneRenderer) {
         if (game == null) {
             throw new NullPointerException("game");
         }
         this.game = game;
+        this.sceneRenderer = sceneRenderer;
     }
 
     @Override
@@ -44,16 +53,26 @@ public final class DesktopGameListener implements ApplicationListener {
     @Override
     public void render() {
         clearScreen();
+        ensureSceneRenderer();
         updateAndRender(Gdx.graphics.getDeltaTime());
     }
 
     /**
-     * Forwards one update/render tick to the game. Package-visible so unit tests can exercise
-     * the lifecycle without starting LWJGL or requiring a display.
+     * Forwards one update/render tick to the game, then draws the retained scene. Package-visible
+     * so unit tests can exercise the lifecycle without starting LWJGL or requiring a display.
      */
     void updateAndRender(float delta) {
         game.update(delta);
         game.render();
+        if (sceneRenderer != null && scene != null) {
+            sceneRenderer.render(scene);
+        }
+    }
+
+    private void ensureSceneRenderer() {
+        if (sceneRenderer == null) {
+            sceneRenderer = new SceneShapeRenderer();
+        }
     }
 
     @Override
@@ -68,7 +87,9 @@ public final class DesktopGameListener implements ApplicationListener {
 
     @Override
     public void dispose() {
-        // No-op for D1.
+        if (sceneRenderer != null) {
+            sceneRenderer.dispose();
+        }
     }
 
     private static void clearScreen() {
