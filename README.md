@@ -6,6 +6,8 @@ The Gradle plugin id is `io.github.worldsmiths.engine`. A game applies it in `se
 
 Group id and package: `io.github.worldsmiths`, from `gradle/libs.versions.toml`.
 
+External consumers resolve engine modules with `includeBuild` + `dependencySubstitution` (not Maven Central). See [`docs/includebuild-substitutions.md`](docs/includebuild-substitutions.md).
+
 Ship archives: desktop `:desktop:distZip` / `:desktop:installDist`, and web `:web:wsItchWebZip`
 (itch-style zip with `index.html` at the root). Game assets come from `worldsmiths.assetsDir`
 (default `"assets"`). Decisions are recorded in `docs/adr/`.

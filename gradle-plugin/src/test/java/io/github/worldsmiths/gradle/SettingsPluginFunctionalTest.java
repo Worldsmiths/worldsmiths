@@ -26,7 +26,7 @@ class SettingsPluginFunctionalTest {
 
     private static final String REUSED = "Reusing configuration cache.";
     private static final String STORED = "Configuration cache entry stored.";
-    private static final String ENGINE_VERSION = "0.0.1-SNAPSHOT";
+    private static final String ENGINE_VERSION = EngineModuleCoordinates.VERSION;
 
     @TempDir
     Path projectDir;
@@ -394,14 +394,7 @@ class SettingsPluginFunctionalTest {
         return "plugins { id(\"io.github.worldsmiths.engine\") }\n"
                 + "dependencyResolutionManagement { repositories { mavenCentral() } }\n"
                 + "includeBuild(\"" + engineRoot + "\") {\n"
-                + "    dependencySubstitution {\n"
-                + "        substitute(module(\"io.github.worldsmiths:backends-desktop\"))"
-                + ".using(project(\":backends:desktop\"))\n"
-                + "        substitute(module(\"io.github.worldsmiths:backends-web\"))"
-                + ".using(project(\":backends:web\"))\n"
-                + "        substitute(module(\"io.github.worldsmiths:ws-core\"))"
-                + ".using(project(\":runtime:ws-core\"))\n"
-                + "    }\n"
+                + IncludeBuildSubstitutions.dependencySubstitutionKotlin()
                 + "}\n"
                 + "rootProject.name = \"starfall\"\n"
                 + "include(\":game\")\n"

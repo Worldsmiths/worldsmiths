@@ -21,8 +21,7 @@ import org.gradle.api.tasks.compile.JavaCompile;
 public final class DesktopPlugin implements Plugin<Project> {
 
     /** Maven coordinate of the engine desktop backend; version matches the plugin. */
-    static final String BACKENDS_DESKTOP =
-            "io.github.worldsmiths:backends-desktop:0.0.1-SNAPSHOT";
+    static final String BACKENDS_DESKTOP = EngineModuleCoordinates.BACKENDS_DESKTOP_NOTATION;
 
     @Override
     public void apply(Project project) {
