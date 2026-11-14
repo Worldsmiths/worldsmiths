@@ -1,10 +1,14 @@
 [versions]
 group = "io.github.worldsmiths"
 engine = "0.0.1-SNAPSHOT"
+gdx = "1.14.2"
 junit = "5.11.4"
 junit-platform = "1.11.4"
 
 [libraries]
+gdx = { module = "com.badlogicgames.gdx:gdx", version.ref = "gdx" }
+gdx-backend-lwjgl3 = { module = "com.badlogicgames.gdx:gdx-backend-lwjgl3", version.ref = "gdx" }
+gdx-platform = { module = "com.badlogicgames.gdx:gdx-platform", version.ref = "gdx" }
 junit-jupiter = { module = "org.junit.jupiter:junit-jupiter", version.ref = "junit" }
 junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher", version.ref = "junit-platform" }
 

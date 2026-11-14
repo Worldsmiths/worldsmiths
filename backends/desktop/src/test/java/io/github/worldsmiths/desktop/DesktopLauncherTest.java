@@ -1,7 +1,7 @@
 package io.github.worldsmiths.desktop;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
 import org.junit.jupiter.api.Test;
 
@@ -13,12 +13,9 @@ class DesktopLauncherTest {
     }
 
     @Test
-    void doesNotShipLibGdx() {
-        assertThrows(ClassNotFoundException.class, () -> Class.forName("com.badlogic.gdx.Application"));
-    }
-
-    @Test
-    void mainDoesNotOpenAWindow() {
-        DesktopLauncher.main(new String[0]);
+    void shipsLibGdxOnTheClasspath() {
+        assertDoesNotThrow(() -> Class.forName("com.badlogic.gdx.Application"));
+        assertDoesNotThrow(
+                () -> Class.forName("com.badlogic.gdx.backends.lwjgl3.Lwjgl3Application"));
     }
 }

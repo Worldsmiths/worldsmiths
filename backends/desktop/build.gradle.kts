@@ -12,6 +12,13 @@ tasks.withType<JavaCompile>().configureEach {
 
 dependencies {
     api(project(":runtime:ws-core"))
+    api(libs.gdx)
+    api(libs.gdx.backend.lwjgl3)
+    api(libs.gdx.platform) {
+        artifact {
+            classifier = "natives-desktop"
+        }
+    }
     testImplementation(libs.junit.jupiter)
     testRuntimeOnly(libs.junit.platform.launcher)
 }
