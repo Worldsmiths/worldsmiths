@@ -4,6 +4,7 @@ package io.github.worldsmiths.core;
  * Built-in sprite component. {@code texture} is a forward-compatible asset key; D2 draws with
  * {@code r}/{@code g}/{@code b}/{@code a} shape colors instead of loading the texture.
  */
+@WsComponent
 public final class Sprite {
 
     public String texture;

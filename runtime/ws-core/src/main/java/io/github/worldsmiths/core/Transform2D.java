@@ -3,6 +3,7 @@ package io.github.worldsmiths.core;
 /**
  * Built-in 2D transform component: position, rotation, and scale in scene units.
  */
+@WsComponent
 public final class Transform2D {
 
     public float x;
