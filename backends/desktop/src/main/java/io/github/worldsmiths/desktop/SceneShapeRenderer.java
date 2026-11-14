@@ -1,6 +1,8 @@
 package io.github.worldsmiths.desktop;
 
+import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
+import com.badlogic.gdx.math.Matrix4;
 import io.github.worldsmiths.core.Node;
 import io.github.worldsmiths.core.Scene;
 import io.github.worldsmiths.core.Sprite;
@@ -8,6 +10,7 @@ import io.github.worldsmiths.core.Transform2D;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.function.IntSupplier;
 
 /**
  * Walks a retained {@link Scene} and draws each visible {@link Sprite} as a filled rect from
@@ -20,11 +23,29 @@ public final class SceneShapeRenderer {
     public static final float CELL_SIZE = 32f;
 
     private final ShapeRenderer shapes;
+    private final IntSupplier screenWidth;
+    private final IntSupplier screenHeight;
     private List<ShapeDrawCommand> lastDrawCommands = Collections.emptyList();
+    private Matrix4 lastProjectionMatrix;
+    private float lastProjectionWidth = -1f;
+    private float lastProjectionHeight = -1f;
     private boolean disposed;
 
     public SceneShapeRenderer() {
-        this(new ShapeRenderer());
+        this(
+                new ShapeRenderer(),
+                new IntSupplier() {
+                    @Override
+                    public int getAsInt() {
+                        return Gdx.graphics.getWidth();
+                    }
+                },
+                new IntSupplier() {
+                    @Override
+                    public int getAsInt() {
+                        return Gdx.graphics.getHeight();
+                    }
+                });
     }
 
     /**
@@ -37,7 +58,30 @@ public final class SceneShapeRenderer {
 
     /** Package-visible for tests that inject a fake or already-constructed renderer. */
     SceneShapeRenderer(ShapeRenderer shapes) {
+        this(
+                shapes,
+                new IntSupplier() {
+                    @Override
+                    public int getAsInt() {
+                        return Gdx.graphics.getWidth();
+                    }
+                },
+                new IntSupplier() {
+                    @Override
+                    public int getAsInt() {
+                        return Gdx.graphics.getHeight();
+                    }
+                });
+    }
+
+    /**
+     * Package-visible for tests that inject screen size without {@link Gdx#graphics}.
+     * Recording-only callers pass {@code shapes == null} so suppliers are never read on render.
+     */
+    SceneShapeRenderer(ShapeRenderer shapes, IntSupplier screenWidth, IntSupplier screenHeight) {
         this.shapes = shapes;
+        this.screenWidth = screenWidth;
+        this.screenHeight = screenHeight;
     }
 
     /**
@@ -75,12 +119,33 @@ public final class SceneShapeRenderer {
         }
     }
 
+    /**
+     * Screen-space ortho matrix for pixel coordinates (origin bottom-left). Package-visible test
+     * seam shared with the GL draw path.
+     */
+    static Matrix4 screenOrthoMatrix(float width, float height) {
+        return new Matrix4().setToOrtho2D(0f, 0f, width, height);
+    }
+
+    /**
+     * Records and returns the screen ortho used before ShapeRenderer draws. Package-visible test
+     * seam; the GL path calls this then {@link ShapeRenderer#setProjectionMatrix(Matrix4)}.
+     */
+    Matrix4 prepareScreenProjection(float width, float height) {
+        lastProjectionWidth = width;
+        lastProjectionHeight = height;
+        lastProjectionMatrix = screenOrthoMatrix(width, height);
+        return lastProjectionMatrix;
+    }
+
     /** Draws all visible sprites in {@code scene} as filled rects (or records them when headless). */
     public void render(Scene scene) {
         lastDrawCommands = collectDrawCommands(scene);
         if (shapes == null || lastDrawCommands.isEmpty()) {
             return;
         }
+        shapes.setProjectionMatrix(
+                prepareScreenProjection(screenWidth.getAsInt(), screenHeight.getAsInt()));
         shapes.begin(ShapeRenderer.ShapeType.Filled);
         for (ShapeDrawCommand draw : lastDrawCommands) {
             shapes.setColor(draw.r, draw.g, draw.b, draw.a);
@@ -92,6 +157,21 @@ public final class SceneShapeRenderer {
     /** Commands from the most recent {@link #render(Scene)}. Package-visible for unit tests. */
     List<ShapeDrawCommand> lastDrawCommands() {
         return lastDrawCommands;
+    }
+
+    /** Last ortho width passed to {@link #prepareScreenProjection}; {@code -1} if never applied. */
+    float lastProjectionWidth() {
+        return lastProjectionWidth;
+    }
+
+    /** Last ortho height passed to {@link #prepareScreenProjection}; {@code -1} if never applied. */
+    float lastProjectionHeight() {
+        return lastProjectionHeight;
+    }
+
+    /** Matrix from the most recent {@link #prepareScreenProjection}; null if never applied. */
+    Matrix4 lastProjectionMatrix() {
+        return lastProjectionMatrix;
     }
 
     /** Whether {@link #dispose()} has been called. Package-visible for unit tests. */

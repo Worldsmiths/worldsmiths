@@ -3,6 +3,7 @@ package io.github.worldsmiths.samples.snake;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
+import com.badlogic.gdx.math.Matrix4;
 import io.github.worldsmiths.core.Node;
 import io.github.worldsmiths.core.Scene;
 import io.github.worldsmiths.core.Sprite;
@@ -51,10 +52,22 @@ public final class SnakeGame implements WorldsmithsGame {
         headTransform.y = controller.y();
     }
 
+    /**
+     * Screen-space ortho for pixel coordinates (origin bottom-left). Package-visible test seam;
+     * grid draw applies this via {@link ShapeRenderer#setProjectionMatrix(Matrix4)}.
+     */
+    static Matrix4 screenOrthoMatrix(float width, float height) {
+        return new Matrix4().setToOrtho2D(0f, 0f, width, height);
+    }
+
     @Override
     public void render() {
         if (shapes == null) {
             return;
+        }
+        if (Gdx.graphics != null) {
+            shapes.setProjectionMatrix(
+                    screenOrthoMatrix(Gdx.graphics.getWidth(), Gdx.graphics.getHeight()));
         }
         shapes.begin(ShapeRenderer.ShapeType.Line);
         shapes.setColor(0.25f, 0.25f, 0.28f, 1f);

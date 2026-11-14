@@ -1,15 +1,71 @@
 package io.github.worldsmiths.desktop;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
+import com.badlogic.gdx.math.Matrix4;
 import io.github.worldsmiths.core.Node;
 import io.github.worldsmiths.core.Scene;
 import io.github.worldsmiths.core.Sprite;
 import io.github.worldsmiths.core.Transform2D;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.Test;
 
 class SceneShapeRendererTest {
+
+    @Test
+    void screenOrthoMatrixMatchesPixelSpaceSetToOrtho2D() {
+        Matrix4 expected = new Matrix4().setToOrtho2D(0f, 0f, 640f, 480f);
+
+        Matrix4 actual = SceneShapeRenderer.screenOrthoMatrix(640f, 480f);
+
+        assertArrayEquals(expected.val, actual.val, 1e-5f);
+    }
+
+    @Test
+    void prepareScreenProjectionRecordsDimensionsForDrawPathSeam() {
+        SceneShapeRenderer renderer = SceneShapeRenderer.recordingOnly();
+
+        Matrix4 matrix = renderer.prepareScreenProjection(800f, 600f);
+
+        assertEquals(800f, renderer.lastProjectionWidth(), 0.001f);
+        assertEquals(600f, renderer.lastProjectionHeight(), 0.001f);
+        assertArrayEquals(new Matrix4().setToOrtho2D(0f, 0f, 800f, 600f).val, matrix.val, 1e-5f);
+    }
+
+    @Test
+    void recordingOnlyRenderDoesNotTouchScreenSizeSuppliers() {
+        AtomicInteger widthReads = new AtomicInteger();
+        AtomicInteger heightReads = new AtomicInteger();
+        SceneShapeRenderer renderer =
+                new SceneShapeRenderer(
+                        null,
+                        new java.util.function.IntSupplier() {
+                            @Override
+                            public int getAsInt() {
+                                widthReads.incrementAndGet();
+                                return 100;
+                            }
+                        },
+                        new java.util.function.IntSupplier() {
+                            @Override
+                            public int getAsInt() {
+                                heightReads.incrementAndGet();
+                                return 100;
+                            }
+                        });
+
+        Sprite sprite = new Sprite("x.png");
+        Scene scene = new Scene("test").add(new Node("n").add(new Transform2D(1f, 1f)).add(sprite));
+        renderer.render(scene);
+
+        assertEquals(0, widthReads.get());
+        assertEquals(0, heightReads.get());
+        assertEquals(-1f, renderer.lastProjectionWidth(), 0.001f);
+        assertNull(renderer.lastProjectionMatrix());
+    }
 
     @Test
     void collectsFilledRectForVisibleSpriteUsingCellCoordsAndRgba() {
