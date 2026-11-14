@@ -5,6 +5,8 @@ colored `Sprite` (engine-drawn), discrete grid movement on a step timer, grow on
 collision ends the run, score in the window title (`Snake — score: N`), and restart without
 relaunching.
 
+Desktop and browser (TeaVM / gdx-teavm) share the same `:game` sources.
+
 ## Controls
 
 - **Move:** arrow keys or WASD (ignored while dead)
@@ -14,8 +16,10 @@ relaunching.
 
 - JDK 21 or newer to run Gradle (same as the engine monorepo).
 - The game module compiles for **Java 8** (`options.release = 8`), as required by the engine plugin.
+- Browser run: a modern Chromium-based browser (Chrome recommended). The Playwright check needs
+  Google Chrome installed (or set `CHROME` to a Chromium binary).
 
-This sample is a nested Gradle project. It applies `io.github.worldsmiths.engine` via `includeBuild` of the monorepo `gradle-plugin`, and resolves `ws-core` / `backends-desktop` from the monorepo root with `includeBuild` + dependency substitution (not Maven Central). Game sources may use LibGDX core (`Gdx`, shapes) but must not import `com.badlogic.gdx.backends`.
+This sample is a nested Gradle project. It applies `io.github.worldsmiths.engine` via `includeBuild` of the monorepo `gradle-plugin`, and resolves `ws-core` / `backends-desktop` / `backends-web` from the monorepo root with `includeBuild` + dependency substitution (not Maven Central). Game sources may use LibGDX core (`Gdx`, shapes) but must not import `com.badlogic.gdx.backends`.
 
 ## Build / compile (no window)
 
@@ -31,7 +35,7 @@ Or from this directory (using the monorepo wrapper):
 ../../gradlew :desktop:compileJava
 ```
 
-## Run (manual smoke)
+## Run desktop (manual smoke)
 
 Opens a real desktop window — run locally, not in CI:
 
@@ -42,3 +46,30 @@ Opens a real desktop window — run locally, not in CI:
 On macOS the plugin adds `-XstartOnFirstThread` for LWJGL.
 
 Close the window to exit.
+
+## Build / run web
+
+Both JS and Wasm TeaVM flavors are configured (`reflectionEnabled=false`). From the monorepo root:
+
+```bash
+# Build artifacts
+./gradlew -p samples/snake :web:gdx_teavm_web_js_build :web:gdx_teavm_web_wasm_build
+
+# Serve the JS build at http://localhost:8080 (manual play)
+./gradlew -p samples/snake :web:gdx_teavm_web_js_run
+```
+
+Outputs land under `.worldsmiths/gen/web/build/dist/{js,wasm}/webapp/`.
+
+### Playwright browser check (JS)
+
+After a JS build, from `samples/snake/browser-check`:
+
+```bash
+npm ci
+node check.mjs ../.worldsmiths/gen/web/build/dist/js/webapp
+```
+
+The check serves the webapp, asserts a `canvas` is present, and waits until `document.title`
+matches `Snake — score: <digits>`. Mainline CI runs this on **ubuntu-latest** only (Chrome channel);
+Wasm is compile-checked in CI but not loaded in Playwright this milestone.

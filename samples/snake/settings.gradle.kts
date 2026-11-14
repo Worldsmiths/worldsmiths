@@ -18,6 +18,8 @@ includeBuild("../..") {
     dependencySubstitution {
         substitute(module("io.github.worldsmiths:backends-desktop"))
             .using(project(":backends:desktop"))
+        substitute(module("io.github.worldsmiths:backends-web"))
+            .using(project(":backends:web"))
         substitute(module("io.github.worldsmiths:ws-core"))
             .using(project(":runtime:ws-core"))
     }
@@ -32,6 +34,11 @@ worldsmiths {
     gameClass = "io.github.worldsmiths.samples.snake.SnakeGame"
     targets {
         desktop {
+            title.set("Snake")
+            width.set(640)
+            height.set(480)
+        }
+        web {
             title.set("Snake")
             width.set(640)
             height.set(480)

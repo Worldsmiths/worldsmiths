@@ -1,0 +1,12 @@
+{
+  "name": "snake-browser-check",
+  "private": true,
+  "type": "module",
+  "description": "Loads the Snake gdx-teavm JS webapp in headless Chrome and checks canvas + score title.",
+  "scripts": {
+    "check": "node check.mjs"
+  },
+  "dependencies": {
+    "playwright-core": "1.65.0"
+  }
+}
