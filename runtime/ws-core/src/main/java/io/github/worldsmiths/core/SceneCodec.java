@@ -9,6 +9,10 @@ import com.badlogic.gdx.utils.SerializationException;
 /**
  * Public scene (de)serialization entry that wraps libGDX {@link Json}. Every type on the scene path has an
  * explicit serializer so {@code Json} never reaches its reflective fallback.
+ *
+ * <p>Authors typically call {@code SceneCodec.create(ComponentRegistries.builtins())} for engine-only
+ * scenes, or {@code SceneCodec.create(ComponentRegistry.combine(ComponentRegistries.builtins(), gameRegistry))}
+ * when a game module contributes its own {@code @WsComponent} types.
  */
 public final class SceneCodec {
     public static final String TYPE_FIELD = "type";

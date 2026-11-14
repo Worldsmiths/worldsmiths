@@ -1,12 +1,15 @@
 package io.github.worldsmiths.core;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertSame;
 
 import com.badlogic.gdx.utils.Json;
 import com.badlogic.gdx.utils.JsonValue;
+import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import org.junit.jupiter.api.Test;
 
 class ComponentTypeTest {
@@ -33,6 +36,13 @@ class ComponentTypeTest {
         Transform2D second = type.create();
         assertNotNull(first);
         assertNotSame(first, second);
+    }
+
+    @Test
+    void serializerIsNotPartOfThePublicAuthorApi() throws Exception {
+        Method serializer = ComponentType.class.getDeclaredMethod("serializer");
+        assertFalse(Modifier.isPublic(serializer.getModifiers()));
+        assertFalse(Modifier.isProtected(serializer.getModifiers()));
     }
 
     private static Json.Serializer<Transform2D> noopSerializer() {

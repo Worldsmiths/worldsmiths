@@ -9,6 +9,11 @@ public final class ComponentType<T> {
     private final ComponentFactory<T> factory;
     private final Json.Serializer<T> serializer;
 
+    /**
+     * Used by generated {@code GeneratedComponentRegistry} code. Authors should not construct this;
+     * use {@link SceneCodec} and {@link ComponentRegistry#combine}. Remains public so game modules can
+     * generate registries outside {@code io.github.worldsmiths.core}.
+     */
     public ComponentType(String tag, Class<T> type, ComponentFactory<T> factory, Json.Serializer<T> serializer) {
         this.tag = tag;
         this.type = type;
@@ -28,7 +33,8 @@ public final class ComponentType<T> {
         return factory.create();
     }
 
-    public Json.Serializer<T> serializer() {
+    /** Package-private: only {@link SceneCodec} (same package) installs serializers on {@link Json}. */
+    Json.Serializer<T> serializer() {
         return serializer;
     }
 }

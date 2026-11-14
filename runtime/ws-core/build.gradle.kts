@@ -10,7 +10,7 @@ tasks.withType<JavaCompile>().configureEach {
     options.compilerArgs.addAll(
         listOf(
             "-Xlint:-options",
-            "-Aws.registry.package=io.github.worldsmiths.core.generated",
+            "-Aws.registry.package=io.github.worldsmiths.core",
         ),
     )
 }

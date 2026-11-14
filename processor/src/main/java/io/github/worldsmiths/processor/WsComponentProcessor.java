@@ -31,7 +31,7 @@ import javax.tools.Diagnostic;
 public final class WsComponentProcessor extends AbstractProcessor {
     static final String ANNOTATION = "io.github.worldsmiths.core.WsComponent";
     static final String REGISTRY_PACKAGE_OPTION = "ws.registry.package";
-    static final String DEFAULT_REGISTRY_PACKAGE = "io.github.worldsmiths.generated";
+    static final String DEFAULT_REGISTRY_PACKAGE = "io.github.worldsmiths.core";
     static final String REGISTRY_NAME = "GeneratedComponentRegistry";
 
     private final List<ComponentModel> components = new ArrayList<>();
@@ -217,7 +217,7 @@ public final class WsComponentProcessor extends AbstractProcessor {
         out.append("    }\n\n");
         out.append("    @Override\n");
         out.append("    public com.badlogic.gdx.utils.Array<io.github.worldsmiths.core.ComponentType<?>> types() {\n");
-        out.append("        return types;\n");
+        out.append("        return new com.badlogic.gdx.utils.Array<io.github.worldsmiths.core.ComponentType<?>>(types);\n");
         out.append("    }\n");
         out.append("}\n");
         Element[] origins = components.stream().map(c -> c.element).toArray(Element[]::new);

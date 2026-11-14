@@ -7,7 +7,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.badlogic.gdx.utils.SerializationException;
-import io.github.worldsmiths.core.generated.GeneratedComponentRegistry;
 import org.junit.jupiter.api.Test;
 
 class SceneCodecTest {
@@ -15,7 +14,7 @@ class SceneCodecTest {
     @Test
     void multiNodeSceneRoundTripsThroughGeneratedRegistry() {
         Scene original = buildDemoScene();
-        SceneCodec codec = SceneCodec.create(GeneratedComponentRegistry.INSTANCE);
+        SceneCodec codec = SceneCodec.create(ComponentRegistries.builtins());
 
         String text = codec.toJson(original);
         Scene copy = codec.fromJson(text);
@@ -51,7 +50,7 @@ class SceneCodecTest {
 
     @Test
     void componentsAreTaggedWithRegistryTagsNotClassNames() {
-        String text = SceneCodec.create(GeneratedComponentRegistry.INSTANCE).toJson(buildDemoScene());
+        String text = SceneCodec.create(ComponentRegistries.builtins()).toJson(buildDemoScene());
         assertTrue(text.contains("\"type\":\"Transform2D\""), text);
         assertTrue(text.contains("\"type\":\"Sprite\""), text);
         assertFalse(text.contains("io.github"), text);
@@ -59,7 +58,7 @@ class SceneCodecTest {
 
     @Test
     void unknownComponentTagFailsWithoutClassForNameFallback() {
-        SceneCodec codec = SceneCodec.create(GeneratedComponentRegistry.INSTANCE);
+        SceneCodec codec = SceneCodec.create(ComponentRegistries.builtins());
         String text = "{\"schemaVersion\":1,\"name\":\"x\",\"nodes\":[{\"name\":\"n\",\"components\":[{\"type\":\"java.lang.Object\"}]}]}";
 
         SerializationException e = assertThrows(SerializationException.class, () -> codec.fromJson(text));
@@ -68,13 +67,13 @@ class SceneCodecTest {
 
     @Test
     void writesSchemaVersionOne() {
-        String text = SceneCodec.create(GeneratedComponentRegistry.INSTANCE).toJson(buildDemoScene());
+        String text = SceneCodec.create(ComponentRegistries.builtins()).toJson(buildDemoScene());
         assertTrue(text.contains("\"schemaVersion\":1"), text);
     }
 
     @Test
     void missingSchemaVersionDefaultsToOne() {
-        SceneCodec codec = SceneCodec.create(GeneratedComponentRegistry.INSTANCE);
+        SceneCodec codec = SceneCodec.create(ComponentRegistries.builtins());
         String text = "{\"name\":\"Legacy\",\"nodes\":[]}";
         Scene scene = codec.fromJson(text);
         assertEquals("Legacy", scene.name);
@@ -83,7 +82,7 @@ class SceneCodecTest {
 
     @Test
     void unknownSchemaVersionIsRejected() {
-        SceneCodec codec = SceneCodec.create(GeneratedComponentRegistry.INSTANCE);
+        SceneCodec codec = SceneCodec.create(ComponentRegistries.builtins());
         String text = "{\"schemaVersion\":99,\"name\":\"Future\",\"nodes\":[]}";
         SerializationException e = assertThrows(SerializationException.class, () -> codec.fromJson(text));
         assertTrue(e.getMessage().contains("Unsupported schemaVersion: 99"), e.getMessage());

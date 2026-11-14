@@ -14,6 +14,7 @@ import com.badlogic.gdx.utils.JsonValue;
 import com.badlogic.gdx.utils.JsonWriter;
 import io.github.worldsmiths.core.ComponentRegistry;
 import io.github.worldsmiths.core.ComponentType;
+import java.lang.reflect.Method;
 import java.nio.file.Path;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -68,16 +69,19 @@ class WsComponentProcessorTest {
         return (ComponentRegistry) registryClass.getField("INSTANCE").get(null);
     }
 
-    private static Json jsonFor(ComponentRegistry registry) {
+    private static Json jsonFor(ComponentRegistry registry) throws Exception {
         Json json = new Json(JsonWriter.OutputType.json);
         json.setTypeName("type");
         for (ComponentType<?> type : registry.types()) install(json, type);
         return json;
     }
 
-    private static <T> void install(Json json, ComponentType<T> type) {
+    @SuppressWarnings("unchecked")
+    private static <T> void install(Json json, ComponentType<T> type) throws Exception {
         json.addClassTag(type.tag(), type.type());
-        json.setSerializer(type.type(), type.serializer());
+        Method serializer = ComponentType.class.getDeclaredMethod("serializer");
+        serializer.setAccessible(true);
+        json.setSerializer(type.type(), (Json.Serializer<T>) serializer.invoke(type));
     }
 
     private static Object field(Object target, String name) throws Exception {
@@ -108,10 +112,15 @@ class WsComponentProcessorTest {
     }
 
     @Test
-    void registryInstanceIsASingletonAndTypesAreStable() throws Exception {
+    void registryInstanceIsASingletonAndTypesAreDefensiveCopies() throws Exception {
         Compilation c = compileOk(sources("demo.AllTypes", ALL_TYPES));
         ComponentRegistry registry = registry(c);
-        assertSame(registry.types(), registry.types());
+        Array<ComponentType<?>> first = registry.types();
+        Array<ComponentType<?>> second = registry.types();
+        assertEquals(first.size, second.size);
+        assertSame(first.get(0), second.get(0));
+        first.clear();
+        assertEquals(1, registry.types().size);
     }
 
     @Test
@@ -204,7 +213,9 @@ class WsComponentProcessorTest {
     void registryPackageDefaultsWhenOptionIsAbsent() throws Exception {
         Compilation c = Compilation.compile(work, sources("demo.AllTypes", ALL_TYPES));
         assertTrue(c.success, c::errors);
-        c.classLoader().loadClass("io.github.worldsmiths.generated.GeneratedComponentRegistry");
+        String registry = c.generatedSource("io.github.worldsmiths.core.GeneratedComponentRegistry");
+        assertTrue(registry.contains("package io.github.worldsmiths.core;"), registry);
+        assertTrue(registry.contains("AllTypes"), registry);
     }
 
     private void assertRejected(String source, String expectedMessage) {
