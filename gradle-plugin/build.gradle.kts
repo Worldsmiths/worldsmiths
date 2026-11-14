@@ -17,6 +17,8 @@ dependencies {
 
 tasks.test {
     useJUnitPlatform()
+    // Monorepo root (parent of this included build) for TestKit includeBuild + dependencySubstitution.
+    systemProperty("ws.engineRoot", rootDir.resolve("..").canonicalFile.absolutePath)
 }
 
 gradlePlugin {

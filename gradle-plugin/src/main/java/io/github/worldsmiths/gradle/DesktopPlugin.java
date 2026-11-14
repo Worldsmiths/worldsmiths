@@ -1,18 +1,24 @@
 package io.github.worldsmiths.gradle;
 
 import java.util.Collections;
+import java.util.Locale;
 import org.gradle.api.GradleException;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 import org.gradle.api.plugins.ApplicationPlugin;
 import org.gradle.api.plugins.JavaApplication;
 import org.gradle.api.plugins.JavaPluginExtension;
+import org.gradle.api.tasks.JavaExec;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.TaskProvider;
 import org.gradle.api.tasks.compile.JavaCompile;
 
 /** Applied by the generated {@code :desktop} build script. */
 public final class DesktopPlugin implements Plugin<Project> {
+
+    /** Maven coordinate of the engine desktop backend; version matches the plugin. */
+    static final String BACKENDS_DESKTOP =
+            "io.github.worldsmiths:backends-desktop:0.0.1-SNAPSHOT";
 
     @Override
     public void apply(Project project) {
@@ -22,6 +28,9 @@ public final class DesktopPlugin implements Plugin<Project> {
         TaskProvider<GenerateDesktopLauncher> generate = project.getTasks()
                 .register("wsGenerateLauncher", GenerateDesktopLauncher.class, task -> {
                     task.getGameClass().set(extension.getGameClass());
+                    task.getTitle().set(extension.getTitle());
+                    task.getWidth().set(extension.getWidth());
+                    task.getHeight().set(extension.getHeight());
                     task.getOutputDir().set(project.getLayout().getBuildDirectory().dir("generated/sources/ws-launcher"));
                 });
 
@@ -37,9 +46,15 @@ public final class DesktopPlugin implements Plugin<Project> {
         project.getDependencies().addProvider("implementation",
                 extension.getGameModule().map(path ->
                         project.getDependencies().project(Collections.singletonMap("path", path))));
+        project.getDependencies().add("implementation", BACKENDS_DESKTOP);
 
         project.getExtensions().getByType(JavaApplication.class).getMainClass()
                 .set(GenerateDesktopLauncher.MAIN_CLASS);
+
+        if (isMacOs()) {
+            project.getTasks().named(ApplicationPlugin.TASK_RUN_NAME, JavaExec.class, run ->
+                    run.jvmArgs("-XstartOnFirstThread"));
+        }
 
         project.getTasks().register("wsPrintRuntimeClasspath", PrintRuntimeClasspath.class, task ->
                 task.getClasspath().from(main.getRuntimeClasspath()));
@@ -88,5 +103,10 @@ public final class DesktopPlugin implements Plugin<Project> {
             major = major.substring(0, dot);
         }
         return Integer.parseInt(major);
+    }
+
+    private static boolean isMacOs() {
+        String os = System.getProperty("os.name");
+        return os != null && os.toLowerCase(Locale.ROOT).startsWith("mac");
     }
 }

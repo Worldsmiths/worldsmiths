@@ -21,67 +21,87 @@ class SettingsPluginFunctionalTest {
 
     private static final String REUSED = "Reusing configuration cache.";
     private static final String STORED = "Configuration cache entry stored.";
+    private static final String ENGINE_VERSION = "0.0.1-SNAPSHOT";
 
     @TempDir
     Path projectDir;
 
     @BeforeEach
     void createGameProject() throws IOException {
-        write("settings.gradle.kts",
-                "plugins { id(\"io.github.worldsmiths.engine\") }\n"
-                        + "dependencyResolutionManagement { repositories { mavenCentral() } }\n"
-                        + "rootProject.name = \"starfall\"\n"
-                        + "include(\":game\")\n"
-                        + "worldsmiths {\n"
-                        + "    gameModule = \":game\"\n"
-                        + "    gameClass = \"com.example.Game\"\n"
-                        + "}\n");
-        write("game/build.gradle.kts",
-                "plugins { `java-library` }\n"
-                        + "tasks.withType<JavaCompile>().configureEach {\n"
-                        + "    options.release.set(8)\n"
-                        + "    options.compilerArgs.add(\"-Xlint:-options\")\n"
-                        + "}\n"
-                        // implementation, not api: the desktop module must still get it at runtime (FR-B04).
-                        + "dependencies { implementation(\"org.apache.commons:commons-lang3:3.17.0\") }\n");
+        write("settings.gradle.kts", defaultSettings(""
+                + "    targets {\n"
+                + "        desktop {\n"
+                + "            title.set(\"Starfall\")\n"
+                + "            width.set(1024)\n"
+                + "            height.set(768)\n"
+                + "        }\n"
+                + "    }\n"));
+        write("game/build.gradle.kts", gameBuildScript());
         writeGameClass("hello from game");
     }
 
     @Test
-    void desktopRunsGameWithFullClasspathAndReusesConfigurationCache() {
-        BuildResult first = runner(":desktop:run", ":desktop:wsPrintRuntimeClasspath").build();
+    void desktopCompilesTypedLauncherWithFullClasspathAndReusesConfigurationCache() throws IOException {
+        BuildResult first = runner(":desktop:compileJava", ":desktop:wsPrintRuntimeClasspath").build();
 
-        assertEquals(TaskOutcome.SUCCESS, first.task(":desktop:run").getOutcome());
+        assertEquals(TaskOutcome.SUCCESS, first.task(":desktop:compileJava").getOutcome());
         assertTrue(first.getOutput().contains(STORED), first.getOutput());
-        assertTrue(first.getOutput().contains("Worldsmiths desktop launched: Hello from game"), first.getOutput());
         assertTrue(first.getOutput().contains("ws-classpath: game.jar"), first.getOutput());
         assertTrue(first.getOutput().contains("ws-classpath: commons-lang3-3.17.0.jar"), first.getOutput());
+        assertTrue(first.getOutput().contains("ws-classpath: ws-core"), first.getOutput());
+        assertTrue(first.getOutput().contains("ws-classpath: gdx-backend-lwjgl3"), first.getOutput());
         assertTrue(Files.isRegularFile(projectDir.resolve(".worldsmiths/gen/desktop/build.gradle.kts")));
 
-        BuildResult second = runner(":desktop:run", ":desktop:wsPrintRuntimeClasspath").build();
+        String launcher = readLauncherSource();
+        assertTrue(launcher.contains("WorldsmithsGame game = new com.example.Game()"), launcher);
+        assertTrue(launcher.contains("DesktopBackend.start"), launcher);
+        assertTrue(launcher.contains("new DesktopConfig(\"Starfall\", 1024, 768)"), launcher);
+        assertFalse(launcher.contains("Object game"), launcher);
+        assertFalse(launcher.contains("System.out.println"), launcher);
+
+        String script = read(".worldsmiths/gen/desktop/build.gradle.kts");
+        assertTrue(script.contains("title = \"Starfall\""), script);
+        assertTrue(script.contains("width = 1024"), script);
+        assertTrue(script.contains("height = 768"), script);
+
+        BuildResult second = runner(":desktop:compileJava", ":desktop:wsPrintRuntimeClasspath").build();
 
         assertTrue(second.getOutput().contains(REUSED), second.getOutput());
-        assertTrue(second.getOutput().contains("Worldsmiths desktop launched: Hello from game"), second.getOutput());
         assertTrue(second.getOutput().contains("ws-classpath: commons-lang3-3.17.0.jar"), second.getOutput());
     }
 
     @Test
+    void desktopTargetDefaultsFlowIntoGeneratedLauncher() throws IOException {
+        write("settings.gradle.kts", defaultSettings(""));
+
+        BuildResult result = runner(":desktop:compileJava").build();
+
+        assertEquals(TaskOutcome.SUCCESS, result.task(":desktop:compileJava").getOutcome());
+        String launcher = readLauncherSource();
+        assertTrue(launcher.contains("new DesktopConfig(\"Worldsmiths\", 800, 600)"), launcher);
+        String script = read(".worldsmiths/gen/desktop/build.gradle.kts");
+        assertTrue(script.contains("title = \"Worldsmiths\""), script);
+        assertTrue(script.contains("width = 800"), script);
+        assertTrue(script.contains("height = 600"), script);
+    }
+
+    @Test
     void editingGameSourcesKeepsTheConfigurationCache() throws IOException {
-        runner(":desktop:run").build();
+        runner(":game:compileJava", ":desktop:compileJava").build();
         writeGameClass("edited game");
 
-        BuildResult second = runner(":desktop:run").build();
+        BuildResult second = runner(":game:compileJava", ":desktop:compileJava").build();
 
         assertTrue(second.getOutput().contains(REUSED), second.getOutput());
-        assertTrue(second.getOutput().contains("Worldsmiths desktop launched: Edited game"), second.getOutput());
+        assertEquals(TaskOutcome.SUCCESS, second.task(":game:compileJava").getOutcome());
     }
 
     @Test
     void deletedGeneratedModuleIsRestoredOnCacheHit() throws IOException {
-        runner(":desktop:run").build();
+        runner(":desktop:compileJava").build();
         deleteRecursively(projectDir.resolve(".worldsmiths"));
 
-        BuildResult second = runner(":desktop:run").build();
+        BuildResult second = runner(":desktop:compileJava").build();
 
         assertTrue(second.getOutput().contains(REUSED), second.getOutput());
         assertTrue(Files.isRegularFile(projectDir.resolve(".worldsmiths/gen/desktop/build.gradle.kts")));
@@ -158,7 +178,10 @@ class SettingsPluginFunctionalTest {
         write("core/build.gradle.kts",
                 "plugins { `java-library` }\n"
                         + "java { targetCompatibility = JavaVersion.VERSION_17 }\n"
-                        + "dependencies { implementation(\"org.apache.commons:commons-lang3:3.17.0\") }\n");
+                        + "dependencies {\n"
+                        + "    implementation(\"io.github.worldsmiths:ws-core:" + ENGINE_VERSION + "\")\n"
+                        + "    implementation(\"org.apache.commons:commons-lang3:3.17.0\")\n"
+                        + "}\n");
 
         BuildResult result = runner("help").buildAndFail();
 
@@ -222,10 +245,67 @@ class SettingsPluginFunctionalTest {
     private void writeGameClass(String message) throws IOException {
         write("game/src/main/java/com/example/Game.java",
                 "package com.example;\n"
+                        + "import io.github.worldsmiths.core.WorldsmithsGame;\n"
                         + "import org.apache.commons.lang3.StringUtils;\n"
-                        + "public class Game {\n"
-                        + "    @Override public String toString() { return StringUtils.capitalize(\"" + message + "\"); }\n"
+                        + "public class Game implements WorldsmithsGame {\n"
+                        + "    @Override public void create() {}\n"
+                        + "    @Override public void update(float delta) {}\n"
+                        + "    @Override public void render() {}\n"
+                        + "    @Override public String toString() {\n"
+                        + "        return StringUtils.capitalize(\"" + message + "\");\n"
+                        + "    }\n"
                         + "}\n");
+    }
+
+    private String defaultSettings(String targetsBlock) {
+        String engineRoot = engineRoot().toString().replace('\\', '/');
+        return "plugins { id(\"io.github.worldsmiths.engine\") }\n"
+                + "dependencyResolutionManagement { repositories { mavenCentral() } }\n"
+                + "includeBuild(\"" + engineRoot + "\") {\n"
+                + "    dependencySubstitution {\n"
+                + "        substitute(module(\"io.github.worldsmiths:backends-desktop\"))"
+                + ".using(project(\":backends:desktop\"))\n"
+                + "        substitute(module(\"io.github.worldsmiths:ws-core\"))"
+                + ".using(project(\":runtime:ws-core\"))\n"
+                + "    }\n"
+                + "}\n"
+                + "rootProject.name = \"starfall\"\n"
+                + "include(\":game\")\n"
+                + "worldsmiths {\n"
+                + "    gameModule = \":game\"\n"
+                + "    gameClass = \"com.example.Game\"\n"
+                + targetsBlock
+                + "}\n";
+    }
+
+    private static String gameBuildScript() {
+        return "plugins { `java-library` }\n"
+                + "tasks.withType<JavaCompile>().configureEach {\n"
+                + "    options.release.set(8)\n"
+                + "    options.compilerArgs.add(\"-Xlint:-options\")\n"
+                + "}\n"
+                // implementation, not api: the desktop module must still get it at runtime (FR-B04).
+                + "dependencies {\n"
+                + "    implementation(\"io.github.worldsmiths:ws-core:" + ENGINE_VERSION + "\")\n"
+                + "    implementation(\"org.apache.commons:commons-lang3:3.17.0\")\n"
+                + "}\n";
+    }
+
+    private String readLauncherSource() throws IOException {
+        return read(".worldsmiths/gen/desktop/build/generated/sources/ws-launcher/"
+                + "io/github/worldsmiths/generated/desktop/DesktopMain.java");
+    }
+
+    private String read(String relativePath) throws IOException {
+        return new String(Files.readAllBytes(projectDir.resolve(relativePath)), StandardCharsets.UTF_8);
+    }
+
+    private static Path engineRoot() {
+        String configured = System.getProperty("ws.engineRoot");
+        if (configured != null && !configured.isEmpty()) {
+            return Path.of(configured);
+        }
+        return Path.of("..").toAbsolutePath().normalize();
     }
 
     private static void deleteRecursively(Path root) throws IOException {
