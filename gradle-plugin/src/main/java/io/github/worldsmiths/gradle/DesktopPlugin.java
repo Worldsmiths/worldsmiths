@@ -34,6 +34,9 @@ public final class DesktopPlugin implements Plugin<Project> {
                     task.getTitle().set(extension.getTitle());
                     task.getWidth().set(extension.getWidth());
                     task.getHeight().set(extension.getHeight());
+                    task.getVsync().set(extension.getVsync());
+                    task.getResizable().set(extension.getResizable());
+                    task.getIcon().set(extension.getIcon());
                     task.getOutputDir().set(project.getLayout().getBuildDirectory().dir("generated/sources/ws-launcher"));
                 });
 

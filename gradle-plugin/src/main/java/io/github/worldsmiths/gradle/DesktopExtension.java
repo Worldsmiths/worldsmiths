@@ -17,4 +17,13 @@ public abstract class DesktopExtension {
     public abstract Property<Integer> getWidth();
 
     public abstract Property<Integer> getHeight();
+
+    public abstract Property<Boolean> getVsync();
+
+    public abstract Property<Boolean> getResizable();
+
+    /**
+     * Optional window icon path relative to {@link #getAssetsDir()}. Unset means no custom icon.
+     */
+    public abstract Property<String> getIcon();
 }

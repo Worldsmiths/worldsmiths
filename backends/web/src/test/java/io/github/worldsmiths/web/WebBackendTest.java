@@ -1,8 +1,10 @@
 package io.github.worldsmiths.web;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import com.github.xpenatan.gdx.teavm.backends.web.WebApplicationConfiguration;
 import io.github.worldsmiths.core.Scene;
 import io.github.worldsmiths.core.WorldsmithsGame;
 import org.junit.jupiter.api.Test;
@@ -19,6 +21,24 @@ class WebBackendTest {
     void startRejectsNullConfig() {
         assertThrows(
                 NullPointerException.class, () -> WebBackend.start(new StubGame(), null));
+    }
+
+    @Test
+    void applyMapsWidthHeightAndStoragePrefixOntoWebConfig() {
+        WebConfig config = new WebConfig(960, 540, "mygame_");
+
+        WebApplicationConfiguration web = WebBackend.toWebConfig(config);
+
+        assertEquals(960, web.width);
+        assertEquals(540, web.height);
+        assertEquals("mygame_", web.storagePrefix);
+    }
+
+    @Test
+    void applyUsesDefaultStoragePrefix() {
+        WebApplicationConfiguration web = WebBackend.toWebConfig(new WebConfig());
+
+        assertEquals("app", web.storagePrefix);
     }
 
     @Test

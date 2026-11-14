@@ -60,7 +60,8 @@ class SettingsPluginFunctionalTest {
         String launcher = readLauncherSource();
         assertTrue(launcher.contains("WorldsmithsGame game = new com.example.Game()"), launcher);
         assertTrue(launcher.contains("DesktopBackend.start"), launcher);
-        assertTrue(launcher.contains("new DesktopConfig(\"Starfall\", 1024, 768)"), launcher);
+        assertTrue(launcher.contains("new DesktopConfig(\"Starfall\", 1024, 768, true, true, null)"),
+                launcher);
         assertFalse(launcher.contains("Object game"), launcher);
         assertFalse(launcher.contains("System.out.println"), launcher);
 
@@ -68,6 +69,9 @@ class SettingsPluginFunctionalTest {
         assertTrue(script.contains("title = \"Starfall\""), script);
         assertTrue(script.contains("width = 1024"), script);
         assertTrue(script.contains("height = 768"), script);
+        assertTrue(script.contains("vsync = true"), script);
+        assertTrue(script.contains("resizable = true"), script);
+        assertFalse(script.contains("icon ="), script);
 
         BuildResult second = runner(":desktop:compileJava", ":desktop:wsPrintRuntimeClasspath").build();
 
@@ -83,11 +87,42 @@ class SettingsPluginFunctionalTest {
 
         assertEquals(TaskOutcome.SUCCESS, result.task(":desktop:compileJava").getOutcome());
         String launcher = readLauncherSource();
-        assertTrue(launcher.contains("new DesktopConfig(\"Worldsmiths\", 800, 600)"), launcher);
+        assertTrue(launcher.contains("new DesktopConfig(\"Worldsmiths\", 800, 600, true, true, null)"),
+                launcher);
         String script = read(".worldsmiths/gen/desktop/build.gradle.kts");
         assertTrue(script.contains("title = \"Worldsmiths\""), script);
         assertTrue(script.contains("width = 800"), script);
         assertTrue(script.contains("height = 600"), script);
+        assertTrue(script.contains("vsync = true"), script);
+        assertTrue(script.contains("resizable = true"), script);
+        assertFalse(script.contains("icon ="), script);
+    }
+
+    @Test
+    void desktopCuratedAttrOverridesReachGeneratedScriptAndLauncher() throws IOException {
+        write("settings.gradle.kts", defaultSettings(""
+                + "    targets {\n"
+                + "        desktop {\n"
+                + "            title.set(\"Starfall\")\n"
+                + "            width.set(1024)\n"
+                + "            height.set(768)\n"
+                + "            vsync.set(false)\n"
+                + "            resizable.set(false)\n"
+                + "            icon.set(\"icons/app.png\")\n"
+                + "        }\n"
+                + "    }\n"));
+
+        BuildResult result = runner(":desktop:compileJava").build();
+
+        assertEquals(TaskOutcome.SUCCESS, result.task(":desktop:compileJava").getOutcome());
+        String script = read(".worldsmiths/gen/desktop/build.gradle.kts");
+        assertTrue(script.contains("vsync = false"), script);
+        assertTrue(script.contains("resizable = false"), script);
+        assertTrue(script.contains("icon = \"icons/app.png\""), script);
+        String launcher = readLauncherSource();
+        assertTrue(launcher.contains(
+                "new DesktopConfig(\"Starfall\", 1024, 768, false, false, \"icons/app.png\")"),
+                launcher);
     }
 
     @Test
@@ -325,6 +360,7 @@ class SettingsPluginFunctionalTest {
         assertTrue(script.contains("title = \"Starfall Web\""), script);
         assertTrue(script.contains("width = 960"), script);
         assertTrue(script.contains("height = 540"), script);
+        assertTrue(script.contains("storagePrefix = \"app\""), script);
 
         assertTrue(result.getOutput().contains("ws-teavm-reflectionEnabled=false"), result.getOutput());
         assertTrue(result.getOutput().contains("ws-teavm-reflectionDefaults=false"), result.getOutput());
@@ -335,8 +371,48 @@ class SettingsPluginFunctionalTest {
                 + "io/github/worldsmiths/generated/web/WebMain.java");
         assertTrue(launcher.contains("WorldsmithsGame game = new com.example.Game()"), launcher);
         assertTrue(launcher.contains("WebBackend.start"), launcher);
-        assertTrue(launcher.contains("new WebConfig(960, 540)"), launcher);
+        assertTrue(launcher.contains("new WebConfig(960, 540, \"app\")"), launcher);
         assertFalse(launcher.contains("Starfall Web"), launcher);
+    }
+
+    @Test
+    void webStoragePrefixDefaultFlowsIntoGeneratedScriptAndLauncher() throws IOException {
+        write("settings.gradle.kts", defaultSettings(""
+                + "    targets {\n"
+                + "        desktop {}\n"
+                + "        web {}\n"
+                + "    }\n"));
+
+        BuildResult result = runner(":web:wsGenerateLauncher").build();
+
+        assertEquals(TaskOutcome.SUCCESS, result.task(":web:wsGenerateLauncher").getOutcome());
+        String script = read(".worldsmiths/gen/web/build.gradle.kts");
+        assertTrue(script.contains("storagePrefix = \"app\""), script);
+        String launcher = read(".worldsmiths/gen/web/build/generated/sources/ws-launcher/"
+                + "io/github/worldsmiths/generated/web/WebMain.java");
+        assertTrue(launcher.contains("new WebConfig(800, 600, \"app\")"), launcher);
+    }
+
+    @Test
+    void webStoragePrefixOverrideReachesGeneratedScriptAndLauncher() throws IOException {
+        write("settings.gradle.kts", defaultSettings(""
+                + "    targets {\n"
+                + "        desktop {}\n"
+                + "        web {\n"
+                + "            width.set(960)\n"
+                + "            height.set(540)\n"
+                + "            storagePrefix.set(\"mygame_\")\n"
+                + "        }\n"
+                + "    }\n"));
+
+        BuildResult result = runner(":web:wsGenerateLauncher").build();
+
+        assertEquals(TaskOutcome.SUCCESS, result.task(":web:wsGenerateLauncher").getOutcome());
+        String script = read(".worldsmiths/gen/web/build.gradle.kts");
+        assertTrue(script.contains("storagePrefix = \"mygame_\""), script);
+        String launcher = read(".worldsmiths/gen/web/build/generated/sources/ws-launcher/"
+                + "io/github/worldsmiths/generated/web/WebMain.java");
+        assertTrue(launcher.contains("new WebConfig(960, 540, \"mygame_\")"), launcher);
     }
 
     private GradleRunner runner(String... tasks) {

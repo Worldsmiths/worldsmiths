@@ -17,4 +17,7 @@ public abstract class WebExtension {
     public abstract Property<Integer> getWidth();
 
     public abstract Property<Integer> getHeight();
+
+    /** Browser storage prefix; defaults to gdx-teavm's {@code "app"}. */
+    public abstract Property<String> getStoragePrefix();
 }

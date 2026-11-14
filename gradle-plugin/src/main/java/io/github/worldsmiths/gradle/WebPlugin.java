@@ -30,6 +30,7 @@ public final class WebPlugin implements Plugin<Project> {
                     task.getGameClass().set(extension.getGameClass());
                     task.getWidth().set(extension.getWidth());
                     task.getHeight().set(extension.getHeight());
+                    task.getStoragePrefix().set(extension.getStoragePrefix());
                     task.getOutputDir().set(project.getLayout().getBuildDirectory().dir("generated/sources/ws-launcher"));
                 });
 

@@ -27,10 +27,20 @@ public final class DesktopBackend {
             throw new NullPointerException("config");
         }
 
+        new Lwjgl3Application(new DesktopGameListener(game), toLwjglConfig(config));
+    }
+
+    /** Maps {@link DesktopConfig} onto an LWJGL3 configuration (package-visible for tests). */
+    static Lwjgl3ApplicationConfiguration toLwjglConfig(DesktopConfig config) {
         Lwjgl3ApplicationConfiguration lwjglConfig = new Lwjgl3ApplicationConfiguration();
         lwjglConfig.setTitle(config.getTitle());
         lwjglConfig.setWindowedMode(config.getWidth(), config.getHeight());
-
-        new Lwjgl3Application(new DesktopGameListener(game), lwjglConfig);
+        lwjglConfig.useVsync(config.isVsync());
+        lwjglConfig.setResizable(config.isResizable());
+        if (config.getIcon() != null) {
+            // Paths are relative to assetsDir (desktop run working directory / shipped assets root).
+            lwjglConfig.setWindowIcon(config.getIcon());
+        }
+        return lwjglConfig;
     }
 }

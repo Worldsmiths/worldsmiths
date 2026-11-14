@@ -15,10 +15,27 @@ class WebConfigTest {
     }
 
     @Test
+    void defaultsMatchGdxTeavmStoragePrefix() {
+        WebConfig config = new WebConfig();
+
+        assertEquals("app", config.getStoragePrefix());
+    }
+
+    @Test
     void storesExplicitWidthAndHeight() {
         WebConfig config = new WebConfig(640, 480);
 
         assertEquals(640, config.getWidth());
         assertEquals(480, config.getHeight());
+        assertEquals("app", config.getStoragePrefix());
+    }
+
+    @Test
+    void storesExplicitStoragePrefix() {
+        WebConfig config = new WebConfig(960, 540, "mygame_");
+
+        assertEquals(960, config.getWidth());
+        assertEquals(540, config.getHeight());
+        assertEquals("mygame_", config.getStoragePrefix());
     }
 }

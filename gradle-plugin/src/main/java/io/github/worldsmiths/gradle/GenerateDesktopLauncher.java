@@ -10,6 +10,7 @@ import org.gradle.api.file.DirectoryProperty;
 import org.gradle.api.provider.Property;
 import org.gradle.api.tasks.CacheableTask;
 import org.gradle.api.tasks.Input;
+import org.gradle.api.tasks.Optional;
 import org.gradle.api.tasks.OutputDirectory;
 import org.gradle.api.tasks.TaskAction;
 
@@ -31,6 +32,17 @@ public abstract class GenerateDesktopLauncher extends DefaultTask {
     @Input
     public abstract Property<Integer> getHeight();
 
+    @Input
+    public abstract Property<Boolean> getVsync();
+
+    @Input
+    public abstract Property<Boolean> getResizable();
+
+    /** Optional icon path relative to assetsDir; unset emits {@code null} in the launcher. */
+    @Input
+    @Optional
+    public abstract Property<String> getIcon();
+
     @OutputDirectory
     public abstract DirectoryProperty getOutputDir();
 
@@ -42,6 +54,13 @@ public abstract class GenerateDesktopLauncher extends DefaultTask {
         String title = getTitle().get().replace("\\", "\\\\").replace("\"", "\\\"");
         int width = getWidth().get();
         int height = getHeight().get();
+        boolean vsync = getVsync().get();
+        boolean resizable = getResizable().get();
+        String iconLiteral = "null";
+        if (getIcon().isPresent()) {
+            String icon = getIcon().get().replace("\\", "\\\\").replace("\"", "\\\"");
+            iconLiteral = "\"" + icon + "\"";
+        }
         String code = "package io.github.worldsmiths.generated.desktop;\n"
                 + "\n"
                 + "import io.github.worldsmiths.core.WorldsmithsGame;\n"
@@ -52,7 +71,7 @@ public abstract class GenerateDesktopLauncher extends DefaultTask {
                 + "    public static void main(String[] args) {\n"
                 + "        WorldsmithsGame game = new " + gameClass + "();\n"
                 + "        DesktopBackend.start(game, new DesktopConfig(\"" + title + "\", "
-                + width + ", " + height + "));\n"
+                + width + ", " + height + ", " + vsync + ", " + resizable + ", " + iconLiteral + "));\n"
                 + "    }\n"
                 + "}\n";
         try {
