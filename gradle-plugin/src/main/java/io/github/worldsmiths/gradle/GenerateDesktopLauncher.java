@@ -51,15 +51,14 @@ public abstract class GenerateDesktopLauncher extends DefaultTask {
         Path source = getOutputDir().get().getAsFile().toPath()
                 .resolve(MAIN_CLASS.replace('.', '/') + ".java");
         String gameClass = getGameClass().get();
-        String title = getTitle().get().replace("\\", "\\\\").replace("\"", "\\\"");
+        String title = JavaStringEscapes.escape(getTitle().get());
         int width = getWidth().get();
         int height = getHeight().get();
         boolean vsync = getVsync().get();
         boolean resizable = getResizable().get();
         String iconLiteral = "null";
         if (getIcon().isPresent()) {
-            String icon = getIcon().get().replace("\\", "\\\\").replace("\"", "\\\"");
-            iconLiteral = "\"" + icon + "\"";
+            iconLiteral = "\"" + JavaStringEscapes.escape(getIcon().get()) + "\"";
         }
         String code = "package io.github.worldsmiths.generated.desktop;\n"
                 + "\n"

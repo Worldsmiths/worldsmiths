@@ -21,13 +21,14 @@ public final class WorldsmithsSettingsPlugin implements Plugin<Settings> {
     static final String DESKTOP_DIR = "gen/desktop";
     static final String WEB_DIR = "gen/web";
 
+    // Keep in sync with DesktopConfig / WebConfig defaults (plugin has no backends dep).
     static final String DEFAULT_TITLE = "Worldsmiths";
     static final int DEFAULT_WIDTH = 800;
     static final int DEFAULT_HEIGHT = 600;
     static final String DEFAULT_ASSETS_DIR = "assets";
-    static final boolean DEFAULT_VSYNC = true;
-    static final boolean DEFAULT_RESIZABLE = true;
-    /** Same default as gdx-teavm {@code WebApplicationConfiguration.storagePrefix}. */
+    static final boolean DEFAULT_VSYNC = true; // DesktopConfig.DEFAULT_VSYNC
+    static final boolean DEFAULT_RESIZABLE = true; // DesktopConfig.DEFAULT_RESIZABLE
+    /** Same default as WebConfig.DEFAULT_STORAGE_PREFIX / gdx-teavm storagePrefix. */
     static final String DEFAULT_STORAGE_PREFIX = "app";
 
     @Override
@@ -156,6 +157,6 @@ public final class WorldsmithsSettingsPlugin implements Plugin<Settings> {
     }
 
     private static String escape(String value) {
-        return value.replace("\\", "\\\\").replace("\"", "\\\"");
+        return JavaStringEscapes.escape(value);
     }
 }

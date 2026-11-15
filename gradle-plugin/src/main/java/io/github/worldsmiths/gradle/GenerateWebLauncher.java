@@ -41,9 +41,7 @@ public abstract class GenerateWebLauncher extends DefaultTask {
         String gameClass = getGameClass().get();
         int width = getWidth().get();
         int height = getHeight().get();
-        String storagePrefix = getStoragePrefix().get()
-                .replace("\\", "\\\\")
-                .replace("\"", "\\\"");
+        String storagePrefix = JavaStringEscapes.escape(getStoragePrefix().get());
         String code = "package io.github.worldsmiths.generated.web;\n"
                 + "\n"
                 + "import io.github.worldsmiths.core.WorldsmithsGame;\n"

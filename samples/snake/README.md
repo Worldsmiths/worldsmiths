@@ -46,6 +46,10 @@ Opens a real desktop window — run locally, not in CI:
 On macOS the plugin adds `-XstartOnFirstThread` for LWJGL. The run task uses the sample
 `assets/` directory as its working directory (`worldsmiths.assetsDir`, default `"assets"`).
 
+Optional desktop attrs in `settings.gradle.kts`: `vsync` / `resizable` (default `true`),
+and `icon` (path relative to `assetsDir`). Web: `storagePrefix` (default `"app"`). See the
+root [README](../../README.md#target-settings-curated-dsl).
+
 Close the window to exit.
 
 ## Ship archives (desktop + web)
