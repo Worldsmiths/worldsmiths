@@ -73,13 +73,15 @@ jobs:
         run: |
           set -euo pipefail
           marker="ws-ship-marker.txt"
-          desk_zip="$(find samples/snake/.worldsmiths/gen/desktop/build/distributions -name '*.zip' | head -n 1)"
+          # Prefer null-delimited find so pipefail + head cannot SIGPIPE the step.
+          desk_zip="$(find samples/snake/.worldsmiths/gen/desktop/build/distributions -name '*.zip' -print -quit)"
           web_zip="samples/snake/.worldsmiths/gen/web/build/distributions/web-itch.zip"
           test -n "$desk_zip"
           test -f "$web_zip"
           unzip -l "$desk_zip" | grep -F "$marker"
           unzip -l "$web_zip" | grep -F "$marker"
-          unzip -l "$web_zip" | grep -E '(^|/)index\.html$'
+          # unzip -l prints size/date columns before the name; allow leading whitespace.
+          unzip -l "$web_zip" | grep -E '(^|[[:space:]]|/)index\.html$'
       - uses: actions/upload-artifact@v7
         with:
           name: snake-ship-archives
