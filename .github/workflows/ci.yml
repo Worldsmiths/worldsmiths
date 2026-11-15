@@ -73,7 +73,7 @@ jobs:
         run: |
           set -euo pipefail
           marker="ws-ship-marker.txt"
-          # Prefer null-delimited find so pipefail + head cannot SIGPIPE the step.
+          # -print -quit avoids find|head SIGPIPE under pipefail.
           desk_zip="$(find samples/snake/.worldsmiths/gen/desktop/build/distributions -name '*.zip' -print -quit)"
           web_zip="samples/snake/.worldsmiths/gen/web/build/distributions/web-itch.zip"
           test -n "$desk_zip"
