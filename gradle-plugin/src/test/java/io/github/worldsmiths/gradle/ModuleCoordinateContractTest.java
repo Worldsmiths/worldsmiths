@@ -18,11 +18,13 @@ class ModuleCoordinateContractTest {
     void sampleSubstitutesMatchPluginModuleCoordinates() throws IOException {
         String desktop = moduleId(DesktopPlugin.BACKENDS_DESKTOP);
         String web = moduleId(WebPlugin.BACKENDS_WEB);
+        String android = moduleId(EngineModuleCoordinates.BACKENDS_ANDROID);
         String wsCore = moduleId(EngineModuleCoordinates.WS_CORE);
 
         String snake = readEngine("samples/snake/settings.gradle.kts");
         assertContainsSubstitute(snake, desktop);
         assertContainsSubstitute(snake, web);
+        assertContainsSubstitute(snake, android);
         assertContainsSubstitute(snake, wsCore);
 
         String minimal = readEngine("samples/minimal/settings.gradle.kts");
@@ -31,11 +33,34 @@ class ModuleCoordinateContractTest {
     }
 
     @Test
+    void snakeOptsInAndroidTargetWithGoogleMaven() throws IOException {
+        String snake = readEngine("samples/snake/settings.gradle.kts");
+        assertTrue(snake.contains("google()"), snake);
+        assertTrue(snake.contains("android {"), snake);
+        assertTrue(snake.contains(":backends:android"), snake);
+    }
+
+    @Test
     void testKitSubstitutesMatchPluginModuleCoordinates() {
         String block = IncludeBuildSubstitutions.dependencySubstitutionKotlin();
         assertContainsSubstitute(block, moduleId(DesktopPlugin.BACKENDS_DESKTOP));
         assertContainsSubstitute(block, moduleId(WebPlugin.BACKENDS_WEB));
+        assertContainsSubstitute(block, moduleId(EngineModuleCoordinates.BACKENDS_ANDROID));
         assertContainsSubstitute(block, moduleId(EngineModuleCoordinates.WS_CORE));
+        assertTrue(block.contains(":backends:android"), block);
+    }
+
+    @Test
+    void androidSubstituteLineMatchesPluginModuleCoordinate() {
+        assertContainsSubstitute(
+                IncludeBuildSubstitutions.backendsAndroidSubstituteKotlin(),
+                moduleId(EngineModuleCoordinates.BACKENDS_ANDROID));
+        assertTrue(
+                IncludeBuildSubstitutions.backendsAndroidSubstituteKotlin()
+                        .contains(":backends:android"));
+        assertTrue(
+                IncludeBuildSubstitutions.dependencySubstitutionKotlin()
+                        .contains(IncludeBuildSubstitutions.backendsAndroidSubstituteKotlin()));
     }
 
     @Test
@@ -43,9 +68,11 @@ class ModuleCoordinateContractTest {
         String doc = readEngine("docs/includebuild-substitutions.md");
         assertContainsSubstitute(doc, moduleId(DesktopPlugin.BACKENDS_DESKTOP));
         assertContainsSubstitute(doc, moduleId(WebPlugin.BACKENDS_WEB));
+        assertContainsSubstitute(doc, moduleId(EngineModuleCoordinates.BACKENDS_ANDROID));
         assertContainsSubstitute(doc, moduleId(EngineModuleCoordinates.WS_CORE));
         assertTrue(doc.contains(":backends:desktop"), doc);
         assertTrue(doc.contains(":backends:web"), doc);
+        assertTrue(doc.contains(":backends:android"), doc);
         assertTrue(doc.contains(":runtime:ws-core"), doc);
     }
 

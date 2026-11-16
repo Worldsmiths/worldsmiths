@@ -5,12 +5,13 @@ colored `Sprite` (engine-drawn), discrete grid movement on a step timer, grow on
 collision ends the run, score in the window title (`Snake — score: N`), and restart without
 relaunching.
 
-Desktop and browser (TeaVM / gdx-teavm) share the same `:game` sources.
+Desktop, browser (TeaVM / gdx-teavm), and Android share the same `:game` sources.
 
 ## Controls
 
-- **Move:** arrow keys or WASD (ignored while dead)
-- **Restart after death:** `R` or Space
+- **Move (desktop / keyboard):** arrow keys or WASD (ignored while dead)
+- **Move (Android / touch):** swipe left / right / up / down
+- **Restart after death:** `R` or Space (keyboard); tap or swipe (touch)
 
 ## Requirements
 
@@ -19,7 +20,45 @@ Desktop and browser (TeaVM / gdx-teavm) share the same `:game` sources.
 - Browser run: a modern Chromium-based browser (Chrome recommended). The Playwright check needs
   Google Chrome installed (or set `CHROME` to a Chromium binary).
 
-This sample is a nested Gradle project. It applies `io.github.worldsmiths.engine` via `includeBuild` of the monorepo `gradle-plugin`, and resolves `ws-core` / `backends-desktop` / `backends-web` from the monorepo root with `includeBuild` + dependency substitution (not Maven Central). The consumer snippet is in [`docs/includebuild-substitutions.md`](../../docs/includebuild-substitutions.md). Game sources may use LibGDX core (`Gdx`, shapes) but must not import `com.badlogic.gdx.backends`, `com.github.xpenatan.gdx.teavm.backends`, or any `*ApplicationConfiguration` type.
+This sample is a nested Gradle project. It applies `io.github.worldsmiths.engine` via `includeBuild` of the monorepo `gradle-plugin`, and resolves `ws-core` / `backends-desktop` / `backends-web` / `backends-android` from the monorepo root with `includeBuild` + dependency substitution (not Maven Central). Android needs Google Maven (`google()`) in both `pluginManagement.repositories` (AGP on the engine plugin classpath) and `dependencyResolutionManagement` (Android artifacts). The consumer snippet is in [`docs/includebuild-substitutions.md`](../../docs/includebuild-substitutions.md). Game sources may use LibGDX core (`Gdx`, shapes) but must not import `com.badlogic.gdx.backends`, `com.github.xpenatan.gdx.teavm.backends`, or any `*ApplicationConfiguration` type.
+
+## Manual validation (desktop + web + Android)
+
+From the monorepo root (`worldsmiths/`). On Windows use `.\gradlew.bat` instead of `./gradlew`.
+
+### Desktop
+
+```bash
+./gradlew -p samples/snake :desktop:run
+```
+
+Smoke: window opens → arrows/WASD move → eat food → score in title (`Snake — score: N`) → die → `R`/Space restarts → close window.
+
+Compile-only (no window): `./gradlew -p samples/snake :desktop:compileJava`
+
+### Web (browser)
+
+```bash
+# Build JS (+ Wasm compile) then serve JS at http://localhost:8080
+./gradlew -p samples/snake :web:gdx_teavm_web_js_build :web:gdx_teavm_web_wasm_build
+./gradlew -p samples/snake :web:gdx_teavm_web_js_run
+```
+
+Open the URL Gradle prints (usually `http://localhost:8080`). Smoke: canvas visible → keyboard move/restart same as desktop → title score updates. Stop the server with Ctrl+C.
+
+Automated JS check (Chrome / Playwright), after a JS build:
+
+```bash
+cd samples/snake/browser-check
+npm ci
+node check.mjs ../.worldsmiths/gen/web/build/dist/js/webapp
+```
+
+### Android
+
+See [Build / install Android](#build--install-android) below (`installDebug` + swipe/tap play).
+
+---
 
 ## Build / compile (no window)
 
@@ -35,7 +74,7 @@ Or from this directory (using the monorepo wrapper):
 ../../gradlew :desktop:compileJava
 ```
 
-## Run desktop (manual smoke)
+## Run desktop (detail)
 
 Opens a real desktop window — run locally, not in CI:
 
@@ -51,6 +90,35 @@ and `icon` (path relative to `assetsDir`). Web: `storagePrefix` (default `"app"`
 root [README](../../README.md#target-settings-curated-dsl).
 
 Close the window to exit.
+
+## Build / install Android
+
+Requires an Android SDK (`ANDROID_HOME` or `ANDROID_SDK_ROOT`). With the SDK present:
+
+```bash
+# Assemble a debug APK (CI / local proof)
+./gradlew -p samples/snake :android:assembleDebug
+
+# Install on a connected device or emulator, then launch manually
+./gradlew -p samples/snake :android:installDebug
+```
+
+APK output: `.worldsmiths/gen/android/build/outputs/apk/debug/` (also uploaded by the
+`snake-android` CI job). Same controls as desktop once running (touch / hardware keys
+depending on the device). If `ANDROID_HOME` is unset, configure still succeeds and
+generates `:android`, but `assembleDebug` / `installDebug` need the SDK.
+
+### Founder manual play gate (human)
+
+CI only proves `assembleDebug` + `ws-ship-marker.txt` membership in the APK. Playability
+on a real device or emulator is a **manual founder gate**, not automated:
+
+1. Start an emulator or connect a device with USB debugging.
+2. `./gradlew -p samples/snake :android:installDebug` (or `adb install -r` the debug APK).
+3. Launch Snake; swipe to move, tap (or swipe) after death to restart. Soft keyboard should stay hidden.
+4. Confirm score updates in the title / UI the same as desktop.
+
+Do not treat a green `snake-android` job as device play evidence.
 
 ## Ship archives (desktop + web)
 
@@ -70,29 +138,8 @@ Outputs:
 - Desktop zip: `.worldsmiths/gen/desktop/build/distributions/*.zip`
 - Web itch zip: `.worldsmiths/gen/web/build/distributions/web-itch.zip`
 
-## Build / run web
+## Build / run web (detail)
 
-Both JS and Wasm TeaVM flavors are configured (`reflectionEnabled=false`). From the monorepo root:
+Both JS and Wasm TeaVM flavors are configured (`reflectionEnabled=false`). Manual smoke steps are under [Manual validation](#manual-validation-desktop--web--android). Outputs land under `.worldsmiths/gen/web/build/dist/{js,wasm}/webapp/`.
 
-```bash
-# Build artifacts
-./gradlew -p samples/snake :web:gdx_teavm_web_js_build :web:gdx_teavm_web_wasm_build
-
-# Serve the JS build at http://localhost:8080 (manual play)
-./gradlew -p samples/snake :web:gdx_teavm_web_js_run
-```
-
-Outputs land under `.worldsmiths/gen/web/build/dist/{js,wasm}/webapp/`.
-
-### Playwright browser check (JS)
-
-After a JS build, from `samples/snake/browser-check`:
-
-```bash
-npm ci
-node check.mjs ../.worldsmiths/gen/web/build/dist/js/webapp
-```
-
-The check serves the webapp, asserts a `canvas` is present, and waits until `document.title`
-matches `Snake — score: <digits>`. Mainline CI runs this on **ubuntu-latest** only (Chrome channel);
-Wasm is compile-checked in CI but not loaded in Playwright this milestone.
+The Playwright check serves the webapp, asserts a `canvas` is present, and waits until `document.title` matches `Snake — score: <digits>`. Mainline CI runs this on **ubuntu-latest** only (Chrome channel); Wasm is compile-checked in CI but not loaded in Playwright this milestone.

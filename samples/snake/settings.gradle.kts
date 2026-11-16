@@ -1,4 +1,10 @@
 pluginManagement {
+    // AGP lives on the engine plugin classpath (TeaVM-style); Plugin Portal alone cannot resolve it.
+    repositories {
+        google()
+        mavenCentral()
+        gradlePluginPortal()
+    }
     includeBuild("../../gradle-plugin")
 }
 
@@ -8,6 +14,7 @@ plugins {
 
 dependencyResolutionManagement {
     repositories {
+        google()
         mavenCentral()
     }
 }
@@ -20,6 +27,8 @@ includeBuild("../..") {
             .using(project(":backends:desktop"))
         substitute(module("io.github.worldsmiths:backends-web"))
             .using(project(":backends:web"))
+        substitute(module("io.github.worldsmiths:backends-android"))
+            .using(project(":backends:android"))
         substitute(module("io.github.worldsmiths:ws-core"))
             .using(project(":runtime:ws-core"))
     }
@@ -39,6 +48,11 @@ worldsmiths {
             height.set(480)
         }
         web {
+            title.set("Snake")
+            width.set(640)
+            height.set(480)
+        }
+        android {
             title.set("Snake")
             width.set(640)
             height.set(480)

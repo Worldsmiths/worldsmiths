@@ -5,6 +5,7 @@ tasks.register("build") {
         ":runtime:ws-core:build",
         ":backends:desktop:build",
         ":backends:web:build",
+        ":backends:android:build",
         ":bom:build",
         ":processor:build",
     )

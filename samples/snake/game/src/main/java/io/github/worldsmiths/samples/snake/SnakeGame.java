@@ -16,7 +16,7 @@ import java.util.List;
  * Fuller Snake for D3: grid drawn in {@link #render()}, head + body segment + food nodes from
  * {@link #createScene()} with {@link Transform2D} + colored {@link Sprite}, discrete grid move on a
  * step timer, turns via {@link Gdx#input} while alive, restart via R or Space when dead, score in
- * the window title.
+ * the window title. Touch: swipe to turn while alive; tap (or swipe) to restart when dead.
  */
 public final class SnakeGame implements WorldsmithsGame {
 
@@ -42,6 +42,9 @@ public final class SnakeGame implements WorldsmithsGame {
     private final List<Node> bodyNodes = new ArrayList<Node>();
     private ShapeRenderer shapes;
     private int lastTitleScore = Integer.MIN_VALUE;
+    private boolean trackingTouch;
+    private float touchDownX;
+    private float touchDownY;
 
     public SnakeGame() {
         this(new SnakeController(GRID_WIDTH / 2, GRID_HEIGHT / 2, GRID_WIDTH, GRID_HEIGHT));
@@ -154,11 +157,10 @@ public final class SnakeGame implements WorldsmithsGame {
         if (Gdx.input == null) {
             return;
         }
+        applyTouchInput();
         if (!controller.alive()) {
             if (Gdx.input.isKeyPressed(Input.Keys.R) || Gdx.input.isKeyPressed(Input.Keys.SPACE)) {
-                controller.restart();
-                syncScene();
-                publishTitle(controller.score());
+                restartRun();
             }
             return;
         }
@@ -171,6 +173,50 @@ public final class SnakeGame implements WorldsmithsGame {
         } else if (Gdx.input.isKeyPressed(Input.Keys.DOWN) || Gdx.input.isKeyPressed(Input.Keys.S)) {
             controller.turn(0, -1);
         }
+    }
+
+    private void applyTouchInput() {
+        if (Gdx.input.justTouched()) {
+            trackingTouch = true;
+            touchDownX = Gdx.input.getX();
+            touchDownY = Gdx.input.getY();
+            return;
+        }
+        if (!trackingTouch || Gdx.input.isTouched()) {
+            return;
+        }
+        trackingTouch = false;
+        SnakeTouchGestures.Gesture gesture =
+                SnakeTouchGestures.classify(
+                        touchDownX, touchDownY, Gdx.input.getX(), Gdx.input.getY());
+        if (!controller.alive()) {
+            if (gesture != SnakeTouchGestures.Gesture.NONE) {
+                restartRun();
+            }
+            return;
+        }
+        switch (gesture) {
+            case LEFT:
+                controller.turn(-1, 0);
+                break;
+            case RIGHT:
+                controller.turn(1, 0);
+                break;
+            case UP:
+                controller.turn(0, 1);
+                break;
+            case DOWN:
+                controller.turn(0, -1);
+                break;
+            default:
+                break;
+        }
+    }
+
+    private void restartRun() {
+        controller.restart();
+        syncScene();
+        publishTitle(controller.score());
     }
 
     private void publishTitleIfChanged() {
