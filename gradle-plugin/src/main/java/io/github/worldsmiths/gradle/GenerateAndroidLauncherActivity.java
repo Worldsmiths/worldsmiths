@@ -44,6 +44,7 @@ public abstract class GenerateAndroidLauncherActivity extends DefaultTask {
         String code = "package io.github.worldsmiths.generated.android;\n"
                 + "\n"
                 + "import android.os.Bundle;\n"
+                + "import android.view.WindowManager;\n"
                 + "import com.badlogic.gdx.ApplicationListener;\n"
                 + "import com.badlogic.gdx.backends.android.AndroidApplication;\n"
                 + "import com.badlogic.gdx.backends.android.AndroidApplicationConfiguration;\n"
@@ -56,6 +57,9 @@ public abstract class GenerateAndroidLauncherActivity extends DefaultTask {
                 + "    @Override\n"
                 + "    protected void onCreate(Bundle savedInstanceState) {\n"
                 + "        super.onCreate(savedInstanceState);\n"
+                // Snake uses swipe/tap; keep the soft keyboard from stealing focus on touch.
+                + "        getWindow().setSoftInputMode(\n"
+                + "                WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN);\n"
                 + "        WorldsmithsGame game = new " + gameClass + "();\n"
                 + "        AndroidBackend.attach(this, game, new AndroidConfig("
                 + width + ", " + height + "));\n"

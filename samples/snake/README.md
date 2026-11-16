@@ -9,8 +9,9 @@ Desktop, browser (TeaVM / gdx-teavm), and Android share the same `:game` sources
 
 ## Controls
 
-- **Move:** arrow keys or WASD (ignored while dead)
-- **Restart after death:** `R` or Space
+- **Move (desktop / keyboard):** arrow keys or WASD (ignored while dead)
+- **Move (Android / touch):** swipe left / right / up / down
+- **Restart after death:** `R` or Space (keyboard); tap or swipe (touch)
 
 ## Requirements
 
@@ -76,7 +77,7 @@ on a real device or emulator is a **manual founder gate**, not automated:
 
 1. Start an emulator or connect a device with USB debugging.
 2. `./gradlew -p samples/snake :android:installDebug` (or `adb install -r` the debug APK).
-3. Launch Snake, move with arrows/WASD (or equivalent), eat food, die, restart with `R`/Space.
+3. Launch Snake; swipe to move, tap (or swipe) after death to restart. Soft keyboard should stay hidden.
 4. Confirm score updates in the title / UI the same as desktop.
 
 Do not treat a green `snake-android` job as device play evidence.

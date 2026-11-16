@@ -488,6 +488,9 @@ class SettingsPluginFunctionalTest {
         assertTrue(
                 launcher.contains("new AndroidConfig(640, 480)"),
                 "DSL width/height must reach AndroidConfig in the generated Activity\n" + launcher);
+        assertTrue(
+                launcher.contains("SOFT_INPUT_STATE_ALWAYS_HIDDEN"),
+                "Launcher should keep the soft keyboard hidden for swipe/tap play\n" + launcher);
     }
 
     @Test
