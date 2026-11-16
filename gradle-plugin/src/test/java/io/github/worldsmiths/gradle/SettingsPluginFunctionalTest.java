@@ -154,6 +154,115 @@ class SettingsPluginFunctionalTest {
     }
 
     @Test
+    void assetsDirOverrideReachesGeneratedAndroidScript() throws IOException {
+        write("gradle.properties", "android.useAndroidX=true\nandroid.builtInKotlin=false\n");
+        write("settings.gradle.kts", settingsWithGoogle(""
+                + "    assetsDir = \"game-assets\"\n"
+                + "    targets {\n"
+                + "        desktop {}\n"
+                + "        android {}\n"
+                + "    }\n"));
+
+        BuildResult result = runner("projects").build();
+
+        assertEquals(TaskOutcome.SUCCESS, result.task(":projects").getOutcome());
+        assertTrue(read(".worldsmiths/gen/android/build.gradle.kts").contains("assetsDir = \"game-assets\""));
+    }
+
+    @Test
+    void emptyAssetsDirDoesNotBreakAndroidConfigure() throws IOException {
+        write("gradle.properties", "android.useAndroidX=true\nandroid.builtInKotlin=false\n");
+        Files.createDirectories(projectDir.resolve("assets"));
+        write("settings.gradle.kts", settingsWithGoogle(""
+                + "    targets {\n"
+                + "        desktop {}\n"
+                + "        android {}\n"
+                + "    }\n"));
+
+        BuildResult result = runner(
+                "projects",
+                ":android:wsGenerateManifest",
+                ":android:wsCopyAndroidNatives").build();
+
+        assertEquals(TaskOutcome.SUCCESS, result.task(":projects").getOutcome());
+        assertEquals(TaskOutcome.SUCCESS, result.task(":android:wsGenerateManifest").getOutcome());
+        assertEquals(TaskOutcome.SUCCESS, result.task(":android:wsCopyAndroidNatives").getOutcome());
+    }
+
+    @Test
+    void missingAssetsDirDoesNotBreakAndroidConfigure() throws IOException {
+        write("gradle.properties", "android.useAndroidX=true\nandroid.builtInKotlin=false\n");
+        write("settings.gradle.kts", settingsWithGoogle(""
+                + "    assetsDir = \"no-such-assets\"\n"
+                + "    targets {\n"
+                + "        desktop {}\n"
+                + "        android {}\n"
+                + "    }\n"));
+
+        BuildResult result = runner(
+                "projects",
+                ":android:wsGenerateManifest",
+                ":android:wsCopyAndroidNatives").build();
+
+        assertEquals(TaskOutcome.SUCCESS, result.task(":projects").getOutcome());
+        assertEquals(TaskOutcome.SUCCESS, result.task(":android:wsGenerateManifest").getOutcome());
+        assertEquals(TaskOutcome.SUCCESS, result.task(":android:wsCopyAndroidNatives").getOutcome());
+    }
+
+    @Test
+    void androidCopyNativesExtractsSharedLibraries() throws IOException {
+        write("gradle.properties", "android.useAndroidX=true\nandroid.builtInKotlin=false\n");
+        write("settings.gradle.kts", settingsWithGoogle(""
+                + "    targets {\n"
+                + "        desktop {}\n"
+                + "        android {}\n"
+                + "    }\n"));
+
+        BuildResult result = runner(":android:wsCopyAndroidNatives").build();
+
+        assertEquals(TaskOutcome.SUCCESS, result.task(":android:wsCopyAndroidNatives").getOutcome());
+        Path jniRoot = projectDir.resolve(".worldsmiths/gen/android/build/ws-jniLibs");
+        assertTrue(Files.isDirectory(jniRoot), "missing jniLibs root " + jniRoot);
+        try (Stream<Path> sos = Files.walk(jniRoot)) {
+            boolean hasSo = sos.anyMatch(path -> path.getFileName().toString().endsWith(".so"));
+            assertTrue(hasSo, "expected at least one .so under " + jniRoot);
+        }
+    }
+
+    @Test
+    void androidDebugApkIncludesShipMarkerFromAssetsDirWhenSdkPresent() throws IOException {
+        String androidHome = System.getenv("ANDROID_HOME");
+        Assumptions.assumeTrue(
+                androidHome != null && !androidHome.isBlank() && Files.isDirectory(Path.of(androidHome)),
+                "ANDROID_HOME unset; skipping assembleDebug ship-marker assert");
+
+        write("gradle.properties", "android.useAndroidX=true\nandroid.builtInKotlin=false\n");
+        write("local.properties", "sdk.dir=" + androidHome.replace('\\', '/') + "\n");
+        write("assets/ws-ship-marker.txt", "worldsmiths-ship-marker\n");
+        write("settings.gradle.kts", settingsWithGoogle(""
+                + "    targets {\n"
+                + "        desktop {}\n"
+                + "        android {\n"
+                + "            title.set(\"Starfall Android\")\n"
+                + "            width.set(640)\n"
+                + "            height.set(480)\n"
+                + "        }\n"
+                + "    }\n"));
+
+        BuildResult result = runner(":android:assembleDebug").build();
+        assertAssembleDebugOk(result);
+
+        Path apk = findDebugApk(projectDir.resolve(".worldsmiths/gen/android/build/outputs/apk/debug"));
+        Set<String> entries = zipEntryNames(apk);
+        assertTrue(
+                entries.stream().anyMatch(name -> name.endsWith("ws-ship-marker.txt")),
+                "debug APK entries: " + entries);
+        assertTrue(
+                entries.stream().anyMatch(name -> name.endsWith(".so")),
+                "debug APK missing natives (.so); entries: " + entries);
+    }
+
+    @Test
     void desktopDistZipIncludesMarkerFromAssetsDir() throws IOException {
         write("assets/ws-ship-marker.txt", "worldsmiths-ship-marker\n");
 
@@ -645,6 +754,15 @@ class SettingsPluginFunctionalTest {
             return paths.filter(path -> path.getFileName().toString().endsWith(".zip"))
                     .findFirst()
                     .orElseThrow(() -> new AssertionError("No zip in " + directory));
+        }
+    }
+
+    private static Path findDebugApk(Path directory) throws IOException {
+        assertTrue(Files.isDirectory(directory), "missing APK directory " + directory);
+        try (Stream<Path> paths = Files.list(directory)) {
+            return paths.filter(path -> path.getFileName().toString().endsWith(".apk"))
+                    .findFirst()
+                    .orElseThrow(() -> new AssertionError("No apk in " + directory));
         }
     }
 
