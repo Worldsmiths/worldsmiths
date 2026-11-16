@@ -7,8 +7,14 @@ package io.github.worldsmiths.gradle;
  */
 public final class AndroidSdkPins {
 
-    /** AGP on the gradle-plugin classpath; games do not declare AGP. */
-    public static final String AGP_VERSION = "8.13.2";
+    /**
+     * AGP on the gradle-plugin classpath; games do not declare AGP.
+     *
+     * <p>D6 interview pinned 8.13.x, but AGP 8.x cannot apply on Gradle 9.6+ (removed
+     * {@code InternalProblems}). Worldsmiths is on Gradle 9.9.1, so Phase-0 uses AGP 9.0.0.
+     * See {@code .agent-docs/implement-spec-d6-android-agp/changes.md}.
+     */
+    public static final String AGP_VERSION = "9.0.0";
 
     public static final int MIN_SDK = 21;
     public static final int COMPILE_SDK = 36;
