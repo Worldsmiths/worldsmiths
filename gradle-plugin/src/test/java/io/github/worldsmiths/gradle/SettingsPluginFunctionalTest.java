@@ -18,6 +18,7 @@ import java.util.zip.ZipInputStream;
 import org.gradle.testkit.runner.BuildResult;
 import org.gradle.testkit.runner.GradleRunner;
 import org.gradle.testkit.runner.TaskOutcome;
+import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -330,6 +331,105 @@ class SettingsPluginFunctionalTest {
     }
 
     @Test
+    void withoutTargetsAndroidDoesNotIncludeAndroidProject() {
+        BuildResult result = runner("projects").build();
+
+        assertTrue(result.getOutput().contains("Project ':desktop'"), result.getOutput());
+        assertFalse(result.getOutput().contains("Project ':android'"), result.getOutput());
+        assertFalse(Files.isRegularFile(projectDir.resolve(".worldsmiths/gen/android/build.gradle.kts")));
+    }
+
+    @Test
+    void withTargetsAndroidIncludesGeneratedScriptAndPluginId() throws IOException {
+        write("gradle.properties", ""
+                + "android.useAndroidX=true\n"
+                + "android.builtInKotlin=false\n");
+        write("settings.gradle.kts", settingsWithGoogle(""
+                + "    targets {\n"
+                + "        desktop {}\n"
+                + "        android {\n"
+                + "            title.set(\"Starfall Android\")\n"
+                + "            width.set(640)\n"
+                + "            height.set(480)\n"
+                + "        }\n"
+                + "    }\n"));
+
+        BuildResult result = runner(
+                "projects",
+                ":android:wsGenerateManifest",
+                ":android:wsGenerateLauncher").build();
+
+        assertTrue(result.getOutput().contains("Project ':android'"), result.getOutput());
+        assertTrue(Files.isRegularFile(projectDir.resolve(".worldsmiths/gen/android/build.gradle.kts")));
+
+        String script = read(".worldsmiths/gen/android/build.gradle.kts");
+        assertTrue(script.contains("id(\"io.github.worldsmiths.android\")"), script);
+        assertTrue(script.contains("title = \"Starfall Android\""), script);
+        assertTrue(script.contains("width = 640"), script);
+        assertTrue(script.contains("height = 480"), script);
+
+        String manifest = read(".worldsmiths/gen/android/build/generated/ws-manifest/AndroidManifest.xml");
+        assertTrue(manifest.contains("io.github.worldsmiths.generated.android.AndroidLauncher"), manifest);
+
+        String launcher = read(".worldsmiths/gen/android/build/generated/sources/ws-launcher/"
+                + "io/github/worldsmiths/generated/android/AndroidLauncher.java");
+        assertTrue(launcher.contains("WorldsmithsGame game = new com.example.Game()"), launcher);
+        assertTrue(launcher.contains("AndroidBackend.attach"), launcher);
+        assertTrue(launcher.contains("AndroidApplicationHost"), launcher);
+        assertTrue(launcher.contains("new AndroidConfig("), launcher);
+    }
+
+    @Test
+    void androidWithoutGoogleFailsWithClearMessage() throws IOException {
+        write("gradle.properties", "android.useAndroidX=true\nandroid.builtInKotlin=false\n");
+        write("settings.gradle.kts", defaultSettings(""
+                + "    targets {\n"
+                + "        desktop {}\n"
+                + "        android {}\n"
+                + "    }\n"));
+
+        BuildResult result = runner("projects").buildAndFail();
+
+        assertTrue(result.getOutput().contains("Google Maven"), result.getOutput());
+        assertTrue(result.getOutput().contains("google()"), result.getOutput());
+    }
+
+    @Test
+    void androidAssembleDebugReusesConfigurationCacheWhenSdkPresent() throws IOException {
+        String androidHome = System.getenv("ANDROID_HOME");
+        Assumptions.assumeTrue(
+                androidHome != null && !androidHome.isBlank() && Files.isDirectory(Path.of(androidHome)),
+                "ANDROID_HOME unset; skipping assembleDebug");
+
+        write("gradle.properties", "android.useAndroidX=true\nandroid.builtInKotlin=false\n");
+        write("local.properties", "sdk.dir=" + androidHome.replace('\\', '/') + "\n");
+        write("settings.gradle.kts", settingsWithGoogle(""
+                + "    targets {\n"
+                + "        desktop {}\n"
+                + "        android {\n"
+                + "            title.set(\"Starfall Android\")\n"
+                + "            width.set(640)\n"
+                + "            height.set(480)\n"
+                + "        }\n"
+                + "    }\n"));
+
+        BuildResult first = runner(":android:assembleDebug").build();
+        assertAssembleDebugOk(first);
+        assertTrue(
+                first.getOutput().contains(STORED) || first.getOutput().contains(REUSED),
+                first.getOutput());
+
+        // AGP may install missing build-tools on the first run, which invalidates the CC entry once.
+        BuildResult second = runner(":android:assembleDebug").build();
+        assertAssembleDebugOk(second);
+        if (!second.getOutput().contains(REUSED)) {
+            BuildResult third = runner(":android:assembleDebug").build();
+            assertAssembleDebugOk(third);
+            assertTrue(third.getOutput().contains(REUSED), third.getOutput());
+        }
+    }
+
+    @Test
     void withTargetsWebIncludesWebProjectWithReflectionOff() throws IOException {
         write("settings.gradle.kts", defaultSettings(""
                 + "    targets {\n"
@@ -415,6 +515,13 @@ class SettingsPluginFunctionalTest {
         assertTrue(launcher.contains("new WebConfig(960, 540, \"mygame_\")"), launcher);
     }
 
+    private static void assertAssembleDebugOk(BuildResult result) {
+        TaskOutcome outcome = result.task(":android:assembleDebug").getOutcome();
+        assertTrue(
+                outcome == TaskOutcome.SUCCESS || outcome == TaskOutcome.UP_TO_DATE,
+                "assembleDebug outcome=" + outcome + "\n" + result.getOutput());
+    }
+
     private GradleRunner runner(String... tasks) {
         String[] args = new String[tasks.length + 2];
         System.arraycopy(tasks, 0, args, 0, tasks.length);
@@ -466,9 +573,17 @@ class SettingsPluginFunctionalTest {
     }
 
     private String defaultSettings(String targetsBlock) {
+        return settingsWithRepositories("mavenCentral()", targetsBlock);
+    }
+
+    private String settingsWithGoogle(String targetsBlock) {
+        return settingsWithRepositories("google(); mavenCentral()", targetsBlock);
+    }
+
+    private String settingsWithRepositories(String repositories, String targetsBlock) {
         String engineRoot = engineRoot().toString().replace('\\', '/');
         return "plugins { id(\"io.github.worldsmiths.engine\") }\n"
-                + "dependencyResolutionManagement { repositories { mavenCentral() } }\n"
+                + "dependencyResolutionManagement { repositories { " + repositories + " } }\n"
                 + "includeBuild(\"" + engineRoot + "\") {\n"
                 + IncludeBuildSubstitutions.dependencySubstitutionKotlin()
                 + "}\n"

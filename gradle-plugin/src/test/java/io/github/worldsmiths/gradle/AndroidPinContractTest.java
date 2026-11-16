@@ -20,13 +20,13 @@ class AndroidPinContractTest {
         assertEquals(21, AndroidSdkPins.MIN_SDK);
         assertEquals(36, AndroidSdkPins.COMPILE_SDK);
         assertEquals(36, AndroidSdkPins.TARGET_SDK);
-        assertEquals("8.13.2", AndroidSdkPins.AGP_VERSION);
+        assertEquals("9.0.0", AndroidSdkPins.AGP_VERSION);
     }
 
     @Test
     void versionCatalogRecordsAndroidPins() throws IOException {
         String catalog = readEngine("gradle/libs.versions.toml");
-        assertTrue(catalog.contains("agp = \"8.13.2\""), catalog);
+        assertTrue(catalog.contains("agp = \"9.0.0\""), catalog);
         assertTrue(catalog.contains("android-min-sdk = \"21\""), catalog);
         assertTrue(catalog.contains("android-compile-sdk = \"36\""), catalog);
         assertTrue(catalog.contains("android-target-sdk = \"36\""), catalog);
