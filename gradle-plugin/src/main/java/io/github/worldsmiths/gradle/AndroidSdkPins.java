@@ -1,7 +1,7 @@
 package io.github.worldsmiths.gradle;
 
 /**
- * Android toolchain pins consumed by the future {@code AndroidPlugin} (D6).
+ * Android toolchain pins consumed by {@link AndroidPlugin}.
  * Keep in sync with {@code gradle/libs.versions.toml} and the AGP classpath
  * dependency in {@code gradle-plugin/build.gradle.kts} (TeaVM-style).
  */
@@ -15,6 +15,15 @@ public final class AndroidSdkPins {
      * See {@code .agent-docs/implement-spec-d6-android-agp/changes.md}.
      */
     public static final String AGP_VERSION = "9.0.0";
+
+    /** libGDX version; must match catalog {@code gdx}. */
+    public static final String GDX_VERSION = "1.14.2";
+
+    public static final String GDX_BACKEND_ANDROID =
+            "com.badlogicgames.gdx:gdx-backend-android:" + GDX_VERSION;
+
+    public static final String GDX_PLATFORM =
+            "com.badlogicgames.gdx:gdx-platform:" + GDX_VERSION;
 
     public static final int MIN_SDK = 21;
     public static final int COMPILE_SDK = 36;

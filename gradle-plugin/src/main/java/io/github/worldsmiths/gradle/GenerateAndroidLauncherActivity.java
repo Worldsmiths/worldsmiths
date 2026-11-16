@@ -25,6 +25,12 @@ public abstract class GenerateAndroidLauncherActivity extends DefaultTask {
     @Input
     public abstract Property<String> getGameClass();
 
+    @Input
+    public abstract Property<Integer> getWidth();
+
+    @Input
+    public abstract Property<Integer> getHeight();
+
     @OutputDirectory
     public abstract DirectoryProperty getOutputDir();
 
@@ -33,6 +39,8 @@ public abstract class GenerateAndroidLauncherActivity extends DefaultTask {
         Path source = getOutputDir().get().getAsFile().toPath()
                 .resolve(MAIN_CLASS.replace('.', '/') + ".java");
         String gameClass = getGameClass().get();
+        int width = getWidth().get();
+        int height = getHeight().get();
         String code = "package io.github.worldsmiths.generated.android;\n"
                 + "\n"
                 + "import android.os.Bundle;\n"
@@ -49,7 +57,8 @@ public abstract class GenerateAndroidLauncherActivity extends DefaultTask {
                 + "    protected void onCreate(Bundle savedInstanceState) {\n"
                 + "        super.onCreate(savedInstanceState);\n"
                 + "        WorldsmithsGame game = new " + gameClass + "();\n"
-                + "        AndroidBackend.attach(this, game, new AndroidConfig());\n"
+                + "        AndroidBackend.attach(this, game, new AndroidConfig("
+                + width + ", " + height + "));\n"
                 + "    }\n"
                 + "\n"
                 + "    @Override\n"

@@ -14,10 +14,6 @@ import org.gradle.api.tasks.TaskProvider;
 public final class AndroidPlugin implements Plugin<Project> {
 
     static final String BACKENDS_ANDROID = EngineModuleCoordinates.BACKENDS_ANDROID_NOTATION;
-    static final String GDX_VERSION = "1.14.2";
-    static final String GDX_BACKEND_ANDROID =
-            "com.badlogicgames.gdx:gdx-backend-android:" + GDX_VERSION;
-    static final String GDX_PLATFORM = "com.badlogicgames.gdx:gdx-platform:" + GDX_VERSION;
 
     /** ABIs extracted from {@code gdx-platform} natives jars into {@code jniLibs}. */
     static final String[] NATIVES_ABIS = {
@@ -59,6 +55,8 @@ public final class AndroidPlugin implements Plugin<Project> {
         android.getDefaultConfig().setApplicationId(NAMESPACE);
         android.getDefaultConfig().setMinSdk(AndroidSdkPins.MIN_SDK);
         android.getDefaultConfig().setTargetSdk(AndroidSdkPins.TARGET_SDK);
+        // ADR-0004 Java 8 baseline: AGP forbids JavaCompile --release (needs Android bootclasspath;
+        // see issuetracker.google.com/278800528). compileOptions 1.8 is the supported equivalent.
         android.getCompileOptions().setSourceCompatibility(JavaVersion.VERSION_1_8);
         android.getCompileOptions().setTargetCompatibility(JavaVersion.VERSION_1_8);
 
@@ -76,6 +74,8 @@ public final class AndroidPlugin implements Plugin<Project> {
         TaskProvider<GenerateAndroidLauncherActivity> generateLauncher = project.getTasks()
                 .register("wsGenerateLauncher", GenerateAndroidLauncherActivity.class, task -> {
                     task.getGameClass().set(extension.getGameClass());
+                    task.getWidth().set(extension.getWidth());
+                    task.getHeight().set(extension.getHeight());
                     task.getOutputDir().set(launcherOut);
                 });
 
@@ -86,7 +86,8 @@ public final class AndroidPlugin implements Plugin<Project> {
             configuration.setTransitive(false);
         });
         for (String abi : NATIVES_ABIS) {
-            project.getDependencies().add("natives", GDX_PLATFORM + ":natives-" + abi);
+            project.getDependencies().add(
+                    "natives", AndroidSdkPins.GDX_PLATFORM + ":natives-" + abi);
         }
 
         TaskProvider<ExtractAndroidNatives> copyNatives = project.getTasks()
@@ -119,7 +120,7 @@ public final class AndroidPlugin implements Plugin<Project> {
                 extension.getGameModule().map(path ->
                         project.getDependencies().project(Collections.singletonMap("path", path))));
         project.getDependencies().add("implementation", BACKENDS_ANDROID);
-        project.getDependencies().add("implementation", GDX_BACKEND_ANDROID);
+        project.getDependencies().add("implementation", AndroidSdkPins.GDX_BACKEND_ANDROID);
 
         // assetsDir is filled by the generated script after apply(); AGP needs a concrete File.
         // Missing / non-directory assetsDir is a soft no-op (desktop distZip empty-tree pattern).

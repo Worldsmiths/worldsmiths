@@ -485,7 +485,9 @@ class SettingsPluginFunctionalTest {
         assertTrue(launcher.contains("WorldsmithsGame game = new com.example.Game()"), launcher);
         assertTrue(launcher.contains("AndroidBackend.attach"), launcher);
         assertTrue(launcher.contains("AndroidApplicationHost"), launcher);
-        assertTrue(launcher.contains("new AndroidConfig("), launcher);
+        assertTrue(
+                launcher.contains("new AndroidConfig(640, 480)"),
+                "DSL width/height must reach AndroidConfig in the generated Activity\n" + launcher);
     }
 
     @Test
