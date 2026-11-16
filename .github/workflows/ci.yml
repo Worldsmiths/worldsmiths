@@ -89,3 +89,34 @@ jobs:
             samples/snake/.worldsmiths/gen/desktop/build/distributions/*.zip
             samples/snake/.worldsmiths/gen/web/build/distributions/web-itch.zip
 
+  # Ship APK: Ubuntu assembleDebug + marker assert + upload (Dp peer of distZip / itch zip).
+  # Device/emulator play is a founder manual gate — not automated here.
+  snake-android:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: "21"
+      - uses: gradle/actions/setup-gradle@v6
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v4
+        with:
+          packages: 'platform-tools platforms;android-36 build-tools;36.0.0'
+      - name: Build Snake debug APK
+        run: ./gradlew -p samples/snake :android:assembleDebug --no-daemon
+      - name: Assert ship marker in debug APK
+        run: |
+          set -euo pipefail
+          marker="ws-ship-marker.txt"
+          # -print -quit avoids find|head SIGPIPE under pipefail.
+          apk="$(find samples/snake/.worldsmiths/gen/android/build/outputs/apk/debug -name '*.apk' -print -quit)"
+          test -n "$apk"
+          test -f "$apk"
+          unzip -l "$apk" | grep -F "$marker"
+      - uses: actions/upload-artifact@v7
+        with:
+          name: snake-android-apk
+          path: samples/snake/.worldsmiths/gen/android/build/outputs/apk/debug/*.apk
+
