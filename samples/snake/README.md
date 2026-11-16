@@ -5,7 +5,7 @@ colored `Sprite` (engine-drawn), discrete grid movement on a step timer, grow on
 collision ends the run, score in the window title (`Snake — score: N`), and restart without
 relaunching.
 
-Desktop and browser (TeaVM / gdx-teavm) share the same `:game` sources.
+Desktop, browser (TeaVM / gdx-teavm), and Android share the same `:game` sources.
 
 ## Controls
 
@@ -19,7 +19,7 @@ Desktop and browser (TeaVM / gdx-teavm) share the same `:game` sources.
 - Browser run: a modern Chromium-based browser (Chrome recommended). The Playwright check needs
   Google Chrome installed (or set `CHROME` to a Chromium binary).
 
-This sample is a nested Gradle project. It applies `io.github.worldsmiths.engine` via `includeBuild` of the monorepo `gradle-plugin`, and resolves `ws-core` / `backends-desktop` / `backends-web` from the monorepo root with `includeBuild` + dependency substitution (not Maven Central). The consumer snippet is in [`docs/includebuild-substitutions.md`](../../docs/includebuild-substitutions.md). Game sources may use LibGDX core (`Gdx`, shapes) but must not import `com.badlogic.gdx.backends`, `com.github.xpenatan.gdx.teavm.backends`, or any `*ApplicationConfiguration` type.
+This sample is a nested Gradle project. It applies `io.github.worldsmiths.engine` via `includeBuild` of the monorepo `gradle-plugin`, and resolves `ws-core` / `backends-desktop` / `backends-web` / `backends-android` from the monorepo root with `includeBuild` + dependency substitution (not Maven Central). Android needs Google Maven (`google()`) in both `pluginManagement.repositories` (AGP on the engine plugin classpath) and `dependencyResolutionManagement` (Android artifacts). The consumer snippet is in [`docs/includebuild-substitutions.md`](../../docs/includebuild-substitutions.md). Game sources may use LibGDX core (`Gdx`, shapes) but must not import `com.badlogic.gdx.backends`, `com.github.xpenatan.gdx.teavm.backends`, or any `*ApplicationConfiguration` type.
 
 ## Build / compile (no window)
 
@@ -51,6 +51,22 @@ and `icon` (path relative to `assetsDir`). Web: `storagePrefix` (default `"app"`
 root [README](../../README.md#target-settings-curated-dsl).
 
 Close the window to exit.
+
+## Build / install Android
+
+Requires an Android SDK (`ANDROID_HOME` or `ANDROID_SDK_ROOT`). With the SDK present:
+
+```bash
+# Assemble a debug APK (CI / local proof)
+./gradlew -p samples/snake :android:assembleDebug
+
+# Install on a connected device or emulator, then launch manually
+./gradlew -p samples/snake :android:installDebug
+```
+
+APK output: `.worldsmiths/gen/android/build/outputs/apk/debug/`. Same controls as desktop once running
+(touch / hardware keys depending on the device). If `ANDROID_HOME` is unset, configure still
+succeeds and generates `:android`, but `assembleDebug` / `installDebug` need the SDK.
 
 ## Ship archives (desktop + web)
 
