@@ -22,7 +22,7 @@ public final class WorldsmithsSettingsPlugin implements Plugin<Settings> {
     static final String WEB_DIR = "gen/web";
     static final String ANDROID_DIR = "gen/android";
 
-    // Keep in sync with DesktopConfig / WebConfig defaults (plugin has no backends dep).
+    // Keep in sync with DesktopConfig / WebConfig / AndroidConfig defaults (plugin has no backends dep).
     static final String DEFAULT_TITLE = "Worldsmiths";
     static final int DEFAULT_WIDTH = 800;
     static final int DEFAULT_HEIGHT = 600;
