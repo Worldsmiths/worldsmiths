@@ -3,17 +3,24 @@ group = "io.github.worldsmiths"
 engine = "0.0.1-SNAPSHOT"
 gdx = "1.14.2"
 gdx-teavm = "1.6.2"
+agp = "8.13.2"
+android-min-sdk = "21"
+android-compile-sdk = "36"
+android-target-sdk = "36"
 junit = "5.11.4"
 junit-platform = "1.11.4"
 
 [libraries]
 gdx = { module = "com.badlogicgames.gdx:gdx", version.ref = "gdx" }
 gdx-backend-lwjgl3 = { module = "com.badlogicgames.gdx:gdx-backend-lwjgl3", version.ref = "gdx" }
+gdx-backend-android = { module = "com.badlogicgames.gdx:gdx-backend-android", version.ref = "gdx" }
 gdx-platform = { module = "com.badlogicgames.gdx:gdx-platform", version.ref = "gdx" }
 gdx-teavm-backend-web = { module = "com.github.xpenatan.gdx-teavm:backend-web", version.ref = "gdx-teavm" }
+android-gradle-plugin = { module = "com.android.tools.build:gradle", version.ref = "agp" }
 junit-jupiter = { module = "org.junit.jupiter:junit-jupiter", version.ref = "junit" }
 junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher", version.ref = "junit-platform" }
 
 [plugins]
 engine = { id = "io.github.worldsmiths.engine", version.ref = "engine" }
 gdx-teavm = { id = "com.github.xpenatan.gdx-teavm", version.ref = "gdx-teavm" }
+android-application = { id = "com.android.application", version.ref = "agp" }
