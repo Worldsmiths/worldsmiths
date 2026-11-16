@@ -2,7 +2,6 @@ package io.github.worldsmiths.gradle;
 
 import java.lang.reflect.Method;
 import java.net.URI;
-import java.util.Collection;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.repositories.ArtifactRepository;
 import org.gradle.api.artifacts.repositories.MavenArtifactRepository;
@@ -49,7 +48,6 @@ final class GoogleMavenRepositories {
         return false;
     }
 
-    @SuppressWarnings("unchecked")
     private static RepositoryHandler dependencyResolutionRepositories(Project project) {
         try {
             Object gradle = project.getGradle();
@@ -61,9 +59,6 @@ final class GoogleMavenRepositories {
             Object repos = getRepos.invoke(drm);
             if (repos instanceof RepositoryHandler) {
                 return (RepositoryHandler) repos;
-            }
-            if (repos instanceof Collection<?>) {
-                // Unreachable for current Gradle, but keep typed for clarity.
             }
             return null;
         } catch (ReflectiveOperationException | RuntimeException e) {
