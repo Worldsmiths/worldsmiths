@@ -7,14 +7,25 @@ import org.gradle.api.GradleException;
 import org.gradle.api.JavaVersion;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
+import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.tasks.TaskProvider;
 
 /** Applied by the generated {@code :android} build script. */
 public final class AndroidPlugin implements Plugin<Project> {
 
     static final String BACKENDS_ANDROID = EngineModuleCoordinates.BACKENDS_ANDROID_NOTATION;
+    static final String GDX_VERSION = "1.14.2";
     static final String GDX_BACKEND_ANDROID =
-            "com.badlogicgames.gdx:gdx-backend-android:1.14.2";
+            "com.badlogicgames.gdx:gdx-backend-android:" + GDX_VERSION;
+    static final String GDX_PLATFORM = "com.badlogicgames.gdx:gdx-platform:" + GDX_VERSION;
+
+    /** ABIs extracted from {@code gdx-platform} natives jars into {@code jniLibs}. */
+    static final String[] NATIVES_ABIS = {
+        "armeabi-v7a",
+        "arm64-v8a",
+        "x86",
+        "x86_64"
+    };
 
     static final String NAMESPACE = "io.github.worldsmiths.generated.android";
 
@@ -54,6 +65,7 @@ public final class AndroidPlugin implements Plugin<Project> {
         File buildDir = project.getLayout().getBuildDirectory().get().getAsFile();
         File manifestOut = new File(buildDir, "generated/ws-manifest/AndroidManifest.xml");
         File launcherOut = new File(buildDir, "generated/sources/ws-launcher");
+        File jniLibsOut = new File(buildDir, "ws-jniLibs");
 
         TaskProvider<GenerateAndroidManifest> generateManifest = project.getTasks()
                 .register("wsGenerateManifest", GenerateAndroidManifest.class, task -> {
@@ -67,16 +79,40 @@ public final class AndroidPlugin implements Plugin<Project> {
                     task.getOutputDir().set(launcherOut);
                 });
 
+        Configuration natives = project.getConfigurations().create("natives", configuration -> {
+            configuration.setCanBeConsumed(false);
+            configuration.setCanBeResolved(true);
+            configuration.setVisible(false);
+            configuration.setTransitive(false);
+        });
+        for (String abi : NATIVES_ABIS) {
+            project.getDependencies().add("natives", GDX_PLATFORM + ":natives-" + abi);
+        }
+
+        TaskProvider<ExtractAndroidNatives> copyNatives = project.getTasks()
+                .register("wsCopyAndroidNatives", ExtractAndroidNatives.class, task -> {
+                    task.getNativesJars().from(natives);
+                    task.getOutputDir().set(jniLibsOut);
+                });
+
         // Concrete dirs (not Providers): AGP 9 rejects Provider srcDir on the SourceSet API.
         // Task deps are wired via preBuild so generation still runs before compile.
         android.getSourceSets().named("main", sourceSet -> {
             sourceSet.getManifest().srcFile(manifestOut);
             sourceSet.getJava().srcDir(launcherOut);
+            sourceSet.getJniLibs().srcDir(jniLibsOut);
         });
 
         project.getTasks().named("preBuild").configure(task -> {
             task.dependsOn(generateManifest);
             task.dependsOn(generateLauncher);
+            task.dependsOn(copyNatives);
+        });
+        project.getTasks().configureEach(task -> {
+            String name = task.getName();
+            if (name.contains("merge") && name.contains("JniLibFolders")) {
+                task.dependsOn(copyNatives);
+            }
         });
 
         project.getDependencies().addProvider("implementation",
@@ -85,8 +121,17 @@ public final class AndroidPlugin implements Plugin<Project> {
         project.getDependencies().add("implementation", BACKENDS_ANDROID);
         project.getDependencies().add("implementation", GDX_BACKEND_ANDROID);
 
-        project.afterEvaluate(androidProject ->
-                GameModuleChecks.requireJava8WhenReady(
-                        androidProject, extension.getGameModule().get()));
+        // assetsDir is filled by the generated script after apply(); AGP needs a concrete File.
+        // Missing / non-directory assetsDir is a soft no-op (desktop distZip empty-tree pattern).
+        project.afterEvaluate(androidProject -> {
+            String assetsPath = extension.getAssetsDir().get();
+            File assetsDir = androidProject.getRootProject().file(assetsPath);
+            if (assetsDir.isDirectory()) {
+                android.getSourceSets().named("main", sourceSet ->
+                        sourceSet.getAssets().srcDir(assetsDir));
+            }
+            GameModuleChecks.requireJava8WhenReady(
+                    androidProject, extension.getGameModule().get());
+        });
     }
 }
