@@ -69,13 +69,16 @@ class SnakeSampleBackendsImportGateTest {
     @Test
     void snakeSampleJavaSourcesMustNotImportBannedBackends() throws IOException {
         Path snakeRoot = repoRoot().resolve("samples").resolve("snake");
-        assertTrue(Files.isDirectory(snakeRoot), "missing samples/snake at " + snakeRoot);
+        // Gate the author-owned :game tree only — generated :desktop/:web/:android launchers
+        // under .worldsmiths/gen intentionally import platform backends.
+        Path gameSources = snakeRoot.resolve("game");
+        assertTrue(Files.isDirectory(gameSources), "missing samples/snake/game at " + gameSources);
 
         List<Path> javaFiles = new ArrayList<Path>();
-        try (Stream<Path> walk = Files.walk(snakeRoot)) {
+        try (Stream<Path> walk = Files.walk(gameSources)) {
             walk.filter(p -> p.toString().endsWith(".java")).forEach(javaFiles::add);
         }
-        assertFalse(javaFiles.isEmpty(), "samples/snake has no .java sources under " + snakeRoot);
+        assertFalse(javaFiles.isEmpty(), "samples/snake/game has no .java sources under " + gameSources);
 
         List<String> hits = new ArrayList<String>();
         for (Path file : javaFiles) {
@@ -85,7 +88,7 @@ class SnakeSampleBackendsImportGateTest {
             }
         }
         if (!hits.isEmpty()) {
-            fail("samples/snake must not import banned backend / ApplicationConfiguration types:\n"
+            fail("samples/snake game sources must not import banned backend / ApplicationConfiguration types:\n"
                     + hits.stream().collect(Collectors.joining("\n")));
         }
     }

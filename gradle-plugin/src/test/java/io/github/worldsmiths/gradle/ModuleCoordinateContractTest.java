@@ -18,16 +18,26 @@ class ModuleCoordinateContractTest {
     void sampleSubstitutesMatchPluginModuleCoordinates() throws IOException {
         String desktop = moduleId(DesktopPlugin.BACKENDS_DESKTOP);
         String web = moduleId(WebPlugin.BACKENDS_WEB);
+        String android = moduleId(EngineModuleCoordinates.BACKENDS_ANDROID);
         String wsCore = moduleId(EngineModuleCoordinates.WS_CORE);
 
         String snake = readEngine("samples/snake/settings.gradle.kts");
         assertContainsSubstitute(snake, desktop);
         assertContainsSubstitute(snake, web);
+        assertContainsSubstitute(snake, android);
         assertContainsSubstitute(snake, wsCore);
 
         String minimal = readEngine("samples/minimal/settings.gradle.kts");
         assertContainsSubstitute(minimal, desktop);
         assertContainsSubstitute(minimal, wsCore);
+    }
+
+    @Test
+    void snakeOptsInAndroidTargetWithGoogleMaven() throws IOException {
+        String snake = readEngine("samples/snake/settings.gradle.kts");
+        assertTrue(snake.contains("google()"), snake);
+        assertTrue(snake.contains("android {"), snake);
+        assertTrue(snake.contains(":backends:android"), snake);
     }
 
     @Test
