@@ -35,19 +35,22 @@ class ModuleCoordinateContractTest {
         String block = IncludeBuildSubstitutions.dependencySubstitutionKotlin();
         assertContainsSubstitute(block, moduleId(DesktopPlugin.BACKENDS_DESKTOP));
         assertContainsSubstitute(block, moduleId(WebPlugin.BACKENDS_WEB));
+        assertContainsSubstitute(block, moduleId(EngineModuleCoordinates.BACKENDS_ANDROID));
         assertContainsSubstitute(block, moduleId(EngineModuleCoordinates.WS_CORE));
+        assertTrue(block.contains(":backends:android"), block);
     }
 
     @Test
     void androidSubstituteLineMatchesPluginModuleCoordinate() {
-        // Live TestKit block omits android until :backends:android exists (T2); the
-        // dedicated line still locks the Maven id to the documented substitute.
         assertContainsSubstitute(
                 IncludeBuildSubstitutions.backendsAndroidSubstituteKotlin(),
                 moduleId(EngineModuleCoordinates.BACKENDS_ANDROID));
         assertTrue(
                 IncludeBuildSubstitutions.backendsAndroidSubstituteKotlin()
                         .contains(":backends:android"));
+        assertTrue(
+                IncludeBuildSubstitutions.dependencySubstitutionKotlin()
+                        .contains(IncludeBuildSubstitutions.backendsAndroidSubstituteKotlin()));
     }
 
     @Test
