@@ -64,9 +64,22 @@ Requires an Android SDK (`ANDROID_HOME` or `ANDROID_SDK_ROOT`). With the SDK pre
 ./gradlew -p samples/snake :android:installDebug
 ```
 
-APK output: `.worldsmiths/gen/android/build/outputs/apk/debug/`. Same controls as desktop once running
-(touch / hardware keys depending on the device). If `ANDROID_HOME` is unset, configure still
-succeeds and generates `:android`, but `assembleDebug` / `installDebug` need the SDK.
+APK output: `.worldsmiths/gen/android/build/outputs/apk/debug/` (also uploaded by the
+`snake-android` CI job). Same controls as desktop once running (touch / hardware keys
+depending on the device). If `ANDROID_HOME` is unset, configure still succeeds and
+generates `:android`, but `assembleDebug` / `installDebug` need the SDK.
+
+### Founder manual play gate (human)
+
+CI only proves `assembleDebug` + `ws-ship-marker.txt` membership in the APK. Playability
+on a real device or emulator is a **manual founder gate**, not automated:
+
+1. Start an emulator or connect a device with USB debugging.
+2. `./gradlew -p samples/snake :android:installDebug` (or `adb install -r` the debug APK).
+3. Launch Snake, move with arrows/WASD (or equivalent), eat food, die, restart with `R`/Space.
+4. Confirm score updates in the title / UI the same as desktop.
+
+Do not treat a green `snake-android` job as device play evidence.
 
 ## Ship archives (desktop + web)
 

@@ -8,6 +8,21 @@ Gradle project paths (`:backends:desktop`, `:backends:web`, `:backends:android`,
 
 Point `engineRoot` at a checkout of this repository (sibling clone, CI checkout, etc.). Apply the settings plugin via `pluginManagement { includeBuild("$engineRoot/gradle-plugin") }` (or an equivalent included plugin build).
 
+**Android (`targets.android`):** AGP ships on the engine plugin classpath (TeaVM-style). Consumers must put Google Maven in **`pluginManagement.repositories`** so Plugin Portal alone is not the only resolution path for AGP, and again under `dependencyResolutionManagement` for Android artifacts:
+
+```kotlin
+pluginManagement {
+    repositories {
+        google()
+        mavenCentral()
+        gradlePluginPortal()
+    }
+    includeBuild("$engineRoot/gradle-plugin")
+}
+```
+
+DRM `google()` alone is not enough. Missing `google()` when Android is opted in fails configuration with a clear message.
+
 ```kotlin
 includeBuild(engineRoot) {
     dependencySubstitution {
