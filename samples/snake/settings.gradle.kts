@@ -29,6 +29,8 @@ includeBuild("../..") {
             .using(project(":backends:web"))
         substitute(module("io.github.worldsmiths:backends-android"))
             .using(project(":backends:android"))
+        substitute(module("io.github.worldsmiths:backends-ios"))
+            .using(project(":backends:ios"))
         substitute(module("io.github.worldsmiths:ws-core"))
             .using(project(":runtime:ws-core"))
     }
@@ -53,6 +55,11 @@ worldsmiths {
             height.set(480)
         }
         android {
+            title.set("Snake")
+            width.set(640)
+            height.set(480)
+        }
+        ios {
             title.set("Snake")
             width.set(640)
             height.set(480)
