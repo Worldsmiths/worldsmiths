@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.badlogic.gdx.graphics.GL20;
 import io.github.worldsmiths.core.Node;
 import io.github.worldsmiths.core.Scene;
 import io.github.worldsmiths.core.Sprite;
@@ -63,14 +64,22 @@ class IosGameListenerTest {
     }
 
     @Test
-    void disposeDisposesSceneShapeRenderer() {
+    void disposeInvokesGameDisposeThenDisposesSceneShapeRenderer() {
         RecordingGame game = new RecordingGame();
         SceneShapeRenderer recorder = SceneShapeRenderer.recordingOnly();
         IosGameListener listener = new IosGameListener(game, recorder);
 
         listener.dispose();
 
+        assertEquals(Arrays.asList("dispose"), game.calls);
         assertTrue(recorder.isDisposed());
+    }
+
+    @Test
+    void frameClearMaskIncludesColorAndDepth() {
+        assertEquals(
+                GL20.GL_COLOR_BUFFER_BIT | GL20.GL_DEPTH_BUFFER_BIT,
+                IosGameListener.FRAME_CLEAR_MASK);
     }
 
     private static final class RecordingGame implements WorldsmithsGame {
@@ -96,6 +105,11 @@ class IosGameListenerTest {
         @Override
         public void render() {
             calls.add("render");
+        }
+
+        @Override
+        public void dispose() {
+            calls.add("dispose");
         }
     }
 }

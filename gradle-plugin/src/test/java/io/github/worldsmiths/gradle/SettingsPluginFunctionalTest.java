@@ -989,6 +989,7 @@ class SettingsPluginFunctionalTest {
                         + "    @Override public void create() {}\n"
                         + "    @Override public void update(float delta) {}\n"
                         + "    @Override public void render() {}\n"
+                        + "    @Override public void dispose() {}\n"
                         + "    @Override public String toString() {\n"
                         + "        return StringUtils.capitalize(\"" + message + "\");\n"
                         + "    }\n"

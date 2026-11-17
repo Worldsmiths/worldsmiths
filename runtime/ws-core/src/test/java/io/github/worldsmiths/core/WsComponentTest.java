@@ -28,10 +28,11 @@ class WsComponentTest {
     }
 
     @Test
-    void transform2DAndSpriteAreAnnotatedWsComponent() throws IOException {
+    void transform2DTransform3DAndSpriteAreAnnotatedWsComponent() throws IOException {
         Path core = repoRoot().resolve("runtime").resolve("ws-core").resolve("src").resolve("main").resolve("java")
                 .resolve("io").resolve("github").resolve("worldsmiths").resolve("core");
         assertTrue(annotatedWithWsComponent(core.resolve("Transform2D.java")));
+        assertTrue(annotatedWithWsComponent(core.resolve("Transform3D.java")));
         assertTrue(annotatedWithWsComponent(core.resolve("Sprite.java")));
     }
 
