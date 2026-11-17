@@ -11,9 +11,9 @@ apply it.
 
 Group id and package: `io.github.worldsmiths`, from `gradle/libs.versions.toml`.
 
-External consumers resolve engine modules with `includeBuild` +
-`dependencySubstitution` (not Maven Central). See
-[`docs/includebuild-substitutions.md`](docs/includebuild-substitutions.md).
+External consumers resolve engine modules with bare `includeBuild` of this
+checkout (not Maven Central; Gradle auto-substitutes matching project names).
+See [`docs/includebuild-substitutions.md`](docs/includebuild-substitutions.md).
 Android opt-in also needs `pluginManagement { repositories { google() } }` (AGP on
 the engine plugin classpath) plus DRM `google()` for Android artifacts.
 

@@ -1,8 +1,6 @@
-# includeBuild dependency substitutions
+# includeBuild (bare composite)
 
-Until the engine is published to Maven Central (ADR-0003), external games and samples resolve Worldsmiths artifacts with a composite build: `includeBuild` of the engine checkout plus `dependencySubstitution` for each module the plugins and game sources request by Maven coordinate.
-
-Backend Gradle project paths (`:backends-desktop`, `:backends-web`, `:backends-android`, `:backends-ios`) now match the Maven artifact names. `:runtime:ws-core` still does **not** match `ws-core`. Keep the substitutions below until Da drops the happy-path substitute blocks (bare includeBuild / auto-sub). Do **not** treat `archivesName` as the fix.
+Until the engine is published to Maven Central (ADR-0003), external games and samples resolve Worldsmiths artifacts with a composite build: bare `includeBuild` of the engine checkout. Backend Gradle project names (`backends-desktop`, `backends-web`, `backends-android`, `backends-ios`) and `ws-core` match the Maven artifact names, so Gradle auto-substitutes module coordinates to included projects. Happy-path consumers do **not** write `dependencySubstitution`. Do **not** treat `archivesName` as a substitute for that rename.
 
 ## Snippet
 
@@ -24,23 +22,11 @@ pluginManagement {
 DRM `google()` alone is not enough. Missing `google()` when Android is opted in fails configuration with a clear message.
 
 ```kotlin
-includeBuild(engineRoot) {
-    dependencySubstitution {
-        substitute(module("io.github.worldsmiths:backends-desktop"))
-            .using(project(":backends-desktop"))
-        substitute(module("io.github.worldsmiths:backends-web"))
-            .using(project(":backends-web"))
-        substitute(module("io.github.worldsmiths:backends-android"))
-            .using(project(":backends-android"))
-        substitute(module("io.github.worldsmiths:backends-ios"))
-            .using(project(":backends-ios"))
-        substitute(module("io.github.worldsmiths:ws-core"))
-            .using(project(":runtime:ws-core"))
-    }
-}
+includeBuild(engineRoot)
+// no dependencySubstitution { }
 ```
 
-| Maven module id | Engine project |
+| Maven module id | Engine project (auto-sub) |
 | --- | --- |
 | `io.github.worldsmiths:backends-desktop` | `:backends-desktop` |
 | `io.github.worldsmiths:backends-web` | `:backends-web` |
@@ -48,6 +34,4 @@ includeBuild(engineRoot) {
 | `io.github.worldsmiths:backends-ios` | `:backends-ios` |
 | `io.github.worldsmiths:ws-core` | `:runtime:ws-core` |
 
-A desktop-only game may omit the `backends-web` / `backends-android` / `backends-ios` lines until it adds those targets. Games that depend on `ws-core` from the game module (and any target that pulls a backend) need the matching substitutes.
-
-Plugin-declared notations and TestKit fixtures share `EngineModuleCoordinates` / `IncludeBuildSubstitutions` in `gradle-plugin`; a contract test fails if sample or documented substitutes drift from those ids.
+Plugin-declared notations live in `EngineModuleCoordinates` in `gradle-plugin`; a contract test locks those Maven id strings and asserts happy-path samples/docs use bare `includeBuild`.
