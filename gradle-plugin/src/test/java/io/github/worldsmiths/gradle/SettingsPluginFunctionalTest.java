@@ -313,6 +313,7 @@ class SettingsPluginFunctionalTest {
         Assumptions.assumeTrue(
                 androidHome != null && !androidHome.isBlank() && Files.isDirectory(Path.of(androidHome)),
                 "ANDROID_HOME unset; skipping assembleDebug ship-marker assert");
+        ensureAndroidDebugKeystore();
 
         write("gradle.properties", "android.useAndroidX=true\nandroid.builtInKotlin=false\n");
         write("local.properties", "sdk.dir=" + androidHome.replace('\\', '/') + "\n");
@@ -722,6 +723,7 @@ class SettingsPluginFunctionalTest {
         Assumptions.assumeTrue(
                 androidHome != null && !androidHome.isBlank() && Files.isDirectory(Path.of(androidHome)),
                 "ANDROID_HOME unset; skipping assembleDebug");
+        ensureAndroidDebugKeystore();
 
         write("gradle.properties", "android.useAndroidX=true\nandroid.builtInKotlin=false\n");
         write("local.properties", "sdk.dir=" + androidHome.replace('\\', '/') + "\n");
@@ -868,6 +870,50 @@ class SettingsPluginFunctionalTest {
         assertTrue(start >= 0 && end > start, "missing <directory> in\n" + robovmXml);
         // Generator normalizes to '/'; Path.of accepts that on Windows too.
         return Path.of(robovmXml.substring(start + open.length(), end));
+    }
+
+    /**
+     * AGP {@code validateSigningDebug} creates the default debug keystore under
+     * {@code ~/.android} or {@code ~/.config/.android}; both paths can fail on clean CI
+     * runners. Pre-create the standard debug keystore when missing so assemble tests are
+     * not environmentally flake-prone.
+     */
+    private static void ensureAndroidDebugKeystore() throws IOException {
+        Path home = Path.of(System.getProperty("user.home"));
+        for (String relative : new String[] {".android", ".config/.android"}) {
+            Path dir = home.resolve(relative);
+            Files.createDirectories(dir);
+            Path keystore = dir.resolve("debug.keystore");
+            if (Files.isRegularFile(keystore)) {
+                continue;
+            }
+            Process process = new ProcessBuilder(
+                            "keytool",
+                            "-genkeypair",
+                            "-keystore", keystore.toString(),
+                            "-storepass", "android",
+                            "-keypass", "android",
+                            "-alias", "androiddebugkey",
+                            "-keyalg", "RSA",
+                            "-keysize", "2048",
+                            "-validity", "10000",
+                            "-dname", "CN=Android Debug,O=Android,C=US")
+                    .redirectErrorStream(true)
+                    .start();
+            try {
+                if (!process.waitFor(60, TimeUnit.SECONDS)) {
+                    process.destroyForcibly();
+                    throw new IOException("keytool timed out creating " + keystore);
+                }
+                if (process.exitValue() != 0) {
+                    String output = new String(process.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
+                    throw new IOException("keytool failed creating " + keystore + ":\n" + output);
+                }
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new IOException("interrupted creating " + keystore, e);
+            }
+        }
     }
 
     private static boolean isMacOsWithXcode() {

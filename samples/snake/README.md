@@ -149,7 +149,7 @@ Configure still succeeds and generates `:ios` on non-macOS hosts, but `robovmIns
 
 ### Founder manual play gate (human)
 
-CI proves `robovmInstall` + marker membership (+ zip upload once the `snake-ios` job lands).
+CI job `snake-ios` proves `robovmInstall` + marker membership + zip upload.
 **CI ≠ play.** Simulator playability is a **manual founder gate**:
 
 1. On a Mac with Xcode, boot an iPhone simulator (or let RoboVM pick the default).

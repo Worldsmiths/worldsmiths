@@ -24,6 +24,24 @@ jobs:
           distribution: temurin
           java-version: "21"
       - uses: gradle/actions/setup-gradle@v6
+      # AGP validateSigningDebug can fail creating ~/.android or ~/.config/.android on GHA
+      # (Ubuntu 24.04 / runner-image flakes). Pre-create both canonical debug keystores.
+      - name: Ensure Android debug keystore
+        shell: bash
+        run: |
+          set -euo pipefail
+          for dir in "$HOME/.android" "$HOME/.config/.android"; do
+            mkdir -p "$dir"
+            ks="$dir/debug.keystore"
+            if [ ! -f "$ks" ]; then
+              keytool -genkeypair \
+                -keystore "$ks" \
+                -storepass android -keypass android \
+                -alias androiddebugkey \
+                -keyalg RSA -keysize 2048 -validity 10000 \
+                -dname "CN=Android Debug,O=Android,C=US"
+            fi
+          done
       - run: ./gradlew build --no-daemon
       - name: Compile and test samples/snake
         run: ./gradlew -p samples/snake :desktop:compileJava :game:test --no-daemon
@@ -89,8 +107,9 @@ jobs:
             samples/snake/.worldsmiths/gen/desktop/build/distributions/*.zip
             samples/snake/.worldsmiths/gen/web/build/distributions/web-itch.zip
 
-  # Phase-0 RoboVM-in-generated kill gate (pre-Snake). Hard-fail if packaging fails under
-  # configuration-cache must-not-fail hygiene. Fixture only — Snake targets.ios is T5.
+  # Phase-0 RoboVM-in-generated kill gate. Hard-fail if packaging fails under
+  # configuration-cache must-not-fail hygiene. Fixture remains as a dedicated
+  # kill-gate job; Snake ship is snake-ios below.
   ios-phase0:
     runs-on: macos-latest
     steps:
@@ -137,6 +156,23 @@ jobs:
         uses: android-actions/setup-android@v4
         with:
           packages: 'platform-tools platforms;android-36 build-tools;36.0.0'
+      # See build job: pre-create debug keystores so validateSigningDebug is not flake-prone.
+      - name: Ensure Android debug keystore
+        shell: bash
+        run: |
+          set -euo pipefail
+          for dir in "$HOME/.android" "$HOME/.config/.android"; do
+            mkdir -p "$dir"
+            ks="$dir/debug.keystore"
+            if [ ! -f "$ks" ]; then
+              keytool -genkeypair \
+                -keystore "$ks" \
+                -storepass android -keypass android \
+                -alias androiddebugkey \
+                -keyalg RSA -keysize 2048 -validity 10000 \
+                -dname "CN=Android Debug,O=Android,C=US"
+            fi
+          done
       - name: Build Snake debug APK
         run: ./gradlew -p samples/snake :android:assembleDebug --no-daemon
       - name: Assert ship marker in debug APK
@@ -152,4 +188,37 @@ jobs:
         with:
           name: snake-android-apk
           path: samples/snake/.worldsmiths/gen/android/build/outputs/apk/debug/*.apk
+
+  # Ship iOS: macOS robovmInstall + marker assert + zip upload (Dp peer of APK / distZip).
+  # Simulator play is a founder manual gate — not automated here (CI ≠ play).
+  snake-ios:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: "21"
+      - uses: gradle/actions/setup-gradle@v6
+      - name: Package Snake generated :ios (robovmInstall + zip)
+        run: >
+          ./gradlew -p samples/snake :ios:robovmInstall :ios:wsRobovmInstallZip
+          --configuration-cache --no-daemon
+          -Probovm.iosSkipSigning=true
+      - name: Assert ship marker in install tree and zip
+        run: |
+          set -euo pipefail
+          marker="ws-ship-marker.txt"
+          install_dir="samples/snake/.worldsmiths/gen/ios/build/robovm"
+          zip="samples/snake/.worldsmiths/gen/ios/build/distributions/ios-robovm-install.zip"
+          test -d "$install_dir"
+          # -print -quit avoids find|head SIGPIPE under pipefail.
+          found="$(find "$install_dir" -name "$marker" -print -quit)"
+          test -n "$found"
+          test -f "$zip"
+          unzip -l "$zip" | grep -F "$marker"
+      - uses: actions/upload-artifact@v7
+        with:
+          name: snake-ios-robovm-install
+          path: samples/snake/.worldsmiths/gen/ios/build/distributions/ios-robovm-install.zip
 
