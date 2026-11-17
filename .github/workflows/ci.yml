@@ -224,3 +224,117 @@ jobs:
           name: snake-ios-robovm-install
           path: samples/snake/.worldsmiths/gen/ios/build/distributions/ios-robovm-install.zip
 
+  # Ship archives: desktop distZip + itch-style web zip; fail closed if the assets marker is missing.
+  # Peer of snake-ship for samples/rollball (no Playwright/GPU).
+  rollball-ship:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: "21"
+      - uses: gradle/actions/setup-gradle@v6
+      - name: Build Rollball ship archives
+        run: ./gradlew -p samples/rollball :desktop:distZip :web:wsItchWebZip --no-daemon
+      - name: Assert ship marker in both archives
+        run: |
+          set -euo pipefail
+          marker="ws-ship-marker.txt"
+          # -print -quit avoids find|head SIGPIPE under pipefail.
+          desk_zip="$(find samples/rollball/.worldsmiths/gen/desktop/build/distributions -name '*.zip' -print -quit)"
+          web_zip="samples/rollball/.worldsmiths/gen/web/build/distributions/web-itch.zip"
+          test -n "$desk_zip"
+          test -f "$web_zip"
+          unzip -l "$desk_zip" | grep -F "$marker"
+          unzip -l "$web_zip" | grep -F "$marker"
+          # unzip -l prints size/date columns before the name; allow leading whitespace.
+          unzip -l "$web_zip" | grep -E '(^|[[:space:]]|/)index\.html$'
+      - uses: actions/upload-artifact@v7
+        with:
+          name: rollball-ship-archives
+          path: |
+            samples/rollball/.worldsmiths/gen/desktop/build/distributions/*.zip
+            samples/rollball/.worldsmiths/gen/web/build/distributions/web-itch.zip
+
+  # Ship APK: Ubuntu assembleDebug + marker assert + upload (Dp peer of distZip / itch zip).
+  # Device/emulator play is a founder manual gate — not automated here.
+  rollball-android:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: "21"
+      - uses: gradle/actions/setup-gradle@v6
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v4
+        with:
+          packages: 'platform-tools platforms;android-36 build-tools;36.0.0'
+      # See build job: pre-create debug keystores so validateSigningDebug is not flake-prone.
+      - name: Ensure Android debug keystore
+        shell: bash
+        run: |
+          set -euo pipefail
+          for dir in "$HOME/.android" "$HOME/.config/.android"; do
+            mkdir -p "$dir"
+            ks="$dir/debug.keystore"
+            if [ ! -f "$ks" ]; then
+              keytool -genkeypair \
+                -keystore "$ks" \
+                -storepass android -keypass android \
+                -alias androiddebugkey \
+                -keyalg RSA -keysize 2048 -validity 10000 \
+                -dname "CN=Android Debug,O=Android,C=US"
+            fi
+          done
+      - name: Build Rollball debug APK
+        run: ./gradlew -p samples/rollball :android:assembleDebug --no-daemon
+      - name: Assert ship marker in debug APK
+        run: |
+          set -euo pipefail
+          marker="ws-ship-marker.txt"
+          # -print -quit avoids find|head SIGPIPE under pipefail.
+          apk="$(find samples/rollball/.worldsmiths/gen/android/build/outputs/apk/debug -name '*.apk' -print -quit)"
+          test -n "$apk"
+          test -f "$apk"
+          unzip -l "$apk" | grep -F "$marker"
+      - uses: actions/upload-artifact@v7
+        with:
+          name: rollball-android-apk
+          path: samples/rollball/.worldsmiths/gen/android/build/outputs/apk/debug/*.apk
+
+  # Ship iOS: macOS robovmInstall + marker assert + zip upload (Dp peer of APK / distZip).
+  # Simulator play is a founder manual gate — not automated here (CI ≠ play).
+  rollball-ios:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: "21"
+      - uses: gradle/actions/setup-gradle@v6
+      - name: Package Rollball generated :ios (robovmInstall + zip)
+        run: >
+          ./gradlew -p samples/rollball :ios:robovmInstall :ios:wsRobovmInstallZip
+          --configuration-cache --no-daemon
+          -Probovm.iosSkipSigning=true
+      - name: Assert ship marker in install tree and zip
+        run: |
+          set -euo pipefail
+          marker="ws-ship-marker.txt"
+          install_dir="samples/rollball/.worldsmiths/gen/ios/build/robovm"
+          zip="samples/rollball/.worldsmiths/gen/ios/build/distributions/ios-robovm-install.zip"
+          test -d "$install_dir"
+          # -print -quit avoids find|head SIGPIPE under pipefail.
+          found="$(find "$install_dir" -name "$marker" -print -quit)"
+          test -n "$found"
+          test -f "$zip"
+          unzip -l "$zip" | grep -F "$marker"
+      - uses: actions/upload-artifact@v7
+        with:
+          name: rollball-ios-robovm-install
+          path: samples/rollball/.worldsmiths/gen/ios/build/distributions/ios-robovm-install.zip
+
