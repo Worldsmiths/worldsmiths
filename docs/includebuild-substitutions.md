@@ -50,6 +50,4 @@ includeBuild(engineRoot) {
 
 A desktop-only game may omit the `backends-web` / `backends-android` / `backends-ios` lines until it adds those targets. Games that depend on `ws-core` from the game module (and any target that pulls a backend) need the matching substitutes.
 
-The `backends-ios` substitute requires the engine `:backends:ios` project (D7 T2). Until that module is included, TestKit fixtures omit the ios line so composite settings still configure.
-
 Plugin-declared notations and TestKit fixtures share `EngineModuleCoordinates` / `IncludeBuildSubstitutions` in `gradle-plugin`; a contract test fails if sample or documented substitutes drift from those ids.
