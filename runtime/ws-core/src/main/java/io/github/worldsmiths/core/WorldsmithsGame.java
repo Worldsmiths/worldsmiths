@@ -5,20 +5,26 @@ package io.github.worldsmiths.core;
  * backends drive the lifecycle without exposing platform types to game code.
  *
  * <p>Games build a root {@link Scene} via {@link #createScene()}; the backend retains that scene
- * and later draws from it. Games still receive {@link #create()} / {@link #update(float)} /
+ * and later draws from it. Games then receive {@link #create(EngineServices)} / {@link #update(float)} /
  * {@link #render()} for setup and per-frame logic.
  */
 public interface WorldsmithsGame {
 
     /**
-     * Builds the root scene tree for this game. Called once by the backend before {@link #create()}.
+     * Builds the root scene tree for this game. Called once by the backend before
+     * {@link #create(EngineServices)}.
      *
      * @return the scene the engine should retain (never {@code null})
      */
     Scene createScene();
 
-    /** Called once when the application is ready, after {@link #createScene()}. */
-    void create();
+    /**
+     * Called once when the application is ready, after {@link #createScene()}.
+     *
+     * @param services non-null engine services bag (backends assemble real impls; tests pass
+     *     {@link FakeEngineServices})
+     */
+    void create(EngineServices services);
 
     /**
      * Called each frame before {@link #render()}.

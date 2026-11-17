@@ -9,6 +9,7 @@ import io.github.worldsmiths.core.Scene;
 import io.github.worldsmiths.core.SceneWalk;
 import io.github.worldsmiths.core.Sprite;
 import io.github.worldsmiths.core.Transform2D;
+import io.github.worldsmiths.core.EngineServices;
 import io.github.worldsmiths.core.WorldsmithsGame;
 import java.util.ArrayList;
 import java.util.List;
@@ -69,7 +70,8 @@ public final class SnakeGame implements WorldsmithsGame {
     }
 
     @Override
-    public void create() {
+    public void create(EngineServices services) {
+        // T1 signature stub — Snake still uses Gdx directly until P2 Draw2D migrate.
         shapes = new ShapeRenderer();
         publishTitle(controller.score());
     }

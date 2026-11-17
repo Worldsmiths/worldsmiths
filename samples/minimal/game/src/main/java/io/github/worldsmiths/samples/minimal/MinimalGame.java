@@ -1,5 +1,6 @@
 package io.github.worldsmiths.samples.minimal;
 
+import io.github.worldsmiths.core.EngineServices;
 import io.github.worldsmiths.core.Scene;
 import io.github.worldsmiths.core.WorldsmithsGame;
 
@@ -15,7 +16,7 @@ public final class MinimalGame implements WorldsmithsGame {
     }
 
     @Override
-    public void create() {}
+    public void create(EngineServices services) {}
 
     @Override
     public void update(float delta) {}

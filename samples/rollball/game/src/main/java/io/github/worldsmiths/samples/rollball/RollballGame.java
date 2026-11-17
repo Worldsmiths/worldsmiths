@@ -16,6 +16,7 @@ import com.badlogic.gdx.graphics.g3d.utils.ModelBuilder;
 import io.github.worldsmiths.core.Node;
 import io.github.worldsmiths.core.Scene;
 import io.github.worldsmiths.core.Transform3D;
+import io.github.worldsmiths.core.EngineServices;
 import io.github.worldsmiths.core.WorldsmithsGame;
 
 /**
@@ -85,7 +86,8 @@ public final class RollballGame implements WorldsmithsGame {
     }
 
     @Override
-    public void create() {
+    public void create(EngineServices services) {
+        // T1 signature stub — rollball still uses Gdx directly until D9b.
         ModelBuilder builder = new ModelBuilder();
         float ballDiam = RollballController.BALL_RADIUS * 2f;
         ballModel =

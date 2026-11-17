@@ -5,6 +5,7 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.GL20;
 import io.github.worldsmiths.core.Scene;
 import io.github.worldsmiths.core.WorldsmithsGame;
+import io.github.worldsmiths.core.gdx.GdxEngineServices;
 
 /**
  * LibGDX {@link ApplicationListener} that drives a {@link WorldsmithsGame}, clears the framebuffer
@@ -41,7 +42,8 @@ public final class IosGameListener implements ApplicationListener {
     @Override
     public void create() {
         scene = game.createScene();
-        game.create();
+        // T1 compile stub: real bag assembly ownership stays T2; GDX is live here.
+        game.create(GdxEngineServices.create());
     }
 
     /**

@@ -986,7 +986,7 @@ class SettingsPluginFunctionalTest {
                         + "import org.apache.commons.lang3.StringUtils;\n"
                         + "public class Game implements WorldsmithsGame {\n"
                         + "    @Override public Scene createScene() { return new Scene(); }\n"
-                        + "    @Override public void create() {}\n"
+                        + "    @Override public void create(io.github.worldsmiths.core.EngineServices services) {}\n"
                         + "    @Override public void update(float delta) {}\n"
                         + "    @Override public void render() {}\n"
                         + "    @Override public void dispose() {}\n"

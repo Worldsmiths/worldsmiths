@@ -94,7 +94,7 @@ class IosGameListenerTest {
         }
 
         @Override
-        public void create() {
+        public void create(io.github.worldsmiths.core.EngineServices services) {
             calls.add("create");
         }
 

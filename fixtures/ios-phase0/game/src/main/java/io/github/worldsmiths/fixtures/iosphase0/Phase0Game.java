@@ -1,5 +1,6 @@
 package io.github.worldsmiths.fixtures.iosphase0;
 
+import io.github.worldsmiths.core.EngineServices;
 import io.github.worldsmiths.core.Scene;
 import io.github.worldsmiths.core.WorldsmithsGame;
 
@@ -12,7 +13,7 @@ public final class Phase0Game implements WorldsmithsGame {
     }
 
     @Override
-    public void create() {}
+    public void create(EngineServices services) {}
 
     @Override
     public void update(float delta) {}
