@@ -24,13 +24,13 @@ dependencyResolutionManagement {
 includeBuild("../..") {
     dependencySubstitution {
         substitute(module("io.github.worldsmiths:backends-desktop"))
-            .using(project(":backends:desktop"))
+            .using(project(":backends-desktop"))
         substitute(module("io.github.worldsmiths:backends-web"))
-            .using(project(":backends:web"))
+            .using(project(":backends-web"))
         substitute(module("io.github.worldsmiths:backends-android"))
-            .using(project(":backends:android"))
+            .using(project(":backends-android"))
         substitute(module("io.github.worldsmiths:backends-ios"))
-            .using(project(":backends:ios"))
+            .using(project(":backends-ios"))
         substitute(module("io.github.worldsmiths:ws-core"))
             .using(project(":runtime:ws-core"))
     }

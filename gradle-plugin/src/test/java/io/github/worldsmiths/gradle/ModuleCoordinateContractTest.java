@@ -46,7 +46,7 @@ class ModuleCoordinateContractTest {
         String snake = readEngine("samples/snake/settings.gradle.kts");
         assertTrue(snake.contains("google()"), snake);
         assertTrue(snake.contains("android {"), snake);
-        assertTrue(snake.contains(":backends:android"), snake);
+        assertTrue(snake.contains(":backends-android"), snake);
     }
 
     @Test
@@ -54,14 +54,14 @@ class ModuleCoordinateContractTest {
         String rollball = readEngine("samples/rollball/settings.gradle.kts");
         assertTrue(rollball.contains("google()"), rollball);
         assertTrue(rollball.contains("android {"), rollball);
-        assertTrue(rollball.contains(":backends:android"), rollball);
+        assertTrue(rollball.contains(":backends-android"), rollball);
     }
 
     @Test
     void snakeOptsInIosTargetWithBackendsIosSubstitute() throws IOException {
         String snake = readEngine("samples/snake/settings.gradle.kts");
         assertTrue(snake.contains("ios {"), snake);
-        assertTrue(snake.contains(":backends:ios"), snake);
+        assertTrue(snake.contains(":backends-ios"), snake);
         assertContainsSubstitute(snake, moduleId(EngineModuleCoordinates.BACKENDS_IOS));
     }
 
@@ -69,7 +69,7 @@ class ModuleCoordinateContractTest {
     void rollballOptsInIosTargetWithBackendsIosSubstitute() throws IOException {
         String rollball = readEngine("samples/rollball/settings.gradle.kts");
         assertTrue(rollball.contains("ios {"), rollball);
-        assertTrue(rollball.contains(":backends:ios"), rollball);
+        assertTrue(rollball.contains(":backends-ios"), rollball);
         assertContainsSubstitute(rollball, moduleId(EngineModuleCoordinates.BACKENDS_IOS));
     }
 
@@ -81,8 +81,8 @@ class ModuleCoordinateContractTest {
         assertContainsSubstitute(block, moduleId(EngineModuleCoordinates.BACKENDS_ANDROID));
         assertContainsSubstitute(block, moduleId(EngineModuleCoordinates.BACKENDS_IOS));
         assertContainsSubstitute(block, moduleId(EngineModuleCoordinates.WS_CORE));
-        assertTrue(block.contains(":backends:android"), block);
-        assertTrue(block.contains(":backends:ios"), block);
+        assertTrue(block.contains(":backends-android"), block);
+        assertTrue(block.contains(":backends-ios"), block);
     }
 
     @Test
@@ -92,7 +92,7 @@ class ModuleCoordinateContractTest {
                 moduleId(EngineModuleCoordinates.BACKENDS_ANDROID));
         assertTrue(
                 IncludeBuildSubstitutions.backendsAndroidSubstituteKotlin()
-                        .contains(":backends:android"));
+                        .contains(":backends-android"));
         assertTrue(
                 IncludeBuildSubstitutions.dependencySubstitutionKotlin()
                         .contains(IncludeBuildSubstitutions.backendsAndroidSubstituteKotlin()));
@@ -105,11 +105,11 @@ class ModuleCoordinateContractTest {
                 moduleId(EngineModuleCoordinates.BACKENDS_IOS));
         assertTrue(
                 IncludeBuildSubstitutions.backendsIosSubstituteKotlin()
-                        .contains(":backends:ios"));
+                        .contains(":backends-ios"));
         assertTrue(
                 IncludeBuildSubstitutions.dependencySubstitutionKotlin()
                         .contains(IncludeBuildSubstitutions.backendsIosSubstituteKotlin()),
-                "live TestKit substitute must include ios now that :backends:ios exists");
+                "live TestKit substitute must include ios now that :backends-ios exists");
     }
 
     @Test
@@ -120,10 +120,10 @@ class ModuleCoordinateContractTest {
         assertContainsSubstitute(doc, moduleId(EngineModuleCoordinates.BACKENDS_ANDROID));
         assertContainsSubstitute(doc, moduleId(EngineModuleCoordinates.BACKENDS_IOS));
         assertContainsSubstitute(doc, moduleId(EngineModuleCoordinates.WS_CORE));
-        assertTrue(doc.contains(":backends:desktop"), doc);
-        assertTrue(doc.contains(":backends:web"), doc);
-        assertTrue(doc.contains(":backends:android"), doc);
-        assertTrue(doc.contains(":backends:ios"), doc);
+        assertTrue(doc.contains(":backends-desktop"), doc);
+        assertTrue(doc.contains(":backends-web"), doc);
+        assertTrue(doc.contains(":backends-android"), doc);
+        assertTrue(doc.contains(":backends-ios"), doc);
         assertTrue(doc.contains(":runtime:ws-core"), doc);
     }
 

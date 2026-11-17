@@ -3,10 +3,10 @@ tasks.register("build") {
     dependsOn(gradle.includedBuild("gradle-plugin").task(":check"))
     dependsOn(
         ":runtime:ws-core:build",
-        ":backends:desktop:build",
-        ":backends:web:build",
-        ":backends:android:build",
-        ":backends:ios:build",
+        ":backends-desktop:build",
+        ":backends-web:build",
+        ":backends-android:build",
+        ":backends-ios:build",
         ":bom:build",
         ":processor:build",
     )

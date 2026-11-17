@@ -17,7 +17,7 @@ dependencyResolutionManagement {
 includeBuild("../..") {
     dependencySubstitution {
         substitute(module("io.github.worldsmiths:backends-desktop"))
-            .using(project(":backends:desktop"))
+            .using(project(":backends-desktop"))
         substitute(module("io.github.worldsmiths:ws-core"))
             .using(project(":runtime:ws-core"))
     }
