@@ -12,7 +12,9 @@ import org.junit.jupiter.api.Test;
 
 /**
  * After Da-coords: happy-path consumers use bare {@code includeBuild} (no
- * {@code dependencySubstitution}). Plugin Maven module ids stay locked.
+ * {@code dependencySubstitution}). Plugin Maven module ids stay locked, and
+ * root settings keep flat {@code :backends-*} paths with {@code projectDir}
+ * under {@code backends/<platform>}.
  */
 class ModuleCoordinateContractTest {
 
@@ -21,6 +23,9 @@ class ModuleCoordinateContractTest {
         assertEquals(
                 EngineModuleCoordinates.BACKENDS_DESKTOP_NOTATION, DesktopPlugin.BACKENDS_DESKTOP);
         assertEquals(EngineModuleCoordinates.BACKENDS_WEB_NOTATION, WebPlugin.BACKENDS_WEB);
+        assertEquals(
+                EngineModuleCoordinates.BACKENDS_ANDROID_NOTATION, AndroidPlugin.BACKENDS_ANDROID);
+        assertEquals(EngineModuleCoordinates.BACKENDS_IOS_NOTATION, IosPlugin.BACKENDS_IOS);
         assertEquals(EngineModuleCoordinates.GROUP + ":backends-desktop",
                 EngineModuleCoordinates.BACKENDS_DESKTOP);
         assertEquals(EngineModuleCoordinates.GROUP + ":backends-web",
@@ -30,6 +35,22 @@ class ModuleCoordinateContractTest {
         assertEquals(EngineModuleCoordinates.GROUP + ":backends-ios",
                 EngineModuleCoordinates.BACKENDS_IOS);
         assertEquals(EngineModuleCoordinates.GROUP + ":ws-core", EngineModuleCoordinates.WS_CORE);
+    }
+
+    @Test
+    void rootSettingsUseFlatBackendProjectPaths() throws IOException {
+        String settings = readEngine("settings.gradle.kts");
+        assertFlatBackendInclude(settings, "desktop");
+        assertFlatBackendInclude(settings, "web");
+        assertFlatBackendInclude(settings, "android");
+        assertFlatBackendInclude(settings, "ios");
+        assertFalse(
+                settings.contains("include(\"backends:"),
+                "expected flat backends-* includes, not nested backends:<platform>:\n" + settings);
+        assertFalse(
+                settings.contains("project(\":backends:"),
+                "expected flat :backends-* project paths, not nested :backends:<platform>:\n"
+                        + settings);
     }
 
     @Test
@@ -75,6 +96,18 @@ class ModuleCoordinateContractTest {
                 "happy-path docs must not require substitute(module(...)):\n" + doc);
         assertTrue(doc.contains("backends-desktop"), doc);
         assertTrue(doc.contains("ws-core"), doc);
+    }
+
+    private static void assertFlatBackendInclude(String settings, String platform) {
+        String include = "include(\"backends-" + platform + "\")";
+        String projectDir =
+                "project(\":backends-"
+                        + platform
+                        + "\").projectDir = file(\"backends/"
+                        + platform
+                        + "\")";
+        assertTrue(settings.contains(include), "missing " + include + ":\n" + settings);
+        assertTrue(settings.contains(projectDir), "missing " + projectDir + ":\n" + settings);
     }
 
     private static void assertBareIncludeBuild(String settings) {
