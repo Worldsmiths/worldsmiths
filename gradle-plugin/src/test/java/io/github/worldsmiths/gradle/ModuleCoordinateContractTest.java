@@ -29,6 +29,13 @@ class ModuleCoordinateContractTest {
         assertContainsSubstitute(snake, ios);
         assertContainsSubstitute(snake, wsCore);
 
+        String rollball = readEngine("samples/rollball/settings.gradle.kts");
+        assertContainsSubstitute(rollball, desktop);
+        assertContainsSubstitute(rollball, web);
+        assertContainsSubstitute(rollball, android);
+        assertContainsSubstitute(rollball, ios);
+        assertContainsSubstitute(rollball, wsCore);
+
         String minimal = readEngine("samples/minimal/settings.gradle.kts");
         assertContainsSubstitute(minimal, desktop);
         assertContainsSubstitute(minimal, wsCore);
@@ -43,11 +50,27 @@ class ModuleCoordinateContractTest {
     }
 
     @Test
+    void rollballOptsInAndroidTargetWithGoogleMaven() throws IOException {
+        String rollball = readEngine("samples/rollball/settings.gradle.kts");
+        assertTrue(rollball.contains("google()"), rollball);
+        assertTrue(rollball.contains("android {"), rollball);
+        assertTrue(rollball.contains(":backends:android"), rollball);
+    }
+
+    @Test
     void snakeOptsInIosTargetWithBackendsIosSubstitute() throws IOException {
         String snake = readEngine("samples/snake/settings.gradle.kts");
         assertTrue(snake.contains("ios {"), snake);
         assertTrue(snake.contains(":backends:ios"), snake);
         assertContainsSubstitute(snake, moduleId(EngineModuleCoordinates.BACKENDS_IOS));
+    }
+
+    @Test
+    void rollballOptsInIosTargetWithBackendsIosSubstitute() throws IOException {
+        String rollball = readEngine("samples/rollball/settings.gradle.kts");
+        assertTrue(rollball.contains("ios {"), rollball);
+        assertTrue(rollball.contains(":backends:ios"), rollball);
+        assertContainsSubstitute(rollball, moduleId(EngineModuleCoordinates.BACKENDS_IOS));
     }
 
     @Test
