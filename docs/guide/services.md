@@ -2,21 +2,40 @@
 
 Games receive a non-null `EngineServices` bag from the backend via `WorldsmithsGame.create(EngineServices)` after `createScene()`.
 
-Launchers stay `new Game()` — backends assemble the bag (real GDX-backed impls). Headless tests pass `FakeEngineServices`.
+Launchers stay `new Game()` — backends assemble the bag (GDX-backed impls). Headless tests pass `FakeEngineServices`.
 
-## Floor (D9a)
+Package: `io.github.worldsmiths.core`.
 
-| Getter | Role | Slice |
+## Getters (shipped)
+
+| Getter | Type | Role |
 | --- | --- | --- |
-| `input()` | Poll keys / pointers | S1 |
-| `clock()` | Delta + optional total time | S1 |
-| `graphics()` | Size + best-effort `setTitle` | S1 |
-| `draw2d()` | Imperative begin/line/rect/end | S2 |
-| `files()` | Sync internal packaged read | S3 |
+| `input()` | [`Input`](input.md) | Poll keys (`Key` enum) + primary pointer |
+| `clock()` | [`Clock`](clock.md) | Frame `delta()` + `total()` |
+| `graphics()` | [`Graphics`](graphics.md) | Size + best-effort `setTitle` |
+| `extensions()` | `EngineServices.Extensions` | Empty stub; unused in D9 |
 
-Thin unused `extensions()` stub reserved for later plugins / ECS — unused in D9.
+`draw2d()` and `files()` are **not** on the bag yet — they land with their slices (see below).
+
+## Upcoming
+
+| Facade | Slice | Guide |
+| --- | --- | --- |
+| Draw2D | D9a-S2 | `draw2d.md` (upcoming) |
+| Files | D9a-S3 | `files.md` (upcoming) |
+| Thin 3D | D9b | later |
 
 ## Honesty limits
 
-- `graphics().setTitle(...)` is best-effort; Android ignores it.
+- `graphics().setTitle(...)` is best-effort; Android may ignore it.
 - Files on web = internal packaged only (documented when Files ships).
+
+## Tests
+
+```java
+FakeEngineServices services = new FakeEngineServices();
+services.input().setKeyDown(Key.LEFT, true);
+services.clock().setDelta(1f / 60f);
+services.graphics().setSize(800, 480);
+game.create(services);
+```
