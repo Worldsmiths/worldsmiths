@@ -17,7 +17,18 @@ public final class IncludeBuildSubstitutions {
     }
 
     /**
+     * Kotlin DSL substitute line for {@code backends-ios} → {@code :backends:ios}.
+     * Not yet folded into {@link #dependencySubstitutionKotlin()} — Gradle rejects
+     * {@code project(":backends:ios")} until that module is included (D7 T2).
+     */
+    public static String backendsIosSubstituteKotlin() {
+        return "        substitute(module(\"" + EngineModuleCoordinates.BACKENDS_IOS + "\"))"
+                + ".using(project(\":backends:ios\"))\n";
+    }
+
+    /**
      * Body of {@code dependencySubstitution { ... }} for Kotlin DSL settings scripts.
+     * Desktop / web / android / ws-core only until {@code :backends:ios} exists.
      */
     public static String dependencySubstitutionKotlin() {
         return "    dependencySubstitution {\n"
