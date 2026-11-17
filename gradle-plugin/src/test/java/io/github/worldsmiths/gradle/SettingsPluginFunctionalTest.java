@@ -610,6 +610,10 @@ class SettingsPluginFunctionalTest {
                 isMacOsWithXcode(),
                 "macOS+Xcode required for :ios:robovmInstall; generation asserts still cover Windows");
 
+        // Same heap floor as fixtures/ios-phase0 + samples/snake — RoboVM AOT OOMs on
+        // GHA macOS with Gradle 9's default 512m (DaemonStoppedException mid-install).
+        write("gradle.properties", ""
+                + "org.gradle.jvmargs=-Xmx2g -XX:MaxMetaspaceSize=512m -Dfile.encoding=UTF-8\n");
         write("settings.gradle.kts", defaultSettings(""
                 + "    targets {\n"
                 + "        desktop {}\n"
