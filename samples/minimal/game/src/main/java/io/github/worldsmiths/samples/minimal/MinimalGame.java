@@ -22,4 +22,7 @@ public final class MinimalGame implements WorldsmithsGame {
 
     @Override
     public void render() {}
+
+    @Override
+    public void dispose() {}
 }

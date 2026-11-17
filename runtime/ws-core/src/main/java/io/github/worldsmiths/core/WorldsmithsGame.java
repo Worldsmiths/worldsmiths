@@ -29,4 +29,11 @@ public interface WorldsmithsGame {
 
     /** Called each frame to draw game-owned content (engine draws the retained scene separately). */
     void render();
+
+    /**
+     * Releases game-owned GPU / native resources. Platform listeners call this on shutdown before
+     * disposing their own renderers. Default intent is empty — most games no-op; samples that
+     * allocate Models / ModelBatch free them here.
+     */
+    void dispose();
 }

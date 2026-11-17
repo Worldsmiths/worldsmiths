@@ -94,9 +94,10 @@ class ComponentRegistryTest {
         ComponentRegistry builtins = ComponentRegistries.builtins();
         assertSame(GeneratedComponentRegistry.INSTANCE, builtins);
         Array<ComponentType<?>> types = builtins.types();
-        assertEquals(2, types.size);
+        assertEquals(3, types.size);
         assertEquals("Sprite", types.get(0).tag());
         assertEquals("Transform2D", types.get(1).tag());
+        assertEquals("Transform3D", types.get(2).tag());
     }
 
     @Test

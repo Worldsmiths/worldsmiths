@@ -19,4 +19,7 @@ public final class Phase0Game implements WorldsmithsGame {
 
     @Override
     public void render() {}
+
+    @Override
+    public void dispose() {}
 }
