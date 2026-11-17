@@ -5,9 +5,11 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.Json;
 import com.badlogic.gdx.utils.JsonValue;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 
 class ComponentRegistryTest {
@@ -31,16 +33,16 @@ class ComponentRegistryTest {
 
         ComponentRegistry registry = new ComponentRegistry() {
             @Override
-            public Array<ComponentType<?>> types() {
-                Array<ComponentType<?>> types = new Array<ComponentType<?>>();
+            public List<ComponentType<?>> types() {
+                List<ComponentType<?>> types = new ArrayList<ComponentType<?>>();
                 types.add(transform);
                 types.add(sprite);
                 return types;
             }
         };
 
-        Array<ComponentType<?>> types = registry.types();
-        assertEquals(2, types.size);
+        List<ComponentType<?>> types = registry.types();
+        assertEquals(2, types.size());
         assertSame(transform, types.get(0));
         assertSame(sprite, types.get(1));
         assertEquals("Transform2D", types.get(0).tag());
@@ -52,11 +54,11 @@ class ComponentRegistryTest {
     @Test
     void generatedRegistryTypesAreNotALiveMutableArray() {
         ComponentRegistry registry = GeneratedComponentRegistry.INSTANCE;
-        Array<ComponentType<?>> first = registry.types();
-        int originalSize = first.size;
+        List<ComponentType<?>> first = registry.types();
+        int originalSize = first.size();
         first.clear();
-        assertEquals(originalSize, registry.types().size);
-        assertEquals(0, first.size);
+        assertEquals(originalSize, registry.types().size());
+        assertEquals(0, first.size());
     }
 
     @Test
@@ -80,21 +82,21 @@ class ComponentRegistryTest {
         ComponentRegistry right = singleton(sprite);
 
         ComponentRegistry combined = ComponentRegistry.combine(left, right);
-        Array<ComponentType<?>> types = combined.types();
-        assertEquals(2, types.size);
+        List<ComponentType<?>> types = new ArrayList<ComponentType<?>>(combined.types());
+        assertEquals(2, types.size());
         assertSame(transform, types.get(0));
         assertSame(sprite, types.get(1));
 
         types.clear();
-        assertEquals(2, combined.types().size);
+        assertEquals(2, combined.types().size());
     }
 
     @Test
     void builtinsExposesEngineGeneratedRegistry() {
         ComponentRegistry builtins = ComponentRegistries.builtins();
         assertSame(GeneratedComponentRegistry.INSTANCE, builtins);
-        Array<ComponentType<?>> types = builtins.types();
-        assertEquals(3, types.size);
+        List<ComponentType<?>> types = builtins.types();
+        assertEquals(3, types.size());
         assertEquals("Sprite", types.get(0).tag());
         assertEquals("Transform2D", types.get(1).tag());
         assertEquals("Transform3D", types.get(2).tag());
@@ -126,10 +128,8 @@ class ComponentRegistryTest {
     private static ComponentRegistry singleton(final ComponentType<?> type) {
         return new ComponentRegistry() {
             @Override
-            public Array<ComponentType<?>> types() {
-                Array<ComponentType<?>> types = new Array<ComponentType<?>>();
-                types.add(type);
-                return types;
+            public List<ComponentType<?>> types() {
+                return Collections.<ComponentType<?>>singletonList(type);
             }
         };
     }

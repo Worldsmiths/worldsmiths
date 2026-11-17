@@ -12,6 +12,8 @@ tasks.withType<JavaCompile>().configureEach {
 
 dependencies {
     testImplementation(project(":runtime:ws-core"))
+    // ws-core demoted gdx to implementation; processor tests still exercise generated Json.Serializer code.
+    testImplementation(libs.gdx)
     testImplementation(libs.junit.jupiter)
     testRuntimeOnly(libs.junit.platform.launcher)
 }

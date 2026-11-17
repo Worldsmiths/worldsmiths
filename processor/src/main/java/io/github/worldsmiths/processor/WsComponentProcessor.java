@@ -198,8 +198,8 @@ public final class WsComponentProcessor extends AbstractProcessor {
         out.append("public final class ").append(REGISTRY_NAME)
                 .append(" implements io.github.worldsmiths.core.ComponentRegistry {\n");
         out.append("    public static final ").append(REGISTRY_NAME).append(" INSTANCE = new ").append(REGISTRY_NAME).append("();\n\n");
-        out.append("    private final com.badlogic.gdx.utils.Array<io.github.worldsmiths.core.ComponentType<?>> types =\n");
-        out.append("            new com.badlogic.gdx.utils.Array<io.github.worldsmiths.core.ComponentType<?>>();\n\n");
+        out.append("    private final java.util.List<io.github.worldsmiths.core.ComponentType<?>> types =\n");
+        out.append("            new java.util.ArrayList<io.github.worldsmiths.core.ComponentType<?>>();\n\n");
         out.append("    private ").append(REGISTRY_NAME).append("() {\n");
         for (ComponentModel c : byTag.values()) {
             String serializer = c.packageName.isEmpty() ? c.serializerName : c.packageName + "." + c.serializerName;
@@ -216,8 +216,8 @@ public final class WsComponentProcessor extends AbstractProcessor {
         }
         out.append("    }\n\n");
         out.append("    @Override\n");
-        out.append("    public com.badlogic.gdx.utils.Array<io.github.worldsmiths.core.ComponentType<?>> types() {\n");
-        out.append("        return new com.badlogic.gdx.utils.Array<io.github.worldsmiths.core.ComponentType<?>>(types);\n");
+        out.append("    public java.util.List<io.github.worldsmiths.core.ComponentType<?>> types() {\n");
+        out.append("        return new java.util.ArrayList<io.github.worldsmiths.core.ComponentType<?>>(types);\n");
         out.append("    }\n");
         out.append("}\n");
         Element[] origins = components.stream().map(c -> c.element).toArray(Element[]::new);

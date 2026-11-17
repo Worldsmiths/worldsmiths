@@ -16,7 +16,7 @@ tasks.withType<JavaCompile>().configureEach {
 }
 
 dependencies {
-    api(libs.gdx)
+    implementation(libs.gdx)
     annotationProcessor(project(":processor"))
     testImplementation(libs.junit.jupiter)
     testRuntimeOnly(libs.junit.platform.launcher)

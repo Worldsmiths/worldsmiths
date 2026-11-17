@@ -7,7 +7,6 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.Json;
 import com.badlogic.gdx.utils.JsonReader;
 import com.badlogic.gdx.utils.JsonValue;
@@ -17,6 +16,7 @@ import io.github.worldsmiths.core.ComponentType;
 import java.lang.reflect.Method;
 import java.nio.file.Path;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -96,9 +96,9 @@ class WsComponentProcessorTest {
     void registryListsEveryComponentSortedByTagWithClassLiteralAndFactory() throws Exception {
         Compilation c = compileOk(sources("demo.AllTypes", ALL_TYPES, "demo.other.Marker", MARKER));
         ComponentRegistry registry = registry(c);
-        Array<ComponentType<?>> types = registry.types();
+        List<ComponentType<?>> types = registry.types();
 
-        assertEquals(2, types.size);
+        assertEquals(2, types.size());
         assertEquals("AllTypes", types.get(0).tag());
         assertEquals("Mark", types.get(1).tag());
         Class<?> allTypes = c.classLoader().loadClass("demo.AllTypes");
@@ -115,12 +115,12 @@ class WsComponentProcessorTest {
     void registryInstanceIsASingletonAndTypesAreDefensiveCopies() throws Exception {
         Compilation c = compileOk(sources("demo.AllTypes", ALL_TYPES));
         ComponentRegistry registry = registry(c);
-        Array<ComponentType<?>> first = registry.types();
-        Array<ComponentType<?>> second = registry.types();
-        assertEquals(first.size, second.size);
+        List<ComponentType<?>> first = registry.types();
+        List<ComponentType<?>> second = registry.types();
+        assertEquals(first.size(), second.size());
         assertSame(first.get(0), second.get(0));
         first.clear();
-        assertEquals(1, registry.types().size);
+        assertEquals(1, registry.types().size());
     }
 
     @Test
@@ -202,7 +202,7 @@ class WsComponentProcessorTest {
         String user = """
                 package demo;
                 public class Boot {
-                    public static int count() { return demo.gen.GeneratedComponentRegistry.INSTANCE.types().size; }
+                    public static int count() { return demo.gen.GeneratedComponentRegistry.INSTANCE.types().size(); }
                 }
                 """;
         Compilation c = compileOk(sources("demo.AllTypes", ALL_TYPES, "demo.Boot", user));
