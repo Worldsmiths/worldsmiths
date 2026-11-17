@@ -19,12 +19,14 @@ class ModuleCoordinateContractTest {
         String desktop = moduleId(DesktopPlugin.BACKENDS_DESKTOP);
         String web = moduleId(WebPlugin.BACKENDS_WEB);
         String android = moduleId(EngineModuleCoordinates.BACKENDS_ANDROID);
+        String ios = moduleId(EngineModuleCoordinates.BACKENDS_IOS);
         String wsCore = moduleId(EngineModuleCoordinates.WS_CORE);
 
         String snake = readEngine("samples/snake/settings.gradle.kts");
         assertContainsSubstitute(snake, desktop);
         assertContainsSubstitute(snake, web);
         assertContainsSubstitute(snake, android);
+        assertContainsSubstitute(snake, ios);
         assertContainsSubstitute(snake, wsCore);
 
         String minimal = readEngine("samples/minimal/settings.gradle.kts");
@@ -41,13 +43,23 @@ class ModuleCoordinateContractTest {
     }
 
     @Test
+    void snakeOptsInIosTargetWithBackendsIosSubstitute() throws IOException {
+        String snake = readEngine("samples/snake/settings.gradle.kts");
+        assertTrue(snake.contains("ios {"), snake);
+        assertTrue(snake.contains(":backends:ios"), snake);
+        assertContainsSubstitute(snake, moduleId(EngineModuleCoordinates.BACKENDS_IOS));
+    }
+
+    @Test
     void testKitSubstitutesMatchPluginModuleCoordinates() {
         String block = IncludeBuildSubstitutions.dependencySubstitutionKotlin();
         assertContainsSubstitute(block, moduleId(DesktopPlugin.BACKENDS_DESKTOP));
         assertContainsSubstitute(block, moduleId(WebPlugin.BACKENDS_WEB));
         assertContainsSubstitute(block, moduleId(EngineModuleCoordinates.BACKENDS_ANDROID));
+        assertContainsSubstitute(block, moduleId(EngineModuleCoordinates.BACKENDS_IOS));
         assertContainsSubstitute(block, moduleId(EngineModuleCoordinates.WS_CORE));
         assertTrue(block.contains(":backends:android"), block);
+        assertTrue(block.contains(":backends:ios"), block);
     }
 
     @Test
@@ -64,15 +76,31 @@ class ModuleCoordinateContractTest {
     }
 
     @Test
+    void iosSubstituteLineMatchesPluginModuleCoordinate() {
+        assertContainsSubstitute(
+                IncludeBuildSubstitutions.backendsIosSubstituteKotlin(),
+                moduleId(EngineModuleCoordinates.BACKENDS_IOS));
+        assertTrue(
+                IncludeBuildSubstitutions.backendsIosSubstituteKotlin()
+                        .contains(":backends:ios"));
+        assertTrue(
+                IncludeBuildSubstitutions.dependencySubstitutionKotlin()
+                        .contains(IncludeBuildSubstitutions.backendsIosSubstituteKotlin()),
+                "live TestKit substitute must include ios now that :backends:ios exists");
+    }
+
+    @Test
     void documentedSnippetMatchesPluginModuleCoordinates() throws IOException {
         String doc = readEngine("docs/includebuild-substitutions.md");
         assertContainsSubstitute(doc, moduleId(DesktopPlugin.BACKENDS_DESKTOP));
         assertContainsSubstitute(doc, moduleId(WebPlugin.BACKENDS_WEB));
         assertContainsSubstitute(doc, moduleId(EngineModuleCoordinates.BACKENDS_ANDROID));
+        assertContainsSubstitute(doc, moduleId(EngineModuleCoordinates.BACKENDS_IOS));
         assertContainsSubstitute(doc, moduleId(EngineModuleCoordinates.WS_CORE));
         assertTrue(doc.contains(":backends:desktop"), doc);
         assertTrue(doc.contains(":backends:web"), doc);
         assertTrue(doc.contains(":backends:android"), doc);
+        assertTrue(doc.contains(":backends:ios"), doc);
         assertTrue(doc.contains(":runtime:ws-core"), doc);
     }
 

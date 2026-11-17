@@ -16,12 +16,14 @@ public final class EngineModuleCoordinates {
     public static final String BACKENDS_DESKTOP = GROUP + ":backends-desktop";
     public static final String BACKENDS_WEB = GROUP + ":backends-web";
     public static final String BACKENDS_ANDROID = GROUP + ":backends-android";
+    public static final String BACKENDS_IOS = GROUP + ":backends-ios";
 
     /** Full Maven notation {@code group:name:version}. */
     public static final String WS_CORE_NOTATION = WS_CORE + ":" + VERSION;
     public static final String BACKENDS_DESKTOP_NOTATION = BACKENDS_DESKTOP + ":" + VERSION;
     public static final String BACKENDS_WEB_NOTATION = BACKENDS_WEB + ":" + VERSION;
     public static final String BACKENDS_ANDROID_NOTATION = BACKENDS_ANDROID + ":" + VERSION;
+    public static final String BACKENDS_IOS_NOTATION = BACKENDS_IOS + ":" + VERSION;
 
     private EngineModuleCoordinates() {}
 }

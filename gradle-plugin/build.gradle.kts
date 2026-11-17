@@ -13,6 +13,8 @@ dependencies {
     implementation("com.github.xpenatan.gdx-teavm:gdx-teavm-plugin:1.6.2")
     // TeaVM-style: AGP on the plugin classpath so games do not declare it.
     implementation("com.android.tools.build:gradle:9.0.0")
+    // TeaVM/AGP-style: RoboVM on the plugin classpath so games do not declare it.
+    implementation("com.mobidevelop.robovm:robovm-gradle-plugin:2.3.27")
     testImplementation("org.junit.jupiter:junit-jupiter:5.11.4")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher:1.11.4")
     testImplementation(gradleTestKit())
@@ -41,6 +43,10 @@ gradlePlugin {
         create("android") {
             id = "io.github.worldsmiths.android"
             implementationClass = "io.github.worldsmiths.gradle.AndroidPlugin"
+        }
+        create("ios") {
+            id = "io.github.worldsmiths.ios"
+            implementationClass = "io.github.worldsmiths.gradle.IosPlugin"
         }
     }
 }

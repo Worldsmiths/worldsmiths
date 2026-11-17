@@ -11,7 +11,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Comparator;
 import java.util.HashSet;
+import java.util.Locale;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
@@ -154,6 +156,82 @@ class SettingsPluginFunctionalTest {
     }
 
     @Test
+    void assetsDirOverrideReachesGeneratedIosScript() throws IOException {
+        write("settings.gradle.kts", defaultSettings(""
+                + "    assetsDir = \"game-assets\"\n"
+                + "    targets {\n"
+                + "        desktop {}\n"
+                + "        ios {}\n"
+                + "    }\n"));
+
+        BuildResult result = runner("projects").build();
+
+        assertEquals(TaskOutcome.SUCCESS, result.task(":projects").getOutcome());
+        assertTrue(read(".worldsmiths/gen/ios/build.gradle.kts").contains("assetsDir = \"game-assets\""));
+    }
+
+    @Test
+    void iosRobovmConfigMapsAssetsDirIntoResourcesWhenPresent() throws IOException {
+        write("assets/ws-ship-marker.txt", "worldsmiths-ship-marker\n");
+        write("settings.gradle.kts", defaultSettings(""
+                + "    targets {\n"
+                + "        desktop {}\n"
+                + "        ios {}\n"
+                + "    }\n"));
+
+        BuildResult result = runner(":ios:wsGenerateRobovmConfig").build();
+
+        assertEquals(TaskOutcome.SUCCESS, result.task(":ios:wsGenerateRobovmConfig").getOutcome());
+        String robovmXml = read(".worldsmiths/gen/ios/build/generated/ws-robovm/robovm.xml");
+        assertFalse(robovmXml.contains("<resources/>"), "expected assetsDir mapped into resources:\n" + robovmXml);
+        Path mappedAssets = mappedRobovmResourceDirectory(robovmXml);
+        assertEquals(
+                projectDir.resolve("assets").toRealPath(),
+                mappedAssets.toRealPath(),
+                "robovm.xml resources directory must resolve to worldsmiths.assetsDir\n" + robovmXml);
+        assertTrue(robovmXml.contains("<include>**</include>"), robovmXml);
+        assertTrue(robovmXml.contains("<skipPngCrush>true</skipPngCrush>"), robovmXml);
+    }
+
+    @Test
+    void iosRobovmConfigOmitsResourcesWhenAssetsDirMissing() throws IOException {
+        write("settings.gradle.kts", defaultSettings(""
+                + "    assetsDir = \"no-such-assets\"\n"
+                + "    targets {\n"
+                + "        desktop {}\n"
+                + "        ios {}\n"
+                + "    }\n"));
+
+        BuildResult result = runner(":ios:wsGenerateRobovmConfig").build();
+
+        assertEquals(TaskOutcome.SUCCESS, result.task(":ios:wsGenerateRobovmConfig").getOutcome());
+        String robovmXml = read(".worldsmiths/gen/ios/build/generated/ws-robovm/robovm.xml");
+        assertTrue(robovmXml.contains("<resources/>"), robovmXml);
+        assertFalse(robovmXml.contains("<directory>"), robovmXml);
+    }
+
+    @Test
+    void iosGeneratedRobovmXmlLeavesMetalAngleMergeToDependencyClasspath() throws IOException {
+        write("settings.gradle.kts", defaultSettings(""
+                + "    targets {\n"
+                + "        desktop {}\n"
+                + "        ios {}\n"
+                + "    }\n"));
+
+        BuildResult result = runner(":ios:wsGenerateRobovmConfig").build();
+
+        assertEquals(TaskOutcome.SUCCESS, result.task(":ios:wsGenerateRobovmConfig").getOutcome());
+        String robovmXml = read(".worldsmiths/gen/ios/build/generated/ws-robovm/robovm.xml");
+        // MetalANGLEKit + frameworkPaths come from gdx-backend-robovm-metalangle META-INF/robovm/ios/robovm.xml
+        // (RoboVM classpath merge). App xml must not hard-code those entries.
+        assertFalse(robovmXml.contains("MetalANGLEKit"), robovmXml);
+        assertFalse(robovmXml.contains("<frameworkPaths>"), robovmXml);
+        assertFalse(robovmXml.contains("libGLESv2"), robovmXml);
+        assertTrue(robovmXml.contains("<framework>UIKit</framework>"), robovmXml);
+        assertTrue(robovmXml.contains("<framework>Metal</framework>"), robovmXml);
+    }
+
+    @Test
     void assetsDirOverrideReachesGeneratedAndroidScript() throws IOException {
         write("gradle.properties", "android.useAndroidX=true\nandroid.builtInKotlin=false\n");
         write("settings.gradle.kts", settingsWithGoogle(""
@@ -235,6 +313,7 @@ class SettingsPluginFunctionalTest {
         Assumptions.assumeTrue(
                 androidHome != null && !androidHome.isBlank() && Files.isDirectory(Path.of(androidHome)),
                 "ANDROID_HOME unset; skipping assembleDebug ship-marker assert");
+        ensureAndroidDebugKeystore();
 
         write("gradle.properties", "android.useAndroidX=true\nandroid.builtInKotlin=false\n");
         write("local.properties", "sdk.dir=" + androidHome.replace('\\', '/') + "\n");
@@ -449,6 +528,143 @@ class SettingsPluginFunctionalTest {
     }
 
     @Test
+    void withoutTargetsIosDoesNotIncludeIosProject() {
+        BuildResult result = runner("projects").build();
+
+        assertTrue(result.getOutput().contains("Project ':desktop'"), result.getOutput());
+        assertFalse(result.getOutput().contains("Project ':ios'"), result.getOutput());
+        assertFalse(Files.isRegularFile(projectDir.resolve(".worldsmiths/gen/ios/build.gradle.kts")));
+    }
+
+    @Test
+    void withTargetsIosIncludesGeneratedScriptPluginIdAndDelegateAttach() throws IOException {
+        write("settings.gradle.kts", defaultSettings(""
+                + "    targets {\n"
+                + "        desktop {}\n"
+                + "        ios {\n"
+                + "            title.set(\"Starfall iOS\")\n"
+                + "            width.set(640)\n"
+                + "            height.set(480)\n"
+                + "        }\n"
+                + "    }\n"));
+
+        BuildResult result = runner(
+                "projects",
+                ":ios:wsGenerateDelegate",
+                ":ios:wsGenerateRobovmConfig").build();
+
+        assertTrue(result.getOutput().contains("Project ':ios'"), result.getOutput());
+        assertTrue(Files.isRegularFile(projectDir.resolve(".worldsmiths/gen/ios/build.gradle.kts")));
+
+        String script = read(".worldsmiths/gen/ios/build.gradle.kts");
+        assertTrue(script.contains("id(\"io.github.worldsmiths.ios\")"), script);
+        assertTrue(script.contains("title = \"Starfall iOS\""), script);
+        assertTrue(script.contains("width = 640"), script);
+        assertTrue(script.contains("height = 480"), script);
+
+        String launcher = read(".worldsmiths/gen/ios/build/generated/sources/ws-launcher/"
+                + "io/github/worldsmiths/generated/ios/IosDelegate.java");
+        assertTrue(launcher.contains("WorldsmithsGame game = new com.example.Game()"), launcher);
+        assertTrue(launcher.contains("IosBackend.attach"), launcher);
+        assertTrue(launcher.contains("IosApplicationHost"), launcher);
+        assertTrue(
+                launcher.contains("new IosConfig(640, 480)"),
+                "DSL width/height must reach IosConfig in the generated Delegate\n" + launcher);
+        assertTrue(launcher.contains("IOSApplicationConfiguration"), launcher);
+        assertTrue(launcher.contains("new IOSApplication"), launcher);
+
+        String robovmXml = read(".worldsmiths/gen/ios/build/generated/ws-robovm/robovm.xml");
+        assertTrue(robovmXml.contains("${app.mainclass}"), robovmXml);
+        assertTrue(robovmXml.contains("<os>ios</os>"), robovmXml);
+        String robovmProps = read(".worldsmiths/gen/ios/build/generated/ws-robovm/robovm.properties");
+        assertTrue(
+                robovmProps.contains("app.mainclass=io.github.worldsmiths.generated.ios.IosDelegate"),
+                robovmProps);
+        assertTrue(robovmProps.contains("app.name=Starfall iOS"), robovmProps);
+        assertTrue(Files.isRegularFile(projectDir.resolve(
+                ".worldsmiths/gen/ios/build/generated/ws-robovm/Info.plist.xml")));
+    }
+
+    @Test
+    void emptyTargetsIosBlockStillGeneratesIosModule() throws IOException {
+        write("settings.gradle.kts", defaultSettings(""
+                + "    targets {\n"
+                + "        desktop {}\n"
+                + "        ios {}\n"
+                + "    }\n"));
+
+        BuildResult result = runner("projects", ":ios:wsGenerateDelegate").build();
+
+        assertTrue(result.getOutput().contains("Project ':ios'"), result.getOutput());
+        String script = read(".worldsmiths/gen/ios/build.gradle.kts");
+        assertTrue(script.contains("id(\"io.github.worldsmiths.ios\")"), script);
+        String launcher = read(".worldsmiths/gen/ios/build/generated/sources/ws-launcher/"
+                + "io/github/worldsmiths/generated/ios/IosDelegate.java");
+        assertTrue(launcher.contains("IosBackend.attach"), launcher);
+        assertTrue(launcher.contains("new IosConfig(800, 600)"), launcher);
+    }
+
+    @Test
+    void iosRobovmInstallMustNotFailUnderConfigurationCacheWhenMacOsXcodePresent() throws IOException {
+        Assumptions.assumeTrue(
+                isMacOsWithXcode(),
+                "macOS+Xcode required for :ios:robovmInstall; generation asserts still cover Windows");
+
+        // Same heap floor as fixtures/ios-phase0 + samples/snake — RoboVM AOT OOMs on
+        // GHA macOS with Gradle 9's default 512m (DaemonStoppedException mid-install).
+        write("gradle.properties", ""
+                + "org.gradle.jvmargs=-Xmx2g -XX:MaxMetaspaceSize=512m -Dfile.encoding=UTF-8\n");
+        write("settings.gradle.kts", defaultSettings(""
+                + "    targets {\n"
+                + "        desktop {}\n"
+                + "        ios {\n"
+                + "            title.set(\"Starfall iOS\")\n"
+                + "            width.set(640)\n"
+                + "            height.set(480)\n"
+                + "        }\n"
+                + "    }\n"));
+        write("assets/ws-ship-marker.txt", "phase0\n");
+
+        // runner() always passes --configuration-cache. RoboVM tasks declare
+        // notCompatibleWithConfigurationCache, so STORED/REUSED may be absent / discarded —
+        // Phase-0 bar is must-not-fail (reuse not required), proven by .build() succeeding.
+        BuildResult result = runner(
+                ":ios:robovmInstall",
+                "-Probovm.iosSkipSigning=true").build();
+
+        assertRobovmInstallOk(result);
+        assertFalse(
+                result.getOutput().contains("Configuration cache problems found in this build."),
+                "configuration-cache must not fail (reuse not required)\n" + result.getOutput());
+        assertTrue(
+                installTreeContainsShipMarker(projectDir.resolve(".worldsmiths/gen/ios/build/robovm")),
+                "robovmInstall tree must contain ws-ship-marker.txt from assetsDir");
+    }
+
+    @Test
+    void iosRobovmInstallZipPackagesSeededInstallTreeWithShipMarker() throws IOException {
+        write("settings.gradle.kts", defaultSettings(""
+                + "    targets {\n"
+                + "        desktop {}\n"
+                + "        ios {}\n"
+                + "    }\n"));
+        write(
+                ".worldsmiths/gen/ios/build/robovm/Payload/Starfall.app/ws-ship-marker.txt",
+                "worldsmiths-ship-marker\n");
+
+        BuildResult result = runner(":ios:wsRobovmInstallZip", "-x", "robovmInstall").build();
+
+        assertEquals(TaskOutcome.SUCCESS, result.task(":ios:wsRobovmInstallZip").getOutcome());
+        Path zip = projectDir.resolve(
+                ".worldsmiths/gen/ios/build/distributions/ios-robovm-install.zip");
+        assertTrue(Files.isRegularFile(zip), "missing " + zip);
+        Set<String> entries = zipEntryNames(zip);
+        assertTrue(
+                entries.stream().anyMatch(name -> name.endsWith("ws-ship-marker.txt")),
+                "install zip entries: " + entries);
+    }
+
+    @Test
     void withTargetsAndroidIncludesGeneratedScriptAndPluginId() throws IOException {
         write("gradle.properties", ""
                 + "android.useAndroidX=true\n"
@@ -514,6 +730,7 @@ class SettingsPluginFunctionalTest {
         Assumptions.assumeTrue(
                 androidHome != null && !androidHome.isBlank() && Files.isDirectory(Path.of(androidHome)),
                 "ANDROID_HOME unset; skipping assembleDebug");
+        ensureAndroidDebugKeystore();
 
         write("gradle.properties", "android.useAndroidX=true\nandroid.builtInKotlin=false\n");
         write("local.properties", "sdk.dir=" + androidHome.replace('\\', '/') + "\n");
@@ -634,6 +851,98 @@ class SettingsPluginFunctionalTest {
         assertTrue(
                 outcome == TaskOutcome.SUCCESS || outcome == TaskOutcome.UP_TO_DATE,
                 "assembleDebug outcome=" + outcome + "\n" + result.getOutput());
+    }
+
+    private static void assertRobovmInstallOk(BuildResult result) {
+        TaskOutcome outcome = result.task(":ios:robovmInstall").getOutcome();
+        assertTrue(
+                outcome == TaskOutcome.SUCCESS || outcome == TaskOutcome.UP_TO_DATE,
+                "robovmInstall outcome=" + outcome + "\n" + result.getOutput());
+    }
+
+    private static boolean installTreeContainsShipMarker(Path installRoot) throws IOException {
+        if (!Files.isDirectory(installRoot)) {
+            return false;
+        }
+        try (Stream<Path> paths = Files.walk(installRoot)) {
+            return paths.anyMatch(path -> path.getFileName().toString().equals("ws-ship-marker.txt"));
+        }
+    }
+
+    private static Path mappedRobovmResourceDirectory(String robovmXml) {
+        String open = "<directory>";
+        String close = "</directory>";
+        int start = robovmXml.indexOf(open);
+        int end = robovmXml.indexOf(close, start + open.length());
+        assertTrue(start >= 0 && end > start, "missing <directory> in\n" + robovmXml);
+        // Generator normalizes to '/'; Path.of accepts that on Windows too.
+        return Path.of(robovmXml.substring(start + open.length(), end));
+    }
+
+    /**
+     * AGP {@code validateSigningDebug} creates the default debug keystore under
+     * {@code ~/.android} or {@code ~/.config/.android}; both paths can fail on clean CI
+     * runners. Pre-create the standard debug keystore when missing so assemble tests are
+     * not environmentally flake-prone.
+     */
+    private static void ensureAndroidDebugKeystore() throws IOException {
+        Path home = Path.of(System.getProperty("user.home"));
+        for (String relative : new String[] {".android", ".config/.android"}) {
+            Path dir = home.resolve(relative);
+            Files.createDirectories(dir);
+            Path keystore = dir.resolve("debug.keystore");
+            if (Files.isRegularFile(keystore)) {
+                continue;
+            }
+            Process process = new ProcessBuilder(
+                            "keytool",
+                            "-genkeypair",
+                            "-keystore", keystore.toString(),
+                            "-storepass", "android",
+                            "-keypass", "android",
+                            "-alias", "androiddebugkey",
+                            "-keyalg", "RSA",
+                            "-keysize", "2048",
+                            "-validity", "10000",
+                            "-dname", "CN=Android Debug,O=Android,C=US")
+                    .redirectErrorStream(true)
+                    .start();
+            try {
+                if (!process.waitFor(60, TimeUnit.SECONDS)) {
+                    process.destroyForcibly();
+                    throw new IOException("keytool timed out creating " + keystore);
+                }
+                if (process.exitValue() != 0) {
+                    String output = new String(process.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
+                    throw new IOException("keytool failed creating " + keystore + ":\n" + output);
+                }
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new IOException("interrupted creating " + keystore, e);
+            }
+        }
+    }
+
+    private static boolean isMacOsWithXcode() {
+        String os = System.getProperty("os.name");
+        if (os == null || !os.toLowerCase(Locale.ROOT).startsWith("mac")) {
+            return false;
+        }
+        try {
+            Process process = new ProcessBuilder("xcodebuild", "-version")
+                    .redirectErrorStream(true)
+                    .start();
+            if (!process.waitFor(30, TimeUnit.SECONDS)) {
+                process.destroyForcibly();
+                return false;
+            }
+            return process.exitValue() == 0;
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            return false;
+        } catch (IOException e) {
+            return false;
+        }
     }
 
     private GradleRunner runner(String... tasks) {

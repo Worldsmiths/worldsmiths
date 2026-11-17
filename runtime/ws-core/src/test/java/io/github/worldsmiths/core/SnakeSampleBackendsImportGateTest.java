@@ -69,7 +69,7 @@ class SnakeSampleBackendsImportGateTest {
     @Test
     void snakeSampleJavaSourcesMustNotImportBannedBackends() throws IOException {
         Path snakeRoot = repoRoot().resolve("samples").resolve("snake");
-        // Gate the author-owned :game tree only — generated :desktop/:web/:android launchers
+        // Gate the author-owned :game tree only — generated :desktop/:web/:android/:ios launchers
         // under .worldsmiths/gen intentionally import platform backends.
         Path gameSources = snakeRoot.resolve("game");
         assertTrue(Files.isDirectory(gameSources), "missing samples/snake/game at " + gameSources);
