@@ -5,12 +5,12 @@ colored `Sprite` (engine-drawn), discrete grid movement on a step timer, grow on
 collision ends the run, score in the window title (`Snake — score: N`), and restart without
 relaunching.
 
-Desktop, browser (TeaVM / gdx-teavm), and Android share the same `:game` sources.
+Desktop, browser (TeaVM / gdx-teavm), Android, and iOS (RoboVM) share the same `:game` sources.
 
 ## Controls
 
 - **Move (desktop / keyboard):** arrow keys or WASD (ignored while dead)
-- **Move (Android / touch):** swipe left / right / up / down
+- **Move (Android / iOS / touch):** swipe left / right / up / down
 - **Restart after death:** `R` or Space (keyboard); tap or swipe (touch)
 
 ## Requirements
@@ -19,10 +19,11 @@ Desktop, browser (TeaVM / gdx-teavm), and Android share the same `:game` sources
 - The game module compiles for **Java 8** (`options.release = 8`), as required by the engine plugin.
 - Browser run: a modern Chromium-based browser (Chrome recommended). The Playwright check needs
   Google Chrome installed (or set `CHROME` to a Chromium binary).
+- iOS package / simulator: **macOS + Xcode** (RoboVM). Windows/Linux can still configure and generate `:ios`.
 
-This sample is a nested Gradle project. It applies `io.github.worldsmiths.engine` via `includeBuild` of the monorepo `gradle-plugin`, and resolves `ws-core` / `backends-desktop` / `backends-web` / `backends-android` from the monorepo root with `includeBuild` + dependency substitution (not Maven Central). Android needs Google Maven (`google()`) in both `pluginManagement.repositories` (AGP on the engine plugin classpath) and `dependencyResolutionManagement` (Android artifacts). The consumer snippet is in [`docs/includebuild-substitutions.md`](../../docs/includebuild-substitutions.md). Game sources may use LibGDX core (`Gdx`, shapes) but must not import `com.badlogic.gdx.backends`, `com.github.xpenatan.gdx.teavm.backends`, or any `*ApplicationConfiguration` type.
+This sample is a nested Gradle project. It applies `io.github.worldsmiths.engine` via `includeBuild` of the monorepo `gradle-plugin`, and resolves `ws-core` / `backends-desktop` / `backends-web` / `backends-android` / `backends-ios` from the monorepo root with `includeBuild` + dependency substitution (not Maven Central). Android needs Google Maven (`google()`) in both `pluginManagement.repositories` (AGP on the engine plugin classpath) and `dependencyResolutionManagement` (Android artifacts). The consumer snippet is in [`docs/includebuild-substitutions.md`](../../docs/includebuild-substitutions.md). Game sources may use LibGDX core (`Gdx`, shapes) but must not import `com.badlogic.gdx.backends`, `com.github.xpenatan.gdx.teavm.backends`, or any `*ApplicationConfiguration` type.
 
-## Manual validation (desktop + web + Android)
+## Manual validation (desktop + web + Android + iOS)
 
 From the monorepo root (`worldsmiths/`). On Windows use `.\gradlew.bat` instead of `./gradlew`.
 
@@ -57,6 +58,10 @@ node check.mjs ../.worldsmiths/gen/web/build/dist/js/webapp
 ### Android
 
 See [Build / install Android](#build--install-android) below (`installDebug` + swipe/tap play).
+
+### iOS
+
+See [Build / install iOS](#build--install-ios) below (`robovmInstall` / `launchIPhoneSimulator` + manual sim play).
 
 ---
 
@@ -119,6 +124,41 @@ on a real device or emulator is a **manual founder gate**, not automated:
 4. Confirm score updates in the title / UI the same as desktop.
 
 Do not treat a green `snake-android` job as device play evidence.
+
+## Build / install iOS
+
+Requires **macOS + Xcode**. The sample `gradle.properties` raises the Gradle daemon heap to
+`-Xmx2g` so RoboVM AOT does not OOM (same deviation as `fixtures/ios-phase0`). Default
+`worldsmiths.assetsDir` is `"assets"` (ships `ws-ship-marker.txt` into RoboVM resources).
+
+```bash
+# Package an unsigned sim-oriented install tree (CI / local proof)
+./gradlew -p samples/snake :ios:robovmInstall
+
+# Zip the install tree for ship upload (peer of distZip / itch zip / debug APK)
+./gradlew -p samples/snake :ios:wsRobovmInstallZip
+
+# Launch on the iPhone simulator (local Mac; not CI)
+./gradlew -p samples/snake :ios:launchIPhoneSimulator
+```
+
+Install tree: `.worldsmiths/gen/ios/build/robovm/` (must contain `ws-ship-marker.txt` when
+`assets/` is present). Zip: `.worldsmiths/gen/ios/build/distributions/ios-robovm-install.zip`.
+Configure still succeeds and generates `:ios` on non-macOS hosts, but `robovmInstall` /
+`launchIPhoneSimulator` need macOS + Xcode.
+
+### Founder manual play gate (human)
+
+CI proves `robovmInstall` + marker membership (+ zip upload once the `snake-ios` job lands).
+**CI ≠ play.** Simulator playability is a **manual founder gate**:
+
+1. On a Mac with Xcode, boot an iPhone simulator (or let RoboVM pick the default).
+2. `./gradlew -p samples/snake :ios:launchIPhoneSimulator` (or install from the
+   `robovmInstall` tree and launch manually).
+3. Swipe to move; tap or swipe after death to restart.
+4. Confirm score updates the same as desktop / Android.
+
+Do not treat a green iOS package job as simulator play evidence.
 
 ## Ship archives (desktop + web)
 
