@@ -625,13 +625,16 @@ class SettingsPluginFunctionalTest {
                 + "    }\n"));
         write("assets/ws-ship-marker.txt", "phase0\n");
 
+        // runner() always passes --configuration-cache. RoboVM tasks declare
+        // notCompatibleWithConfigurationCache, so STORED/REUSED may be absent / discarded —
+        // Phase-0 bar is must-not-fail (reuse not required), proven by .build() succeeding.
         BuildResult result = runner(
                 ":ios:robovmInstall",
                 "-Probovm.iosSkipSigning=true").build();
 
         assertRobovmInstallOk(result);
-        assertTrue(
-                result.getOutput().contains(STORED) || result.getOutput().contains(REUSED),
+        assertFalse(
+                result.getOutput().contains("Configuration cache problems found in this build."),
                 "configuration-cache must not fail (reuse not required)\n" + result.getOutput());
         assertTrue(
                 installTreeContainsShipMarker(projectDir.resolve(".worldsmiths/gen/ios/build/robovm")),
