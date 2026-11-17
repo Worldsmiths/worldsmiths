@@ -2,7 +2,7 @@
 
 Until the engine is published to Maven Central (ADR-0003), external games and samples resolve Worldsmiths artifacts with a composite build: `includeBuild` of the engine checkout plus `dependencySubstitution` for each module the plugins and game sources request by Maven coordinate.
 
-Gradle project paths (`:backends:desktop`, `:backends:web`, `:backends:android`, `:backends:ios`, `:runtime:ws-core`) do **not** match the Maven artifact names (`backends-desktop`, `backends-web`, `backends-android`, `backends-ios`, `ws-core`). Do **not** treat `archivesName` as the fix; aligning project names waits for a later milestone (Da). Use the substitutions below.
+Backend Gradle project paths (`:backends-desktop`, `:backends-web`, `:backends-android`, `:backends-ios`) now match the Maven artifact names. `:runtime:ws-core` still does **not** match `ws-core`. Keep the substitutions below until Da drops the happy-path substitute blocks (bare includeBuild / auto-sub). Do **not** treat `archivesName` as the fix.
 
 ## Snippet
 
@@ -27,13 +27,13 @@ DRM `google()` alone is not enough. Missing `google()` when Android is opted in 
 includeBuild(engineRoot) {
     dependencySubstitution {
         substitute(module("io.github.worldsmiths:backends-desktop"))
-            .using(project(":backends:desktop"))
+            .using(project(":backends-desktop"))
         substitute(module("io.github.worldsmiths:backends-web"))
-            .using(project(":backends:web"))
+            .using(project(":backends-web"))
         substitute(module("io.github.worldsmiths:backends-android"))
-            .using(project(":backends:android"))
+            .using(project(":backends-android"))
         substitute(module("io.github.worldsmiths:backends-ios"))
-            .using(project(":backends:ios"))
+            .using(project(":backends-ios"))
         substitute(module("io.github.worldsmiths:ws-core"))
             .using(project(":runtime:ws-core"))
     }
@@ -42,10 +42,10 @@ includeBuild(engineRoot) {
 
 | Maven module id | Engine project |
 | --- | --- |
-| `io.github.worldsmiths:backends-desktop` | `:backends:desktop` |
-| `io.github.worldsmiths:backends-web` | `:backends:web` |
-| `io.github.worldsmiths:backends-android` | `:backends:android` |
-| `io.github.worldsmiths:backends-ios` | `:backends:ios` |
+| `io.github.worldsmiths:backends-desktop` | `:backends-desktop` |
+| `io.github.worldsmiths:backends-web` | `:backends-web` |
+| `io.github.worldsmiths:backends-android` | `:backends-android` |
+| `io.github.worldsmiths:backends-ios` | `:backends-ios` |
 | `io.github.worldsmiths:ws-core` | `:runtime:ws-core` |
 
 A desktop-only game may omit the `backends-web` / `backends-android` / `backends-ios` lines until it adds those targets. Games that depend on `ws-core` from the game module (and any target that pulls a backend) need the matching substitutes.
