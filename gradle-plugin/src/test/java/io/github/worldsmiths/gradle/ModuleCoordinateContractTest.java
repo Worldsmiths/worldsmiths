@@ -1,6 +1,5 @@
 package io.github.worldsmiths.gradle;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
@@ -47,8 +46,10 @@ class ModuleCoordinateContractTest {
         assertContainsSubstitute(block, moduleId(DesktopPlugin.BACKENDS_DESKTOP));
         assertContainsSubstitute(block, moduleId(WebPlugin.BACKENDS_WEB));
         assertContainsSubstitute(block, moduleId(EngineModuleCoordinates.BACKENDS_ANDROID));
+        assertContainsSubstitute(block, moduleId(EngineModuleCoordinates.BACKENDS_IOS));
         assertContainsSubstitute(block, moduleId(EngineModuleCoordinates.WS_CORE));
         assertTrue(block.contains(":backends:android"), block);
+        assertTrue(block.contains(":backends:ios"), block);
     }
 
     @Test
@@ -66,18 +67,16 @@ class ModuleCoordinateContractTest {
 
     @Test
     void iosSubstituteLineMatchesPluginModuleCoordinate() {
-        // Live TestKit block omits ios until :backends:ios exists (T2); the
-        // dedicated line still locks the Maven id to the documented substitute.
         assertContainsSubstitute(
                 IncludeBuildSubstitutions.backendsIosSubstituteKotlin(),
                 moduleId(EngineModuleCoordinates.BACKENDS_IOS));
         assertTrue(
                 IncludeBuildSubstitutions.backendsIosSubstituteKotlin()
                         .contains(":backends:ios"));
-        assertFalse(
+        assertTrue(
                 IncludeBuildSubstitutions.dependencySubstitutionKotlin()
                         .contains(IncludeBuildSubstitutions.backendsIosSubstituteKotlin()),
-                "live TestKit substitute must omit ios until :backends:ios exists (T2)");
+                "live TestKit substitute must include ios now that :backends:ios exists");
     }
 
     @Test

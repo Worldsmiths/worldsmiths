@@ -6,6 +6,7 @@ tasks.register("build") {
         ":backends:desktop:build",
         ":backends:web:build",
         ":backends:android:build",
+        ":backends:ios:build",
         ":bom:build",
         ":processor:build",
     )

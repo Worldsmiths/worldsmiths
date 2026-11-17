@@ -1,0 +1,99 @@
+package io.github.worldsmiths.ios;
+
+import com.badlogic.gdx.ApplicationListener;
+import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.graphics.GL20;
+import io.github.worldsmiths.core.Scene;
+import io.github.worldsmiths.core.WorldsmithsGame;
+
+/**
+ * LibGDX {@link ApplicationListener} that drives a {@link WorldsmithsGame}, clears the framebuffer
+ * each frame, and draws visible scene sprites as filled rects via {@link SceneShapeRenderer}.
+ */
+public final class IosGameListener implements ApplicationListener {
+
+    private final WorldsmithsGame game;
+    private Scene scene;
+    private SceneShapeRenderer sceneRenderer;
+
+    public IosGameListener(WorldsmithsGame game) {
+        this(game, null);
+    }
+
+    /**
+     * Package-visible constructor so unit tests can inject a recording {@link SceneShapeRenderer}
+     * without constructing a real libGDX {@code ShapeRenderer} (no RoboVM / GL).
+     */
+    IosGameListener(WorldsmithsGame game, SceneShapeRenderer sceneRenderer) {
+        if (game == null) {
+            throw new NullPointerException("game");
+        }
+        this.game = game;
+        this.sceneRenderer = sceneRenderer;
+    }
+
+    @Override
+    public void create() {
+        scene = game.createScene();
+        game.create();
+    }
+
+    /**
+     * Scene retained from {@link WorldsmithsGame#createScene()}. Package-visible for unit tests.
+     */
+    Scene retainedScene() {
+        return scene;
+    }
+
+    @Override
+    public void resize(int width, int height) {
+        // No-op until Scene / viewport work in later milestones.
+    }
+
+    @Override
+    public void render() {
+        clearScreen();
+        ensureSceneRenderer();
+        updateAndRender(Gdx.graphics.getDeltaTime());
+    }
+
+    /**
+     * Forwards one update/render tick to the game, then draws the retained scene. Package-visible
+     * so unit tests can exercise the lifecycle without starting RoboVM.
+     */
+    void updateAndRender(float delta) {
+        game.update(delta);
+        game.render();
+        if (sceneRenderer != null && scene != null) {
+            sceneRenderer.render(scene);
+        }
+    }
+
+    private void ensureSceneRenderer() {
+        if (sceneRenderer == null) {
+            sceneRenderer = new SceneShapeRenderer();
+        }
+    }
+
+    @Override
+    public void pause() {
+        // No-op for D7.
+    }
+
+    @Override
+    public void resume() {
+        // No-op for D7.
+    }
+
+    @Override
+    public void dispose() {
+        if (sceneRenderer != null) {
+            sceneRenderer.dispose();
+        }
+    }
+
+    private static void clearScreen() {
+        Gdx.gl.glClearColor(0f, 0f, 0f, 1f);
+        Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
+    }
+}
