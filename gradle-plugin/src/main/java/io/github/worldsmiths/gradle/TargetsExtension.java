@@ -8,6 +8,7 @@ public abstract class TargetsExtension {
 
     private boolean webConfigured;
     private boolean androidConfigured;
+    private boolean iosConfigured;
 
     @Nested
     public abstract DesktopTargetExtension getDesktop();
@@ -17,6 +18,9 @@ public abstract class TargetsExtension {
 
     @Nested
     public abstract AndroidTargetExtension getAndroid();
+
+    @Nested
+    public abstract IosTargetExtension getIos();
 
     public void desktop(Action<? super DesktopTargetExtension> action) {
         action.execute(getDesktop());
@@ -40,11 +44,24 @@ public abstract class TargetsExtension {
         action.execute(getAndroid());
     }
 
+    /**
+     * Opt-in iOS target. Calling this block (even empty) causes the settings plugin to generate
+     * {@code :ios}; samples stay unchanged until they opt in.
+     */
+    public void ios(Action<? super IosTargetExtension> action) {
+        iosConfigured = true;
+        action.execute(getIos());
+    }
+
     boolean isWebConfigured() {
         return webConfigured;
     }
 
     boolean isAndroidConfigured() {
         return androidConfigured;
+    }
+
+    boolean isIosConfigured() {
+        return iosConfigured;
     }
 }

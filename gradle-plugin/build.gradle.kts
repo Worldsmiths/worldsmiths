@@ -44,5 +44,9 @@ gradlePlugin {
             id = "io.github.worldsmiths.android"
             implementationClass = "io.github.worldsmiths.gradle.AndroidPlugin"
         }
+        create("ios") {
+            id = "io.github.worldsmiths.ios"
+            implementationClass = "io.github.worldsmiths.gradle.IosPlugin"
+        }
     }
 }

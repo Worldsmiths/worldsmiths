@@ -11,7 +11,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Comparator;
 import java.util.HashSet;
+import java.util.Locale;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
@@ -151,6 +153,21 @@ class SettingsPluginFunctionalTest {
         assertEquals(TaskOutcome.SUCCESS, result.task(":projects").getOutcome());
         assertTrue(read(".worldsmiths/gen/desktop/build.gradle.kts").contains("assetsDir = \"game-assets\""));
         assertTrue(read(".worldsmiths/gen/web/build.gradle.kts").contains("assetsDir = \"game-assets\""));
+    }
+
+    @Test
+    void assetsDirOverrideReachesGeneratedIosScript() throws IOException {
+        write("settings.gradle.kts", defaultSettings(""
+                + "    assetsDir = \"game-assets\"\n"
+                + "    targets {\n"
+                + "        desktop {}\n"
+                + "        ios {}\n"
+                + "    }\n"));
+
+        BuildResult result = runner("projects").build();
+
+        assertEquals(TaskOutcome.SUCCESS, result.task(":projects").getOutcome());
+        assertTrue(read(".worldsmiths/gen/ios/build.gradle.kts").contains("assetsDir = \"game-assets\""));
     }
 
     @Test
@@ -449,6 +466,110 @@ class SettingsPluginFunctionalTest {
     }
 
     @Test
+    void withoutTargetsIosDoesNotIncludeIosProject() {
+        BuildResult result = runner("projects").build();
+
+        assertTrue(result.getOutput().contains("Project ':desktop'"), result.getOutput());
+        assertFalse(result.getOutput().contains("Project ':ios'"), result.getOutput());
+        assertFalse(Files.isRegularFile(projectDir.resolve(".worldsmiths/gen/ios/build.gradle.kts")));
+    }
+
+    @Test
+    void withTargetsIosIncludesGeneratedScriptPluginIdAndDelegateAttach() throws IOException {
+        write("settings.gradle.kts", defaultSettings(""
+                + "    targets {\n"
+                + "        desktop {}\n"
+                + "        ios {\n"
+                + "            title.set(\"Starfall iOS\")\n"
+                + "            width.set(640)\n"
+                + "            height.set(480)\n"
+                + "        }\n"
+                + "    }\n"));
+
+        BuildResult result = runner(
+                "projects",
+                ":ios:wsGenerateDelegate",
+                ":ios:wsGenerateRobovmConfig").build();
+
+        assertTrue(result.getOutput().contains("Project ':ios'"), result.getOutput());
+        assertTrue(Files.isRegularFile(projectDir.resolve(".worldsmiths/gen/ios/build.gradle.kts")));
+
+        String script = read(".worldsmiths/gen/ios/build.gradle.kts");
+        assertTrue(script.contains("id(\"io.github.worldsmiths.ios\")"), script);
+        assertTrue(script.contains("title = \"Starfall iOS\""), script);
+        assertTrue(script.contains("width = 640"), script);
+        assertTrue(script.contains("height = 480"), script);
+
+        String launcher = read(".worldsmiths/gen/ios/build/generated/sources/ws-launcher/"
+                + "io/github/worldsmiths/generated/ios/IosDelegate.java");
+        assertTrue(launcher.contains("WorldsmithsGame game = new com.example.Game()"), launcher);
+        assertTrue(launcher.contains("IosBackend.attach"), launcher);
+        assertTrue(launcher.contains("IosApplicationHost"), launcher);
+        assertTrue(
+                launcher.contains("new IosConfig(640, 480)"),
+                "DSL width/height must reach IosConfig in the generated Delegate\n" + launcher);
+        assertTrue(launcher.contains("IOSApplicationConfiguration"), launcher);
+        assertTrue(launcher.contains("new IOSApplication"), launcher);
+
+        String robovmXml = read(".worldsmiths/gen/ios/build/generated/ws-robovm/robovm.xml");
+        assertTrue(robovmXml.contains("${app.mainclass}"), robovmXml);
+        assertTrue(robovmXml.contains("<os>ios</os>"), robovmXml);
+        String robovmProps = read(".worldsmiths/gen/ios/build/generated/ws-robovm/robovm.properties");
+        assertTrue(
+                robovmProps.contains("app.mainclass=io.github.worldsmiths.generated.ios.IosDelegate"),
+                robovmProps);
+        assertTrue(robovmProps.contains("app.name=Starfall iOS"), robovmProps);
+        assertTrue(Files.isRegularFile(projectDir.resolve(
+                ".worldsmiths/gen/ios/build/generated/ws-robovm/Info.plist.xml")));
+    }
+
+    @Test
+    void emptyTargetsIosBlockStillGeneratesIosModule() throws IOException {
+        write("settings.gradle.kts", defaultSettings(""
+                + "    targets {\n"
+                + "        desktop {}\n"
+                + "        ios {}\n"
+                + "    }\n"));
+
+        BuildResult result = runner("projects", ":ios:wsGenerateDelegate").build();
+
+        assertTrue(result.getOutput().contains("Project ':ios'"), result.getOutput());
+        String script = read(".worldsmiths/gen/ios/build.gradle.kts");
+        assertTrue(script.contains("id(\"io.github.worldsmiths.ios\")"), script);
+        String launcher = read(".worldsmiths/gen/ios/build/generated/sources/ws-launcher/"
+                + "io/github/worldsmiths/generated/ios/IosDelegate.java");
+        assertTrue(launcher.contains("IosBackend.attach"), launcher);
+        assertTrue(launcher.contains("new IosConfig(800, 600)"), launcher);
+    }
+
+    @Test
+    void iosRobovmInstallMustNotFailUnderConfigurationCacheWhenMacOsXcodePresent() throws IOException {
+        Assumptions.assumeTrue(
+                isMacOsWithXcode(),
+                "macOS+Xcode required for :ios:robovmInstall; generation asserts still cover Windows");
+
+        write("settings.gradle.kts", defaultSettings(""
+                + "    targets {\n"
+                + "        desktop {}\n"
+                + "        ios {\n"
+                + "            title.set(\"Starfall iOS\")\n"
+                + "            width.set(640)\n"
+                + "            height.set(480)\n"
+                + "        }\n"
+                + "    }\n"));
+        write("assets/ws-ship-marker.txt", "phase0\n");
+
+        BuildResult result = runner(
+                ":ios:robovmInstall",
+                "-Probovm.iosSkipSigning=true").build();
+
+        assertRobovmInstallOk(result);
+        assertTrue(
+                result.getOutput().contains(STORED) || result.getOutput().contains(REUSED),
+                "configuration-cache must not fail (reuse not required)\n" + result.getOutput());
+    }
+
+    @Test
     void withTargetsAndroidIncludesGeneratedScriptAndPluginId() throws IOException {
         write("gradle.properties", ""
                 + "android.useAndroidX=true\n"
@@ -634,6 +755,35 @@ class SettingsPluginFunctionalTest {
         assertTrue(
                 outcome == TaskOutcome.SUCCESS || outcome == TaskOutcome.UP_TO_DATE,
                 "assembleDebug outcome=" + outcome + "\n" + result.getOutput());
+    }
+
+    private static void assertRobovmInstallOk(BuildResult result) {
+        TaskOutcome outcome = result.task(":ios:robovmInstall").getOutcome();
+        assertTrue(
+                outcome == TaskOutcome.SUCCESS || outcome == TaskOutcome.UP_TO_DATE,
+                "robovmInstall outcome=" + outcome + "\n" + result.getOutput());
+    }
+
+    private static boolean isMacOsWithXcode() {
+        String os = System.getProperty("os.name");
+        if (os == null || !os.toLowerCase(Locale.ROOT).startsWith("mac")) {
+            return false;
+        }
+        try {
+            Process process = new ProcessBuilder("xcodebuild", "-version")
+                    .redirectErrorStream(true)
+                    .start();
+            if (!process.waitFor(30, TimeUnit.SECONDS)) {
+                process.destroyForcibly();
+                return false;
+            }
+            return process.exitValue() == 0;
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            return false;
+        } catch (IOException e) {
+            return false;
+        }
     }
 
     private GradleRunner runner(String... tasks) {

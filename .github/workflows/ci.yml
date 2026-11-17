@@ -89,6 +89,29 @@ jobs:
             samples/snake/.worldsmiths/gen/desktop/build/distributions/*.zip
             samples/snake/.worldsmiths/gen/web/build/distributions/web-itch.zip
 
+  # Phase-0 RoboVM-in-generated kill gate (pre-Snake). Hard-fail if packaging fails under
+  # configuration-cache must-not-fail hygiene. Fixture only — Snake targets.ios is T5.
+  ios-phase0:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: "21"
+      - uses: gradle/actions/setup-gradle@v6
+      - name: Package Phase-0 generated :ios (robovmInstall)
+        run: >
+          ./gradlew -p fixtures/ios-phase0 :ios:robovmInstall
+          --configuration-cache --no-daemon
+          -Probovm.iosSkipSigning=true
+      - name: Assert install tree exists
+        run: |
+          set -euo pipefail
+          install_dir="fixtures/ios-phase0/.worldsmiths/gen/ios/build/robovm"
+          test -d "$install_dir"
+          find "$install_dir" -type f | head -n 20
+
   # Ship APK: Ubuntu assembleDebug + marker assert + upload (Dp peer of distZip / itch zip).
   # Device/emulator play is a founder manual gate — not automated here.
   snake-android:

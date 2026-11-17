@@ -58,6 +58,18 @@ class IosPinContractTest {
         assertTrue(
                 build.contains("com.mobidevelop.robovm:robovm-gradle-plugin:" + IosPins.ROBOVM_VERSION),
                 build);
+        assertTrue(build.contains("id = \"io.github.worldsmiths.ios\""), build);
+        assertTrue(build.contains("IosPlugin"), build);
+    }
+
+    @Test
+    void iosPluginUsesIosPinGdxNotations() throws IOException {
+        String plugin =
+                readEngine("gradle-plugin/src/main/java/io/github/worldsmiths/gradle/IosPlugin.java");
+        assertTrue(plugin.contains("IosPins.GDX_BACKEND_ROBOVM_METALANGLE"), plugin);
+        assertTrue(plugin.contains("IosPins.GDX_PLATFORM"), plugin);
+        assertTrue(plugin.contains("IosPins.NATIVES_IOS_CLASSIFIER"), plugin);
+        assertTrue(plugin.contains("IosPins.ROBOVM_VERSION"), plugin);
     }
 
     private static String readEngine(String relativePath) throws IOException {
