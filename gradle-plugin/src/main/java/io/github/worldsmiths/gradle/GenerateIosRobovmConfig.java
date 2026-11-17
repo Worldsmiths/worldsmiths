@@ -49,11 +49,13 @@ public abstract class GenerateIosRobovmConfig extends DefaultTask {
                 + "app.name=" + title + "\n";
 
         // Paths in robovm.xml are resolved relative to the project directory; Info.plist is
-        // referenced by absolute path so the config can live under build/.
+        // referenced by absolute path so the config can live under build/. Absolute assetsDir
+        // keeps resources stable when the generated :ios projectDir is under .worldsmiths/gen.
         Path infoPlist = out.resolve("Info.plist.xml");
         String infoPlistPath = infoPlist.toAbsolutePath().toString().replace('\\', '/');
         String assetsPath = assetsDir.replace('\\', '/');
 
+        // worldsmiths.assetsDir → RoboVM <resources> (soft no-op when missing / non-directory).
         StringBuilder resources = new StringBuilder();
         if (!assetsDir.isEmpty()) {
             resources.append("  <resources>\n")

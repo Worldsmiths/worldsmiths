@@ -67,6 +67,9 @@ public final class IosPlugin implements Plugin<Project> {
                 extension.getGameModule().map(path ->
                         project.getDependencies().project(Collections.singletonMap("path", path))));
         project.getDependencies().add("implementation", BACKENDS_IOS);
+        // MetalANGLE + natives-ios each ship META-INF/robovm/ios/robovm.xml; RoboVM merges those
+        // into the app config (frameworks / frameworkPaths / libs). App robovm.xml from
+        // wsGenerateRobovmConfig only adds assetsDir resources + base UIKit/OpenAL/Metal stack.
         project.getDependencies().add("implementation", IosPins.GDX_BACKEND_ROBOVM_METALANGLE);
         project.getDependencies().add("implementation", ROBOVM_RT);
         project.getDependencies().add("implementation", ROBOVM_COCOATOUCH);
@@ -98,6 +101,13 @@ public final class IosPlugin implements Plugin<Project> {
                 task.dependsOn(generateDelegate);
                 task.dependsOn(generateRobovmConfig);
             }
+        });
+
+        // RoboVM default install dir is build/robovm (ios-phase0 CI + snake-ios ship).
+        project.getTasks().register(WsRobovmInstallZip.TASK_NAME, WsRobovmInstallZip.class, task -> {
+            task.dependsOn("robovmInstall");
+            task.getInstallDirectory().set(project.getLayout().getBuildDirectory().dir("robovm"));
+            task.getDestinationDirectory().set(project.getLayout().getBuildDirectory().dir("distributions"));
         });
 
         // ext.mainClassName is also read by AbstractRoboVMTask when present.
