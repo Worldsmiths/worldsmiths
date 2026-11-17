@@ -19,22 +19,9 @@ dependencyResolutionManagement {
     }
 }
 
-// Same composite pattern as the plugin TestKit: resolve published-looking coordinates
-// from the monorepo via includeBuild + dependencySubstitution (ADR-0003).
-includeBuild("../..") {
-    dependencySubstitution {
-        substitute(module("io.github.worldsmiths:backends-desktop"))
-            .using(project(":backends-desktop"))
-        substitute(module("io.github.worldsmiths:backends-web"))
-            .using(project(":backends-web"))
-        substitute(module("io.github.worldsmiths:backends-android"))
-            .using(project(":backends-android"))
-        substitute(module("io.github.worldsmiths:backends-ios"))
-            .using(project(":backends-ios"))
-        substitute(module("io.github.worldsmiths:ws-core"))
-            .using(project(":runtime:ws-core"))
-    }
-}
+// Resolve published-looking coordinates from the monorepo via bare includeBuild (ADR-0003).
+// Project names match Maven artifact ids, so Gradle auto-substitutes — no dependencySubstitution.
+includeBuild("../..")
 
 rootProject.name = "rollball"
 
