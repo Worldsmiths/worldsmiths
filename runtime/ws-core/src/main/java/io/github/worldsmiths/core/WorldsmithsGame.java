@@ -32,8 +32,8 @@ public interface WorldsmithsGame {
 
     /**
      * Releases game-owned GPU / native resources. Platform listeners call this on shutdown before
-     * disposing their own renderers. Default intent is empty — most games no-op; samples that
-     * allocate Models / ModelBatch free them here.
+     * disposing their own renderers. Default is empty — most games no-op; samples that allocate
+     * Models / ModelBatch override and free them here.
      */
-    void dispose();
+    default void dispose() {}
 }
