@@ -1,5 +1,6 @@
 package io.github.worldsmiths.gradle;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
@@ -64,15 +65,33 @@ class ModuleCoordinateContractTest {
     }
 
     @Test
+    void iosSubstituteLineMatchesPluginModuleCoordinate() {
+        // Live TestKit block omits ios until :backends:ios exists (T2); the
+        // dedicated line still locks the Maven id to the documented substitute.
+        assertContainsSubstitute(
+                IncludeBuildSubstitutions.backendsIosSubstituteKotlin(),
+                moduleId(EngineModuleCoordinates.BACKENDS_IOS));
+        assertTrue(
+                IncludeBuildSubstitutions.backendsIosSubstituteKotlin()
+                        .contains(":backends:ios"));
+        assertFalse(
+                IncludeBuildSubstitutions.dependencySubstitutionKotlin()
+                        .contains(IncludeBuildSubstitutions.backendsIosSubstituteKotlin()),
+                "live TestKit substitute must omit ios until :backends:ios exists (T2)");
+    }
+
+    @Test
     void documentedSnippetMatchesPluginModuleCoordinates() throws IOException {
         String doc = readEngine("docs/includebuild-substitutions.md");
         assertContainsSubstitute(doc, moduleId(DesktopPlugin.BACKENDS_DESKTOP));
         assertContainsSubstitute(doc, moduleId(WebPlugin.BACKENDS_WEB));
         assertContainsSubstitute(doc, moduleId(EngineModuleCoordinates.BACKENDS_ANDROID));
+        assertContainsSubstitute(doc, moduleId(EngineModuleCoordinates.BACKENDS_IOS));
         assertContainsSubstitute(doc, moduleId(EngineModuleCoordinates.WS_CORE));
         assertTrue(doc.contains(":backends:desktop"), doc);
         assertTrue(doc.contains(":backends:web"), doc);
         assertTrue(doc.contains(":backends:android"), doc);
+        assertTrue(doc.contains(":backends:ios"), doc);
         assertTrue(doc.contains(":runtime:ws-core"), doc);
     }
 
