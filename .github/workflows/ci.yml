@@ -100,17 +100,27 @@ jobs:
           distribution: temurin
           java-version: "21"
       - uses: gradle/actions/setup-gradle@v6
-      - name: Package Phase-0 generated :ios (robovmInstall)
+      - name: Package Phase-0 generated :ios (robovmInstall + zip)
         run: >
-          ./gradlew -p fixtures/ios-phase0 :ios:robovmInstall
+          ./gradlew -p fixtures/ios-phase0 :ios:robovmInstall :ios:wsRobovmInstallZip
           --configuration-cache --no-daemon
           -Probovm.iosSkipSigning=true
-      - name: Assert install tree exists
+      - name: Assert ship marker in install tree and zip
         run: |
           set -euo pipefail
+          marker="ws-ship-marker.txt"
           install_dir="fixtures/ios-phase0/.worldsmiths/gen/ios/build/robovm"
+          zip="fixtures/ios-phase0/.worldsmiths/gen/ios/build/distributions/ios-robovm-install.zip"
           test -d "$install_dir"
-          find "$install_dir" -type f | head -n 20
+          # -print -quit avoids find|head SIGPIPE under pipefail.
+          found="$(find "$install_dir" -name "$marker" -print -quit)"
+          test -n "$found"
+          test -f "$zip"
+          unzip -l "$zip" | grep -F "$marker"
+      - uses: actions/upload-artifact@v7
+        with:
+          name: ios-phase0-robovm-install
+          path: fixtures/ios-phase0/.worldsmiths/gen/ios/build/distributions/ios-robovm-install.zip
 
   # Ship APK: Ubuntu assembleDebug + marker assert + upload (Dp peer of distZip / itch zip).
   # Device/emulator play is a founder manual gate — not automated here.

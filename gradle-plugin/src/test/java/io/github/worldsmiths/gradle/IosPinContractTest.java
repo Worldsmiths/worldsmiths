@@ -72,6 +72,18 @@ class IosPinContractTest {
         assertTrue(plugin.contains("IosPins.ROBOVM_VERSION"), plugin);
     }
 
+    @Test
+    void iosPluginDocumentsMetalAngleAndNativesRobovmXmlMerge() throws IOException {
+        String plugin =
+                readEngine("gradle-plugin/src/main/java/io/github/worldsmiths/gradle/IosPlugin.java");
+        assertTrue(
+                plugin.contains("META-INF/robovm/ios/robovm.xml"),
+                "IosPlugin must document RoboVM classpath merge for MetalANGLE/natives\n" + plugin);
+        assertTrue(
+                plugin.contains("WsRobovmInstallZip"),
+                "IosPlugin must register wsRobovmInstallZip for CI ship upload\n" + plugin);
+    }
+
     private static String readEngine(String relativePath) throws IOException {
         Path file = engineRoot().resolve(relativePath);
         assertTrue(Files.isRegularFile(file), "missing " + file);

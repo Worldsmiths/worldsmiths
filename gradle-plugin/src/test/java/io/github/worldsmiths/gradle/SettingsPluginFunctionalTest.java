@@ -171,6 +171,63 @@ class SettingsPluginFunctionalTest {
     }
 
     @Test
+    void iosRobovmConfigMapsAssetsDirIntoResourcesWhenPresent() throws IOException {
+        write("assets/ws-ship-marker.txt", "worldsmiths-ship-marker\n");
+        write("settings.gradle.kts", defaultSettings(""
+                + "    targets {\n"
+                + "        desktop {}\n"
+                + "        ios {}\n"
+                + "    }\n"));
+
+        BuildResult result = runner(":ios:wsGenerateRobovmConfig").build();
+
+        assertEquals(TaskOutcome.SUCCESS, result.task(":ios:wsGenerateRobovmConfig").getOutcome());
+        String robovmXml = read(".worldsmiths/gen/ios/build/generated/ws-robovm/robovm.xml");
+        String assetsAbs = projectDir.resolve("assets").toAbsolutePath().toString().replace('\\', '/');
+        assertTrue(robovmXml.contains("<directory>" + assetsAbs + "</directory>"), robovmXml);
+        assertTrue(robovmXml.contains("<include>**</include>"), robovmXml);
+        assertTrue(robovmXml.contains("<skipPngCrush>true</skipPngCrush>"), robovmXml);
+    }
+
+    @Test
+    void iosRobovmConfigOmitsResourcesWhenAssetsDirMissing() throws IOException {
+        write("settings.gradle.kts", defaultSettings(""
+                + "    assetsDir = \"no-such-assets\"\n"
+                + "    targets {\n"
+                + "        desktop {}\n"
+                + "        ios {}\n"
+                + "    }\n"));
+
+        BuildResult result = runner(":ios:wsGenerateRobovmConfig").build();
+
+        assertEquals(TaskOutcome.SUCCESS, result.task(":ios:wsGenerateRobovmConfig").getOutcome());
+        String robovmXml = read(".worldsmiths/gen/ios/build/generated/ws-robovm/robovm.xml");
+        assertTrue(robovmXml.contains("<resources/>"), robovmXml);
+        assertFalse(robovmXml.contains("<directory>"), robovmXml);
+    }
+
+    @Test
+    void iosGeneratedRobovmXmlLeavesMetalAngleMergeToDependencyClasspath() throws IOException {
+        write("settings.gradle.kts", defaultSettings(""
+                + "    targets {\n"
+                + "        desktop {}\n"
+                + "        ios {}\n"
+                + "    }\n"));
+
+        BuildResult result = runner(":ios:wsGenerateRobovmConfig").build();
+
+        assertEquals(TaskOutcome.SUCCESS, result.task(":ios:wsGenerateRobovmConfig").getOutcome());
+        String robovmXml = read(".worldsmiths/gen/ios/build/generated/ws-robovm/robovm.xml");
+        // MetalANGLEKit + frameworkPaths come from gdx-backend-robovm-metalangle META-INF/robovm/ios/robovm.xml
+        // (RoboVM classpath merge). App xml must not hard-code those entries.
+        assertFalse(robovmXml.contains("MetalANGLEKit"), robovmXml);
+        assertFalse(robovmXml.contains("<frameworkPaths>"), robovmXml);
+        assertFalse(robovmXml.contains("libGLESv2"), robovmXml);
+        assertTrue(robovmXml.contains("<framework>UIKit</framework>"), robovmXml);
+        assertTrue(robovmXml.contains("<framework>Metal</framework>"), robovmXml);
+    }
+
+    @Test
     void assetsDirOverrideReachesGeneratedAndroidScript() throws IOException {
         write("gradle.properties", "android.useAndroidX=true\nandroid.builtInKotlin=false\n");
         write("settings.gradle.kts", settingsWithGoogle(""
@@ -567,6 +624,32 @@ class SettingsPluginFunctionalTest {
         assertTrue(
                 result.getOutput().contains(STORED) || result.getOutput().contains(REUSED),
                 "configuration-cache must not fail (reuse not required)\n" + result.getOutput());
+        assertTrue(
+                installTreeContainsShipMarker(projectDir.resolve(".worldsmiths/gen/ios/build/robovm")),
+                "robovmInstall tree must contain ws-ship-marker.txt from assetsDir");
+    }
+
+    @Test
+    void iosRobovmInstallZipPackagesSeededInstallTreeWithShipMarker() throws IOException {
+        write("settings.gradle.kts", defaultSettings(""
+                + "    targets {\n"
+                + "        desktop {}\n"
+                + "        ios {}\n"
+                + "    }\n"));
+        write(
+                ".worldsmiths/gen/ios/build/robovm/Payload/Starfall.app/ws-ship-marker.txt",
+                "worldsmiths-ship-marker\n");
+
+        BuildResult result = runner(":ios:wsRobovmInstallZip", "-x", "robovmInstall").build();
+
+        assertEquals(TaskOutcome.SUCCESS, result.task(":ios:wsRobovmInstallZip").getOutcome());
+        Path zip = projectDir.resolve(
+                ".worldsmiths/gen/ios/build/distributions/ios-robovm-install.zip");
+        assertTrue(Files.isRegularFile(zip), "missing " + zip);
+        Set<String> entries = zipEntryNames(zip);
+        assertTrue(
+                entries.stream().anyMatch(name -> name.endsWith("ws-ship-marker.txt")),
+                "install zip entries: " + entries);
     }
 
     @Test
@@ -762,6 +845,15 @@ class SettingsPluginFunctionalTest {
         assertTrue(
                 outcome == TaskOutcome.SUCCESS || outcome == TaskOutcome.UP_TO_DATE,
                 "robovmInstall outcome=" + outcome + "\n" + result.getOutput());
+    }
+
+    private static boolean installTreeContainsShipMarker(Path installRoot) throws IOException {
+        if (!Files.isDirectory(installRoot)) {
+            return false;
+        }
+        try (Stream<Path> paths = Files.walk(installRoot)) {
+            return paths.anyMatch(path -> path.getFileName().toString().equals("ws-ship-marker.txt"));
+        }
     }
 
     private static boolean isMacOsWithXcode() {
