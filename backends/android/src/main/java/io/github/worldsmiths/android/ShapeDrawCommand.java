@@ -1,8 +1,9 @@
 package io.github.worldsmiths.android;
 
 /**
- * One filled-rect draw issued while walking a scene for shape rendering. Package-visible so unit
- * tests can assert traversal and cell→pixel mapping without starting an Activity.
+ * One filled-rect draw mapped from a core {@link io.github.worldsmiths.core.RectDraw} for
+ * ShapeRenderer / recording. Package-visible so unit tests can assert adapter output without
+ * starting an Activity.
  */
 final class ShapeDrawCommand {
 

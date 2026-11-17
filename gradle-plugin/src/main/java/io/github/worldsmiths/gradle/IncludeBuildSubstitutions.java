@@ -1,43 +1,19 @@
 package io.github.worldsmiths.gradle;
 
 /**
- * Kotlin DSL {@code dependencySubstitution} block shared by TestKit fixtures.
- * Keep in sync with {@code docs/includebuild-substitutions.md} and sample settings.
+ * Kotlin DSL {@code includeBuild} helper for TestKit fixtures.
+ * Happy path is bare {@code includeBuild} — Gradle auto-substitutes when project
+ * names match Maven artifact ids (see {@code docs/includebuild-substitutions.md}).
  */
 public final class IncludeBuildSubstitutions {
 
     private IncludeBuildSubstitutions() {}
 
     /**
-     * Kotlin DSL substitute line for {@code backends-android} → {@code :backends:android}.
+     * Bare {@code includeBuild(path)} line for Kotlin DSL settings scripts (no
+     * {@code dependencySubstitution} block).
      */
-    public static String backendsAndroidSubstituteKotlin() {
-        return "        substitute(module(\"" + EngineModuleCoordinates.BACKENDS_ANDROID + "\"))"
-                + ".using(project(\":backends:android\"))\n";
-    }
-
-    /**
-     * Kotlin DSL substitute line for {@code backends-ios} → {@code :backends:ios}.
-     */
-    public static String backendsIosSubstituteKotlin() {
-        return "        substitute(module(\"" + EngineModuleCoordinates.BACKENDS_IOS + "\"))"
-                + ".using(project(\":backends:ios\"))\n";
-    }
-
-    /**
-     * Body of {@code dependencySubstitution { ... }} for Kotlin DSL settings scripts.
-     * Desktop / web / android / ios / ws-core.
-     */
-    public static String dependencySubstitutionKotlin() {
-        return "    dependencySubstitution {\n"
-                + "        substitute(module(\"" + EngineModuleCoordinates.BACKENDS_DESKTOP + "\"))"
-                + ".using(project(\":backends:desktop\"))\n"
-                + "        substitute(module(\"" + EngineModuleCoordinates.BACKENDS_WEB + "\"))"
-                + ".using(project(\":backends:web\"))\n"
-                + backendsAndroidSubstituteKotlin()
-                + backendsIosSubstituteKotlin()
-                + "        substitute(module(\"" + EngineModuleCoordinates.WS_CORE + "\"))"
-                + ".using(project(\":runtime:ws-core\"))\n"
-                + "    }\n";
+    public static String bareIncludeBuildKotlin(String engineRootPath) {
+        return "includeBuild(\"" + engineRootPath + "\")\n";
     }
 }

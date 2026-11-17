@@ -22,7 +22,7 @@ dependencies {
 
 tasks.test {
     useJUnitPlatform()
-    // Monorepo root (parent of this included build) for TestKit includeBuild + dependencySubstitution.
+    // Monorepo root (parent of this included build) for TestKit bare includeBuild.
     systemProperty("ws.engineRoot", rootDir.resolve("..").canonicalFile.absolutePath)
 }
 

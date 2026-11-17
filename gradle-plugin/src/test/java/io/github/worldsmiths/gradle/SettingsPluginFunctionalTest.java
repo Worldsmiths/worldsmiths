@@ -1008,9 +1008,7 @@ class SettingsPluginFunctionalTest {
         String engineRoot = engineRoot().toString().replace('\\', '/');
         return "plugins { id(\"io.github.worldsmiths.engine\") }\n"
                 + "dependencyResolutionManagement { repositories { " + repositories + " } }\n"
-                + "includeBuild(\"" + engineRoot + "\") {\n"
-                + IncludeBuildSubstitutions.dependencySubstitutionKotlin()
-                + "}\n"
+                + IncludeBuildSubstitutions.bareIncludeBuildKotlin(engineRoot)
                 + "rootProject.name = \"starfall\"\n"
                 + "include(\":game\")\n"
                 + "worldsmiths {\n"

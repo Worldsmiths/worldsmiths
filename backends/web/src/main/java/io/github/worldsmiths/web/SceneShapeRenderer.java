@@ -3,24 +3,23 @@ package io.github.worldsmiths.web;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.Matrix4;
-import io.github.worldsmiths.core.Node;
+import io.github.worldsmiths.core.RectDraw;
 import io.github.worldsmiths.core.Scene;
-import io.github.worldsmiths.core.Sprite;
-import io.github.worldsmiths.core.Transform2D;
+import io.github.worldsmiths.core.SceneWalk;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.IntSupplier;
 
 /**
- * Walks a retained {@link Scene} and draws each visible {@link Sprite} as a filled rect from
- * {@link Transform2D} cell coordinates. Owns a libGDX {@link ShapeRenderer}; dispose when the
- * listener shuts down.
+ * Thin ShapeRenderer adapter: walks a retained {@link Scene} via {@link SceneWalk} and draws each
+ * rect as a filled shape. Owns a libGDX {@link ShapeRenderer}; dispose when the listener shuts
+ * down.
  */
 public final class SceneShapeRenderer {
 
-    /** Pixel size of one scene cell (Transform2D units map 1:1 to cells). */
-    public static final float CELL_SIZE = 32f;
+    /** Pixel size of one scene cell; aliases {@link SceneWalk#CELL_SIZE}. */
+    public static final float CELL_SIZE = SceneWalk.CELL_SIZE;
 
     private final ShapeRenderer shapes;
     private final IntSupplier screenWidth;
@@ -85,38 +84,25 @@ public final class SceneShapeRenderer {
     }
 
     /**
-     * Collects filled-rect draw commands for the scene without touching GL. Package-visible test
-     * seam and shared walk used by {@link #render(Scene)}.
+     * Maps {@link SceneWalk#collectDrawCommands(Scene)} into local {@link ShapeDrawCommand}s
+     * without touching GL. Package-visible test seam and shared path used by {@link #render(Scene)}.
      */
     static List<ShapeDrawCommand> collectDrawCommands(Scene scene) {
-        List<ShapeDrawCommand> draws = new ArrayList<ShapeDrawCommand>();
-        if (scene == null) {
-            return draws;
-        }
-        for (Node node : scene.nodes) {
-            collectFromNode(node, draws);
-        }
-        return draws;
-    }
-
-    private static void collectFromNode(Node node, List<ShapeDrawCommand> draws) {
-        Transform2D transform = node.get(Transform2D.class);
-        Sprite sprite = node.get(Sprite.class);
-        if (transform != null && sprite != null && sprite.visible) {
+        List<RectDraw> rects = SceneWalk.collectDrawCommands(scene);
+        List<ShapeDrawCommand> draws = new ArrayList<ShapeDrawCommand>(rects.size());
+        for (RectDraw rect : rects) {
             draws.add(
                     new ShapeDrawCommand(
-                            transform.x * CELL_SIZE,
-                            transform.y * CELL_SIZE,
-                            CELL_SIZE,
-                            CELL_SIZE,
-                            sprite.r,
-                            sprite.g,
-                            sprite.b,
-                            sprite.a));
+                            rect.x,
+                            rect.y,
+                            rect.width,
+                            rect.height,
+                            rect.r,
+                            rect.g,
+                            rect.b,
+                            rect.a));
         }
-        for (Node child : node.children) {
-            collectFromNode(child, draws);
-        }
+        return draws;
     }
 
     /**
