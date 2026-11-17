@@ -23,8 +23,8 @@ import org.junit.jupiter.api.Test;
 
 /**
  * Sample game import gate: every nested {@code samples/*}/game tree must not import platform
- * backends or {@code *}ApplicationConfiguration types. D9a-S2 also bans all {@code
- * com.badlogic.gdx} imports in snake + minimal; rollball may still use LibGDX core until D9b.
+ * backends, {@code *}ApplicationConfiguration types, or any {@code com.badlogic.gdx} (full D9b ban:
+ * snake + rollball + minimal).
  *
  * <p>Runs under root {@code ./gradlew build} via {@code :runtime:ws-core:test} (no display).
  */
@@ -38,9 +38,9 @@ class SamplesBackendsImportGateTest {
 
     private static final String LIBGDX_CORE_PREFIX = "com.badlogic.gdx";
 
-    /** Samples that must not import any {@code com.badlogic.gdx.*} (D9a-S2 phased gate). */
+    /** All samples must not import any {@code com.badlogic.gdx.*} (D9b full gate). */
     private static final Set<String> LIBGDX_CORE_BANNED_SAMPLES =
-            new HashSet<String>(Arrays.asList("snake", "minimal"));
+            new HashSet<String>(Arrays.asList("snake", "rollball", "minimal"));
 
     private static final Pattern IMPORT_LINE =
             Pattern.compile("^\\s*import\\s+(?:static\\s+)?([\\w.]+)\\s*;", Pattern.MULTILINE);
@@ -77,21 +77,21 @@ class SamplesBackendsImportGateTest {
     }
 
     @Test
-    void phasedCoreBanFlagsLibgdxCoreImport() {
+    void fullCoreBanFlagsLibgdxCoreImport() {
         assertTrue(
                 hasBannedLibgdxCoreImport("import com.badlogic.gdx.Gdx;"),
-                "phased gate must ban com.badlogic.gdx for snake/minimal");
+                "full gate must ban com.badlogic.gdx for all samples");
         assertTrue(
                 hasBannedLibgdxCoreImport(
-                        "import com.badlogic.gdx.graphics.glutils.ShapeRenderer;"),
-                "phased gate must ban nested com.badlogic.gdx packages");
+                        "import com.badlogic.gdx.graphics.g3d.ModelBatch;"),
+                "full gate must ban nested com.badlogic.gdx packages");
     }
 
     @Test
-    void phasedCoreBanDoesNotFlagEngineImports() {
+    void fullCoreBanDoesNotFlagEngineImports() {
         assertFalse(
-                hasBannedLibgdxCoreImport("import io.github.worldsmiths.core.Draw2D;"),
-                "engine imports must remain allowed");
+                hasBannedLibgdxCoreImport("import io.github.worldsmiths.core.thin3d.Thin3D;"),
+                "engine Thin3D imports must remain allowed");
     }
 
     @Test
@@ -145,7 +145,7 @@ class SamplesBackendsImportGateTest {
                     + backendHits.stream().collect(Collectors.joining("\n")));
         }
         if (!coreHits.isEmpty()) {
-            fail("D9a-S2: snake/minimal game sources must not import com.badlogic.gdx:\n"
+            fail("D9b: snake/rollball/minimal game sources must not import com.badlogic.gdx:\n"
                     + coreHits.stream().collect(Collectors.joining("\n")));
         }
     }

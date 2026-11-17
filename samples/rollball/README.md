@@ -1,7 +1,7 @@
 # Rollball sample
 
 D8 3D probe: roll a ball on a pad, collect pickups, win or fall/bounds-fail, restart without
-relaunching. Sample owns ModelBatch / PerspectiveCamera / ModelBuilder meshes; scene wiring uses
+relaunching. Uses engine `Thin3D` (camera / lights / primitive meshes / batch); scene wiring uses
 `Transform3D` → ModelInstance sync each frame. Score / WIN / FAIL appear in the window title
 (`Rollball — score: N`).
 
@@ -21,7 +21,7 @@ Desktop, browser (TeaVM / gdx-teavm), Android, and iOS (RoboVM) share the same `
 - Browser run: a modern Chromium-based browser (Chrome recommended).
 - iOS package / simulator: **macOS + Xcode** (RoboVM). Windows/Linux can still configure and generate `:ios`.
 
-This sample is a nested Gradle project. It applies `io.github.worldsmiths.engine` via `includeBuild` of the monorepo `gradle-plugin`, and resolves `ws-core` / `backends-desktop` / `backends-web` / `backends-android` / `backends-ios` from the monorepo root with bare `includeBuild` (not Maven Central; Gradle auto-substitutes matching project names). Android needs Google Maven (`google()`) in both `pluginManagement.repositories` (AGP on the engine plugin classpath) and `dependencyResolutionManagement` (Android artifacts). The consumer snippet is in [`docs/includebuild-substitutions.md`](../../docs/includebuild-substitutions.md). Game sources may use LibGDX core (`Gdx`, g3d) but must not import `com.badlogic.gdx.backends`, `com.github.xpenatan.gdx.teavm.backends`, or any `*ApplicationConfiguration` type.
+This sample is a nested Gradle project. It applies `io.github.worldsmiths.engine` via `includeBuild` of the monorepo `gradle-plugin`, and resolves `ws-core` / `backends-desktop` / `backends-web` / `backends-android` / `backends-ios` from the monorepo root with bare `includeBuild` (not Maven Central; Gradle auto-substitutes matching project names). Android needs Google Maven (`google()`) in both `pluginManagement.repositories` (AGP on the engine plugin classpath) and `dependencyResolutionManagement` (Android artifacts). The consumer snippet is in [`docs/includebuild-substitutions.md`](../../docs/includebuild-substitutions.md). Game sources must not import `com.badlogic.gdx` (including core); input, graphics meta, and 3D draw go through `EngineServices`. They must also not import `com.badlogic.gdx.backends`, `com.github.xpenatan.gdx.teavm.backends`, or any `*ApplicationConfiguration` type.
 
 ## Manual validation (desktop + web + Android + iOS)
 

@@ -19,12 +19,14 @@ class EngineServicesTest {
         assertNotNull(services.graphics());
         assertNotNull(services.draw2d());
         assertNotNull(services.files());
+        assertNotNull(services.thin3d());
         assertNotNull(services.extensions());
         assertSame(services.input(), services.input());
         assertSame(services.clock(), services.clock());
         assertSame(services.graphics(), services.graphics());
         assertSame(services.draw2d(), services.draw2d());
         assertSame(services.files(), services.files());
+        assertSame(services.thin3d(), services.thin3d());
     }
 
     @Test

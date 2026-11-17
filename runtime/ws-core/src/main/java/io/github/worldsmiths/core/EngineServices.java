@@ -1,5 +1,7 @@
 package io.github.worldsmiths.core;
 
+import io.github.worldsmiths.core.thin3d.Thin3D;
+
 /**
  * Services bag passed to {@link WorldsmithsGame#create(EngineServices)}. Fixed getters cover the D9
  * floor systems; {@link #extensions()} is an unused stub reserved for plugins/ECS later.
@@ -20,6 +22,9 @@ public interface EngineServices {
 
     /** Sync read of packaged internal text/bytes. */
     Files files();
+
+    /** Thin 3D: camera, lights, primitive meshes, batch begin/render/end. */
+    Thin3D thin3d();
 
     /** Unused in D9 — empty stub for a future plugin/ECS escape hatch. */
     Extensions extensions();

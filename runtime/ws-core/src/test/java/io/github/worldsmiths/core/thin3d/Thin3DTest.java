@@ -1,0 +1,86 @@
+package io.github.worldsmiths.core.thin3d;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import io.github.worldsmiths.core.FakeEngineServices;
+import java.util.List;
+import org.junit.jupiter.api.Test;
+
+class Thin3DTest {
+
+    @Test
+    void fakeBagExposesStableThin3D() {
+        FakeEngineServices services = new FakeEngineServices();
+
+        assertNotNull(services.thin3d());
+        assertSame(services.thin3d(), services.thin3d());
+    }
+
+    @Test
+    void fakeThin3DRecordsCameraLightsPrimitivesBatchAndDispose() {
+        FakeEngineServices services = new FakeEngineServices();
+        FakeThin3D thin3d = services.thin3d();
+
+        PerspectiveCamera camera = thin3d.createPerspectiveCamera(67f, 800f, 600f);
+        camera.setNear(0.1f);
+        camera.setFar(100f);
+        camera.setPosition(1f, 2f, 3f);
+        camera.setUp(0f, 1f, 0f);
+        camera.lookAt(0f, 0f, 0f);
+        camera.update();
+
+        Environment environment = thin3d.createEnvironment();
+        environment.setAmbientLight(0.45f, 0.45f, 0.45f, 1f);
+        environment.addDirectionalLight(0.85f, 0.85f, 0.8f, -0.6f, -1f, -0.3f);
+
+        ModelBuilder builder = thin3d.createModelBuilder();
+        Model sphere = builder.createSphere(1f, 1f, 1f, 24, 24, 0.2f, 0.55f, 0.95f, 1f);
+        Model box = builder.createBox(2f, 0.2f, 2f, 0.35f, 0.4f, 0.38f, 1f);
+        ModelInstance sphereInstance = thin3d.createInstance(sphere);
+        ModelInstance boxInstance = thin3d.createInstance(box);
+        sphereInstance.setTranslationAndScaling(0.1f, 0.2f, 0.3f, 1f, 1f, 1f);
+        boxInstance.setTranslation(0f, -0.1f, 0f);
+
+        ModelBatch batch = thin3d.createModelBatch();
+        batch.begin(camera);
+        batch.render(boxInstance, environment);
+        batch.render(sphereInstance, environment);
+        batch.end();
+        batch.dispose();
+        sphere.dispose();
+        box.dispose();
+
+        List<FakeThin3D.Command> commands = thin3d.commands();
+        assertEquals(FakeThin3D.Command.Kind.CREATE_CAMERA, commands.get(0).kind);
+        assertEquals(67f, commands.get(0).a, 1e-5f);
+        assertEquals(FakeThin3D.Command.Kind.CAMERA_NEAR, commands.get(1).kind);
+        assertEquals(FakeThin3D.Command.Kind.CAMERA_FAR, commands.get(2).kind);
+        assertEquals(FakeThin3D.Command.Kind.CAMERA_POSITION, commands.get(3).kind);
+        assertEquals(FakeThin3D.Command.Kind.CAMERA_UP, commands.get(4).kind);
+        assertEquals(FakeThin3D.Command.Kind.CAMERA_LOOK_AT, commands.get(5).kind);
+        assertEquals(FakeThin3D.Command.Kind.CAMERA_UPDATE, commands.get(6).kind);
+        assertEquals(FakeThin3D.Command.Kind.CREATE_ENVIRONMENT, commands.get(7).kind);
+        assertEquals(FakeThin3D.Command.Kind.AMBIENT_LIGHT, commands.get(8).kind);
+        assertEquals(FakeThin3D.Command.Kind.DIRECTIONAL_LIGHT, commands.get(9).kind);
+        assertEquals(FakeThin3D.Command.Kind.CREATE_BUILDER, commands.get(10).kind);
+        assertEquals(FakeThin3D.Command.Kind.CREATE_SPHERE, commands.get(11).kind);
+        assertEquals(FakeThin3D.Command.Kind.CREATE_BOX, commands.get(12).kind);
+        assertEquals(FakeThin3D.Command.Kind.CREATE_INSTANCE, commands.get(13).kind);
+        assertEquals(FakeThin3D.Command.Kind.CREATE_INSTANCE, commands.get(14).kind);
+        assertEquals(FakeThin3D.Command.Kind.INSTANCE_TRANSFORM, commands.get(15).kind);
+        assertEquals(FakeThin3D.Command.Kind.INSTANCE_TRANSLATION, commands.get(16).kind);
+        assertEquals(FakeThin3D.Command.Kind.CREATE_BATCH, commands.get(17).kind);
+        assertEquals(FakeThin3D.Command.Kind.BATCH_BEGIN, commands.get(18).kind);
+        assertEquals(FakeThin3D.Command.Kind.BATCH_RENDER, commands.get(19).kind);
+        assertEquals(FakeThin3D.Command.Kind.BATCH_RENDER, commands.get(20).kind);
+        assertEquals(FakeThin3D.Command.Kind.BATCH_END, commands.get(21).kind);
+        assertEquals(FakeThin3D.Command.Kind.BATCH_DISPOSE, commands.get(22).kind);
+        assertEquals(FakeThin3D.Command.Kind.MODEL_DISPOSE, commands.get(23).kind);
+        assertEquals(FakeThin3D.Command.Kind.MODEL_DISPOSE, commands.get(24).kind);
+        assertTrue(thin3d.batchDisposed());
+        assertTrue(thin3d.modelsDisposed());
+    }
+}

@@ -1,37 +1,32 @@
 package io.github.worldsmiths.samples.rollball;
 
-import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.Input;
-import com.badlogic.gdx.graphics.Color;
-import com.badlogic.gdx.graphics.PerspectiveCamera;
-import com.badlogic.gdx.graphics.VertexAttributes;
-import com.badlogic.gdx.graphics.g3d.Environment;
-import com.badlogic.gdx.graphics.g3d.Material;
-import com.badlogic.gdx.graphics.g3d.Model;
-import com.badlogic.gdx.graphics.g3d.ModelBatch;
-import com.badlogic.gdx.graphics.g3d.ModelInstance;
-import com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute;
-import com.badlogic.gdx.graphics.g3d.environment.DirectionalLight;
-import com.badlogic.gdx.graphics.g3d.utils.ModelBuilder;
+import io.github.worldsmiths.core.EngineServices;
+import io.github.worldsmiths.core.Input;
+import io.github.worldsmiths.core.Key;
 import io.github.worldsmiths.core.Node;
 import io.github.worldsmiths.core.Scene;
 import io.github.worldsmiths.core.Transform3D;
-import io.github.worldsmiths.core.EngineServices;
 import io.github.worldsmiths.core.WorldsmithsGame;
+import io.github.worldsmiths.core.thin3d.Environment;
+import io.github.worldsmiths.core.thin3d.Model;
+import io.github.worldsmiths.core.thin3d.ModelBatch;
+import io.github.worldsmiths.core.thin3d.ModelBuilder;
+import io.github.worldsmiths.core.thin3d.ModelInstance;
+import io.github.worldsmiths.core.thin3d.PerspectiveCamera;
+import io.github.worldsmiths.core.thin3d.Thin3D;
 
 /**
- * D8 roll-a-ball: sample-owned ModelBatch + follow camera; controller → {@link Transform3D} →
- * ModelInstance.transform each frame. Keyboard WASD/arrows + touch drag-stick; R/Space or tap to
- * restart when terminal.
+ * D8 roll-a-ball: sample-owned ModelBatch + follow camera via engine {@link Thin3D}; controller →
+ * {@link Transform3D} → ModelInstance transform each frame. Keyboard WASD/arrows + touch drag-stick;
+ * R/Space or tap to restart when terminal.
  */
 public final class RollballGame implements WorldsmithsGame {
 
     private static final float PICKUP_Y = 0.4f;
     private static final float FLOOR_THICKNESS = 0.2f;
-    private static final int ATTRS =
-            VertexAttributes.Usage.Position | VertexAttributes.Usage.Normal;
 
     private final RollballController controller;
+    private EngineServices services;
     private Scene scene;
     private Transform3D ballTransform;
     private final Transform3D[] pickupTransforms = new Transform3D[RollballController.PICKUP_COUNT];
@@ -87,56 +82,47 @@ public final class RollballGame implements WorldsmithsGame {
 
     @Override
     public void create(EngineServices services) {
-        // T1 signature stub — rollball still uses Gdx directly until D9b.
-        ModelBuilder builder = new ModelBuilder();
+        if (services == null) {
+            throw new NullPointerException("services");
+        }
+        this.services = services;
+        Thin3D thin3d = services.thin3d();
+        ModelBuilder builder = thin3d.createModelBuilder();
         float ballDiam = RollballController.BALL_RADIUS * 2f;
         ballModel =
                 builder.createSphere(
-                        ballDiam,
-                        ballDiam,
-                        ballDiam,
-                        24,
-                        24,
-                        new Material(
-                                ColorAttribute.createDiffuse(new Color(0.2f, 0.55f, 0.95f, 1f))),
-                        ATTRS);
+                        ballDiam, ballDiam, ballDiam, 24, 24, 0.2f, 0.55f, 0.95f, 1f);
         float pickupDiam = RollballController.PICKUP_RADIUS * 2f;
         pickupModel =
                 builder.createSphere(
-                        pickupDiam,
-                        pickupDiam,
-                        pickupDiam,
-                        16,
-                        16,
-                        new Material(
-                                ColorAttribute.createDiffuse(new Color(0.95f, 0.75f, 0.15f, 1f))),
-                        ATTRS);
+                        pickupDiam, pickupDiam, pickupDiam, 16, 16, 0.95f, 0.75f, 0.15f, 1f);
         float floorSize = RollballController.FLOOR_HALF * 2f;
         floorModel =
                 builder.createBox(
-                        floorSize,
-                        FLOOR_THICKNESS,
-                        floorSize,
-                        new Material(
-                                ColorAttribute.createDiffuse(new Color(0.35f, 0.4f, 0.38f, 1f))),
-                        ATTRS);
+                        floorSize, FLOOR_THICKNESS, floorSize, 0.35f, 0.4f, 0.38f, 1f);
 
-        ballInstance = new ModelInstance(ballModel);
-        floorInstance = new ModelInstance(floorModel);
+        ballInstance = thin3d.createInstance(ballModel);
+        floorInstance = thin3d.createInstance(floorModel);
         for (int i = 0; i < RollballController.PICKUP_COUNT; i++) {
-            pickupInstances[i] = new ModelInstance(pickupModel);
+            pickupInstances[i] = thin3d.createInstance(pickupModel);
         }
 
-        modelBatch = new ModelBatch();
-        environment = new Environment();
-        environment.set(new ColorAttribute(ColorAttribute.AmbientLight, 0.45f, 0.45f, 0.45f, 1f));
-        environment.add(new DirectionalLight().set(0.85f, 0.85f, 0.8f, -0.6f, -1f, -0.3f));
+        modelBatch = thin3d.createModelBatch();
+        environment = thin3d.createEnvironment();
+        environment.setAmbientLight(0.45f, 0.45f, 0.45f, 1f);
+        environment.addDirectionalLight(0.85f, 0.85f, 0.8f, -0.6f, -1f, -0.3f);
 
-        float w = Gdx.graphics != null ? Gdx.graphics.getWidth() : 800f;
-        float h = Gdx.graphics != null ? Gdx.graphics.getHeight() : 600f;
-        camera = new PerspectiveCamera(67f, w, h);
-        camera.near = 0.1f;
-        camera.far = 100f;
+        float w = services.graphics().getWidth();
+        float h = services.graphics().getHeight();
+        if (w <= 0f) {
+            w = 800f;
+        }
+        if (h <= 0f) {
+            h = 600f;
+        }
+        camera = thin3d.createPerspectiveCamera(67f, w, h);
+        camera.setNear(0.1f);
+        camera.setFar(100f);
         updateCamera();
         publishTitle();
     }
@@ -221,20 +207,17 @@ public final class RollballGame implements WorldsmithsGame {
     }
 
     private void applyInput(float delta) {
-        if (Gdx.input == null) {
+        if (services == null) {
             controller.update(delta, 0f, 0f);
             return;
         }
+        Input input = services.input();
         boolean terminal = controller.terminal();
-        boolean left =
-                Gdx.input.isKeyPressed(Input.Keys.LEFT) || Gdx.input.isKeyPressed(Input.Keys.A);
-        boolean right =
-                Gdx.input.isKeyPressed(Input.Keys.RIGHT) || Gdx.input.isKeyPressed(Input.Keys.D);
-        boolean up = Gdx.input.isKeyPressed(Input.Keys.UP) || Gdx.input.isKeyPressed(Input.Keys.W);
-        boolean down =
-                Gdx.input.isKeyPressed(Input.Keys.DOWN) || Gdx.input.isKeyPressed(Input.Keys.S);
-        boolean restartKey =
-                Gdx.input.isKeyPressed(Input.Keys.R) || Gdx.input.isKeyPressed(Input.Keys.SPACE);
+        boolean left = input.isKeyDown(Key.LEFT) || input.isKeyDown(Key.A);
+        boolean right = input.isKeyDown(Key.RIGHT) || input.isKeyDown(Key.D);
+        boolean up = input.isKeyDown(Key.UP) || input.isKeyDown(Key.W);
+        boolean down = input.isKeyDown(Key.DOWN) || input.isKeyDown(Key.S);
+        boolean restartKey = input.isKeyDown(Key.R) || input.isKeyDown(Key.SPACE);
         RollballMoveIntent keyIntent =
                 RollballMoveIntent.fromKeys(left, right, up, down, restartKey, terminal);
         RollballMoveIntent touchIntent = pollTouchIntent(terminal);
@@ -249,29 +232,30 @@ public final class RollballGame implements WorldsmithsGame {
     }
 
     /**
-     * Polls {@code Gdx.input} for drag-stick / restart-tap. Finger-down sets stick origin; while
+     * Polls engine {@link Input} for drag-stick / restart-tap. Finger-down sets stick origin; while
      * held, drag maps to axes; release zeros axes and may restart when terminal.
      */
     private RollballMoveIntent pollTouchIntent(boolean terminal) {
-        if (Gdx.input.justTouched()) {
+        Input input = services.input();
+        if (input.justTouched()) {
             trackingTouch = true;
-            touchOriginX = Gdx.input.getX();
-            touchOriginY = Gdx.input.getY();
+            touchOriginX = input.getX();
+            touchOriginY = input.getY();
             touchLastX = touchOriginX;
             touchLastY = touchOriginY;
             return RollballTouchGestures.dragStick(
                     touchOriginX, touchOriginY, touchLastX, touchLastY, terminal);
         }
-        if (trackingTouch && Gdx.input.isTouched()) {
-            touchLastX = Gdx.input.getX();
-            touchLastY = Gdx.input.getY();
+        if (trackingTouch && input.isTouched()) {
+            touchLastX = input.getX();
+            touchLastY = input.getY();
             return RollballTouchGestures.dragStick(
                     touchOriginX, touchOriginY, touchLastX, touchLastY, terminal);
         }
         if (trackingTouch) {
             trackingTouch = false;
-            float upX = Gdx.input.getX();
-            float upY = Gdx.input.getY();
+            float upX = input.getX();
+            float upY = input.getY();
             return RollballTouchGestures.release(touchOriginX, touchOriginY, upX, upY, terminal);
         }
         return RollballMoveIntent.of(0f, 0f, false);
@@ -283,7 +267,7 @@ public final class RollballGame implements WorldsmithsGame {
         }
         if (floorInstance != null) {
             float y = -FLOOR_THICKNESS * 0.5f;
-            floorInstance.transform.setToTranslation(0f, y, 0f);
+            floorInstance.setTranslation(0f, y, 0f);
         }
         for (int i = 0; i < RollballController.PICKUP_COUNT; i++) {
             if (pickupInstances[i] != null && pickupTransforms[i] != null) {
@@ -294,8 +278,7 @@ public final class RollballGame implements WorldsmithsGame {
 
     private static void writeInstanceTransform(ModelInstance instance, Transform3D tx) {
         // Full overwrite each frame (not incremental translate).
-        instance.transform.setToTranslationAndScaling(
-                tx.x, tx.y, tx.z, tx.scale, tx.scale, tx.scale);
+        instance.setTranslationAndScaling(tx.x, tx.y, tx.z, tx.scale, tx.scale, tx.scale);
     }
 
     private void updateCamera() {
@@ -306,8 +289,8 @@ public final class RollballGame implements WorldsmithsGame {
         float[] lookAt = new float[3];
         RollballFollowCamera.compute(
                 controller.ballX(), controller.ballY(), controller.ballZ(), eye, lookAt);
-        camera.position.set(eye[0], eye[1], eye[2]);
-        camera.up.set(0f, 1f, 0f);
+        camera.setPosition(eye[0], eye[1], eye[2]);
+        camera.setUp(0f, 1f, 0f);
         camera.lookAt(lookAt[0], lookAt[1], lookAt[2]);
         camera.update();
     }
@@ -322,8 +305,8 @@ public final class RollballGame implements WorldsmithsGame {
 
     private void publishTitle() {
         lastTitle = formatTitle(controller.score(), controller.won(), controller.failed());
-        if (Gdx.graphics != null) {
-            Gdx.graphics.setTitle(lastTitle);
+        if (services != null) {
+            services.graphics().setTitle(lastTitle);
         }
     }
 }

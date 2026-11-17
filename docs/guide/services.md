@@ -15,13 +15,8 @@ Package: `io.github.worldsmiths.core`.
 | `graphics()` | [`Graphics`](graphics.md) | Size + best-effort `setTitle` |
 | `draw2d()` | [`Draw2D`](draw2d.md) | Immediate-mode lines/rects + ortho |
 | `files()` | [`Files`](files.md) | Sync packaged internal text/bytes |
+| `thin3d()` | [`Thin3D`](thin3d.md) | Camera, lights, primitive meshes, batch |
 | `extensions()` | `EngineServices.Extensions` | Empty stub; unused in D9 |
-
-## Upcoming
-
-| Facade | Slice | Guide |
-| --- | --- | --- |
-| Thin 3D | D9b | later |
 
 ## Honesty limits
 

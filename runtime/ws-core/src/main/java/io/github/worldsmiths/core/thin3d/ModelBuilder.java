@@ -1,0 +1,21 @@
+package io.github.worldsmiths.core.thin3d;
+
+/**
+ * Builds primitive meshes in code. Diffuse color is RGBA; position+normal attributes are always
+ * included so directional lights shade correctly.
+ */
+public interface ModelBuilder {
+
+    Model createSphere(
+            float width,
+            float height,
+            float depth,
+            int divisionsU,
+            int divisionsV,
+            float r,
+            float g,
+            float b,
+            float a);
+
+    Model createBox(float width, float height, float depth, float r, float g, float b, float a);
+}

@@ -1,9 +1,11 @@
 package io.github.worldsmiths.core;
 
+import io.github.worldsmiths.core.thin3d.FakeThin3D;
+
 /**
  * Always-non-null services bag for unit tests and headless game harnesses. Exposes typed fakes so
- * tests can set key/pointer/clock/graphics/files state and assert Draw2D recordings without a
- * display.
+ * tests can set key/pointer/clock/graphics/files state and assert Draw2D / Thin3D recordings without
+ * a display.
  */
 public final class FakeEngineServices implements EngineServices {
     private final FakeInput input = new FakeInput();
@@ -11,6 +13,7 @@ public final class FakeEngineServices implements EngineServices {
     private final FakeGraphics graphics = new FakeGraphics();
     private final FakeDraw2D draw2d = new FakeDraw2D();
     private final FakeFiles files = new FakeFiles();
+    private final FakeThin3D thin3d = new FakeThin3D();
     private final Extensions extensions = new Extensions();
 
     @Override
@@ -36,6 +39,11 @@ public final class FakeEngineServices implements EngineServices {
     @Override
     public FakeFiles files() {
         return files;
+    }
+
+    @Override
+    public FakeThin3D thin3d() {
+        return thin3d;
     }
 
     @Override
