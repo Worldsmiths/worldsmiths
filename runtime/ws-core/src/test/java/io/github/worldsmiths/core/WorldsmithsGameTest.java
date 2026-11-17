@@ -16,6 +16,7 @@ class WorldsmithsGameTest {
             game.create();
             game.update(1f / 60f);
             game.render();
+            game.dispose();
         });
     }
 
@@ -43,5 +44,8 @@ class WorldsmithsGameTest {
 
         @Override
         public void render() {}
+
+        @Override
+        public void dispose() {}
     }
 }

@@ -67,5 +67,8 @@ class WebBackendTest {
 
         @Override
         public void render() {}
+
+        @Override
+        public void dispose() {}
     }
 }

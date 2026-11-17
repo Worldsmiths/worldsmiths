@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -19,13 +20,13 @@ import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 
 /**
- * AC1: {@code samples/snake} game sources must not import platform backends or
- * {@code *ApplicationConfiguration} types — specifically {@code com.badlogic.gdx.backends},
+ * AC3: every nested {@code samples/*}/game tree must not import platform backends or
+ * {@code *ApplicationConfiguration} types - specifically {@code com.badlogic.gdx.backends},
  * {@code com.github.xpenatan.gdx.teavm.backends}, and any import whose type name contains
  * {@code ApplicationConfiguration}.
  * Runs under root {@code ./gradlew build} via {@code :runtime:ws-core:test} (no display).
  */
-class SnakeSampleBackendsImportGateTest {
+class SamplesBackendsImportGateTest {
 
     private static final List<String> BANNED_PREFIXES = Arrays.asList(
             "com.badlogic.gdx.backends",
@@ -67,28 +68,45 @@ class SnakeSampleBackendsImportGateTest {
     }
 
     @Test
-    void snakeSampleJavaSourcesMustNotImportBannedBackends() throws IOException {
-        Path snakeRoot = repoRoot().resolve("samples").resolve("snake");
-        // Gate the author-owned :game tree only — generated :desktop/:web/:android/:ios launchers
-        // under .worldsmiths/gen intentionally import platform backends.
-        Path gameSources = snakeRoot.resolve("game");
-        assertTrue(Files.isDirectory(gameSources), "missing samples/snake/game at " + gameSources);
+    void allSampleGameJavaSourcesMustNotImportBannedBackends() throws IOException {
+        Path samplesRoot = repoRoot().resolve("samples");
+        assertTrue(Files.isDirectory(samplesRoot), "missing samples/ at " + samplesRoot);
 
-        List<Path> javaFiles = new ArrayList<Path>();
-        try (Stream<Path> walk = Files.walk(gameSources)) {
-            walk.filter(p -> p.toString().endsWith(".java")).forEach(javaFiles::add);
-        }
-        assertFalse(javaFiles.isEmpty(), "samples/snake/game has no .java sources under " + gameSources);
+        List<Path> gameTrees = listSampleGameTrees(samplesRoot);
+        assertFalse(gameTrees.isEmpty(), "no samples/*/game trees under " + samplesRoot);
+
+        // D8: gate must cover snake + rollball (and any future samples/*/game).
+        List<String> sampleNames = gameTrees.stream()
+                .map(p -> p.getParent().getFileName().toString())
+                .sorted()
+                .collect(Collectors.toList());
+        assertTrue(
+                sampleNames.contains("snake"),
+                "expected samples/snake/game among scanned trees, got " + sampleNames);
+        assertTrue(
+                sampleNames.contains("rollball"),
+                "expected samples/rollball/game among scanned trees, got " + sampleNames);
 
         List<String> hits = new ArrayList<String>();
-        for (Path file : javaFiles) {
-            String text = new String(Files.readAllBytes(file), StandardCharsets.UTF_8);
-            if (hasBannedImport(text)) {
-                hits.add(snakeRoot.relativize(file).toString());
+        for (Path gameSources : gameTrees) {
+            Path sampleRoot = gameSources.getParent();
+            List<Path> javaFiles = new ArrayList<Path>();
+            try (Stream<Path> walk = Files.walk(gameSources)) {
+                walk.filter(p -> p.toString().endsWith(".java")).forEach(javaFiles::add);
+            }
+            assertFalse(
+                    javaFiles.isEmpty(),
+                    sampleRoot.getFileName() + "/game has no .java sources under " + gameSources);
+
+            for (Path file : javaFiles) {
+                String text = new String(Files.readAllBytes(file), StandardCharsets.UTF_8);
+                if (hasBannedImport(text)) {
+                    hits.add(samplesRoot.relativize(file).toString());
+                }
             }
         }
         if (!hits.isEmpty()) {
-            fail("samples/snake game sources must not import banned backend / ApplicationConfiguration types:\n"
+            fail("samples/*/game sources must not import banned backend / ApplicationConfiguration types:\n"
                     + hits.stream().collect(Collectors.joining("\n")));
         }
     }
@@ -109,6 +127,22 @@ class SnakeSampleBackendsImportGateTest {
             }
         }
         return false;
+    }
+
+    private static List<Path> listSampleGameTrees(Path samplesRoot) throws IOException {
+        List<Path> gameTrees = new ArrayList<Path>();
+        try (DirectoryStream<Path> stream = Files.newDirectoryStream(samplesRoot)) {
+            for (Path sampleDir : stream) {
+                if (!Files.isDirectory(sampleDir)) {
+                    continue;
+                }
+                Path gameSources = sampleDir.resolve("game");
+                if (Files.isDirectory(gameSources)) {
+                    gameTrees.add(gameSources);
+                }
+            }
+        }
+        return gameTrees;
     }
 
     private static Path repoRoot() {

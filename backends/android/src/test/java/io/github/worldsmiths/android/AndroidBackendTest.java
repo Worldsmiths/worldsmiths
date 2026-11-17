@@ -69,5 +69,8 @@ class AndroidBackendTest {
 
         @Override
         public void render() {}
+
+        @Override
+        public void dispose() {}
     }
 }

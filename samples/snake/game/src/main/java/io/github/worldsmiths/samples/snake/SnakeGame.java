@@ -81,6 +81,14 @@ public final class SnakeGame implements WorldsmithsGame {
         publishTitleIfChanged();
     }
 
+    @Override
+    public void dispose() {
+        if (shapes != null) {
+            shapes.dispose();
+            shapes = null;
+        }
+    }
+
     /**
      * Syncs head / body / food node transforms and adds or removes body segment nodes to match
      * {@link SnakeController#bodyLength()}. Package-visible test seam.

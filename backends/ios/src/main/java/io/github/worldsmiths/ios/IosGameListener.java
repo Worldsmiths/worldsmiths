@@ -12,6 +12,12 @@ import io.github.worldsmiths.core.WorldsmithsGame;
  */
 public final class IosGameListener implements ApplicationListener {
 
+    /**
+     * Color + depth clear each frame. Package-visible so unit tests can assert the depth bit without
+     * a real GL context (same spirit as {@link SceneShapeRenderer#recordingOnly()}).
+     */
+    static final int FRAME_CLEAR_MASK = GL20.GL_COLOR_BUFFER_BIT | GL20.GL_DEPTH_BUFFER_BIT;
+
     private final WorldsmithsGame game;
     private Scene scene;
     private SceneShapeRenderer sceneRenderer;
@@ -87,6 +93,7 @@ public final class IosGameListener implements ApplicationListener {
 
     @Override
     public void dispose() {
+        game.dispose();
         if (sceneRenderer != null) {
             sceneRenderer.dispose();
         }
@@ -94,6 +101,6 @@ public final class IosGameListener implements ApplicationListener {
 
     private static void clearScreen() {
         Gdx.gl.glClearColor(0f, 0f, 0f, 1f);
-        Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
+        Gdx.gl.glClear(FRAME_CLEAR_MASK);
     }
 }
