@@ -20,8 +20,8 @@ import io.github.worldsmiths.core.WorldsmithsGame;
 
 /**
  * D8 roll-a-ball: sample-owned ModelBatch + follow camera; controller → {@link Transform3D} →
- * ModelInstance.transform each frame. Desktop smoke: WASD/arrows move, collect 8 pickups to win,
- * fall off the pad or leave the arena to fail, R/Space to restart when terminal.
+ * ModelInstance.transform each frame. Keyboard WASD/arrows + touch drag-stick; R/Space or tap to
+ * restart when terminal.
  */
 public final class RollballGame implements WorldsmithsGame {
 
@@ -45,6 +45,12 @@ public final class RollballGame implements WorldsmithsGame {
     private ModelInstance floorInstance;
     private final ModelInstance[] pickupInstances =
             new ModelInstance[RollballController.PICKUP_COUNT];
+
+    private boolean trackingTouch;
+    private float touchOriginX;
+    private float touchOriginY;
+    private float touchLastX;
+    private float touchLastY;
 
     private String lastTitle = "";
 
@@ -217,6 +223,7 @@ public final class RollballGame implements WorldsmithsGame {
             controller.update(delta, 0f, 0f);
             return;
         }
+        boolean terminal = controller.terminal();
         boolean left =
                 Gdx.input.isKeyPressed(Input.Keys.LEFT) || Gdx.input.isKeyPressed(Input.Keys.A);
         boolean right =
@@ -226,9 +233,10 @@ public final class RollballGame implements WorldsmithsGame {
                 Gdx.input.isKeyPressed(Input.Keys.DOWN) || Gdx.input.isKeyPressed(Input.Keys.S);
         boolean restartKey =
                 Gdx.input.isKeyPressed(Input.Keys.R) || Gdx.input.isKeyPressed(Input.Keys.SPACE);
-        RollballMoveIntent intent =
-                RollballMoveIntent.fromKeys(
-                        left, right, up, down, restartKey, controller.terminal());
+        RollballMoveIntent keyIntent =
+                RollballMoveIntent.fromKeys(left, right, up, down, restartKey, terminal);
+        RollballMoveIntent touchIntent = pollTouchIntent(terminal);
+        RollballMoveIntent intent = RollballMoveIntent.compose(keyIntent, touchIntent);
         if (intent.restart()) {
             controller.restart();
             syncScene();
@@ -236,6 +244,35 @@ public final class RollballGame implements WorldsmithsGame {
             return;
         }
         controller.update(delta, intent.axisX(), intent.axisZ());
+    }
+
+    /**
+     * Polls {@code Gdx.input} for drag-stick / restart-tap. Finger-down sets stick origin; while
+     * held, drag maps to axes; release zeros axes and may restart when terminal.
+     */
+    private RollballMoveIntent pollTouchIntent(boolean terminal) {
+        if (Gdx.input.justTouched()) {
+            trackingTouch = true;
+            touchOriginX = Gdx.input.getX();
+            touchOriginY = Gdx.input.getY();
+            touchLastX = touchOriginX;
+            touchLastY = touchOriginY;
+            return RollballTouchGestures.dragStick(
+                    touchOriginX, touchOriginY, touchLastX, touchLastY, terminal);
+        }
+        if (trackingTouch && Gdx.input.isTouched()) {
+            touchLastX = Gdx.input.getX();
+            touchLastY = Gdx.input.getY();
+            return RollballTouchGestures.dragStick(
+                    touchOriginX, touchOriginY, touchLastX, touchLastY, terminal);
+        }
+        if (trackingTouch) {
+            trackingTouch = false;
+            float upX = Gdx.input.getX();
+            float upY = Gdx.input.getY();
+            return RollballTouchGestures.release(touchOriginX, touchOriginY, upX, upY, terminal);
+        }
+        return RollballMoveIntent.of(0f, 0f, false);
     }
 
     private void applyInstanceTransforms() {

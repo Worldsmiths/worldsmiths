@@ -1,8 +1,8 @@
 package io.github.worldsmiths.samples.rollball;
 
 /**
- * Pure move / restart intent for rollball. Keyboard and (later) touch helpers produce this type so
- * {@link RollballGame} can stay a thin {@code Gdx.input} edge.
+ * Pure move / restart intent for rollball. Keyboard and touch helpers produce this type so {@link
+ * RollballGame} can stay a thin {@code Gdx.input} edge.
  */
 public final class RollballMoveIntent {
 
@@ -14,6 +14,30 @@ public final class RollballMoveIntent {
         this.axisX = axisX;
         this.axisZ = axisZ;
         this.restart = restart;
+    }
+
+    /** Factory for composed / touch-produced intents (axes already in world XZ). */
+    public static RollballMoveIntent of(float axisX, float axisZ, boolean restart) {
+        return new RollballMoveIntent(axisX, axisZ, restart);
+    }
+
+    /**
+     * Merges keyboard and touch intents. Restart if either requests it (axes zeroed). Otherwise sums
+     * axes and clamps to the unit circle.
+     */
+    public static RollballMoveIntent compose(RollballMoveIntent a, RollballMoveIntent b) {
+        if (a.restart || b.restart) {
+            return new RollballMoveIntent(0f, 0f, true);
+        }
+        float x = a.axisX + b.axisX;
+        float z = a.axisZ + b.axisZ;
+        float lenSq = x * x + z * z;
+        if (lenSq > 1f) {
+            float inv = (float) (1.0 / Math.sqrt(lenSq));
+            x *= inv;
+            z *= inv;
+        }
+        return new RollballMoveIntent(x, z, false);
     }
 
     public float axisX() {
