@@ -1,7 +1,7 @@
 package io.github.worldsmiths.gradle;
 
 /**
- * iOS toolchain pins consumed by the future {@code IosPlugin} (D7).
+ * iOS toolchain pins consumed by {@link IosPlugin} (D7).
  * Keep in sync with {@code gradle/libs.versions.toml} and the RoboVM classpath
  * dependency in {@code gradle-plugin/build.gradle.kts} (TeaVM/AGP-style).
  */
