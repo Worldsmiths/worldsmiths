@@ -3,6 +3,7 @@ package io.github.worldsmiths.web;
 import com.badlogic.gdx.ApplicationListener;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.GL20;
+import io.github.worldsmiths.core.EngineServices;
 import io.github.worldsmiths.core.Scene;
 import io.github.worldsmiths.core.WorldsmithsGame;
 import io.github.worldsmiths.core.gdx.GdxEngineServices;
@@ -20,11 +21,13 @@ public final class WebGameListener implements ApplicationListener {
     static final int FRAME_CLEAR_MASK = GL20.GL_COLOR_BUFFER_BIT | GL20.GL_DEPTH_BUFFER_BIT;
 
     private final WorldsmithsGame game;
+    /** Non-null only when tests inject a headless bag; production leaves this null. */
+    private final EngineServices engineServicesOverride;
     private Scene scene;
     private SceneShapeRenderer sceneRenderer;
 
     public WebGameListener(WorldsmithsGame game) {
-        this(game, null);
+        this(game, null, null);
     }
 
     /**
@@ -32,18 +35,30 @@ public final class WebGameListener implements ApplicationListener {
      * without constructing a real libGDX {@code ShapeRenderer} (no display).
      */
     WebGameListener(WorldsmithsGame game, SceneShapeRenderer sceneRenderer) {
+        this(game, sceneRenderer, null);
+    }
+
+    /**
+     * Package-visible test seam: inject {@link EngineServices} so headless tests can call
+     * {@link #create()} without assembling a GDX-backed bag (no display).
+     */
+    WebGameListener(
+            WorldsmithsGame game, SceneShapeRenderer sceneRenderer, EngineServices engineServices) {
         if (game == null) {
             throw new NullPointerException("game");
         }
         this.game = game;
         this.sceneRenderer = sceneRenderer;
+        this.engineServicesOverride = engineServices;
     }
 
     @Override
     public void create() {
         scene = game.createScene();
-        // T1 compile stub: real bag assembly ownership stays T2; GDX is live here.
-        game.create(GdxEngineServices.create());
+        // Backends assemble the portable bag after Application start (GDX live).
+        EngineServices services =
+                engineServicesOverride != null ? engineServicesOverride : GdxEngineServices.create();
+        game.create(services);
     }
 
     /**
