@@ -183,8 +183,12 @@ class SettingsPluginFunctionalTest {
 
         assertEquals(TaskOutcome.SUCCESS, result.task(":ios:wsGenerateRobovmConfig").getOutcome());
         String robovmXml = read(".worldsmiths/gen/ios/build/generated/ws-robovm/robovm.xml");
-        String assetsAbs = projectDir.resolve("assets").toAbsolutePath().toString().replace('\\', '/');
-        assertTrue(robovmXml.contains("<directory>" + assetsAbs + "</directory>"), robovmXml);
+        assertFalse(robovmXml.contains("<resources/>"), "expected assetsDir mapped into resources:\n" + robovmXml);
+        Path mappedAssets = mappedRobovmResourceDirectory(robovmXml);
+        assertEquals(
+                projectDir.resolve("assets").toRealPath(),
+                mappedAssets.toRealPath(),
+                "robovm.xml resources directory must resolve to worldsmiths.assetsDir\n" + robovmXml);
         assertTrue(robovmXml.contains("<include>**</include>"), robovmXml);
         assertTrue(robovmXml.contains("<skipPngCrush>true</skipPngCrush>"), robovmXml);
     }
@@ -854,6 +858,16 @@ class SettingsPluginFunctionalTest {
         try (Stream<Path> paths = Files.walk(installRoot)) {
             return paths.anyMatch(path -> path.getFileName().toString().equals("ws-ship-marker.txt"));
         }
+    }
+
+    private static Path mappedRobovmResourceDirectory(String robovmXml) {
+        String open = "<directory>";
+        String close = "</directory>";
+        int start = robovmXml.indexOf(open);
+        int end = robovmXml.indexOf(close, start + open.length());
+        assertTrue(start >= 0 && end > start, "missing <directory> in\n" + robovmXml);
+        // Generator normalizes to '/'; Path.of accepts that on Windows too.
+        return Path.of(robovmXml.substring(start + open.length(), end));
     }
 
     private static boolean isMacOsWithXcode() {
