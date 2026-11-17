@@ -8,12 +8,18 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.badlogic.gdx.math.Matrix4;
 import io.github.worldsmiths.core.Node;
 import io.github.worldsmiths.core.Scene;
+import io.github.worldsmiths.core.SceneWalk;
 import io.github.worldsmiths.core.Sprite;
 import io.github.worldsmiths.core.Transform2D;
 import java.util.Random;
 import org.junit.jupiter.api.Test;
 
 class SnakeGameProjectionTest {
+
+    @Test
+    void cellSizeAliasesPublicSceneWalkConstant() {
+        assertEquals(SceneWalk.CELL_SIZE, SnakeGame.CELL_SIZE, 0.001f);
+    }
 
     @Test
     void screenOrthoMatrixMatchesPixelSpaceSetToOrtho2D() {

@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.badlogic.gdx.graphics.GL20;
 import io.github.worldsmiths.core.Node;
 import io.github.worldsmiths.core.Scene;
+import io.github.worldsmiths.core.SceneWalk;
 import io.github.worldsmiths.core.Sprite;
 import io.github.worldsmiths.core.Transform2D;
 import io.github.worldsmiths.core.WorldsmithsGame;
@@ -58,8 +59,8 @@ class WebGameListenerTest {
                 Arrays.asList("createScene", "create", "update:0.016", "render"), game.calls);
         List<ShapeDrawCommand> draws = recorder.lastDrawCommands();
         assertEquals(1, draws.size());
-        assertEquals(1f * SceneShapeRenderer.CELL_SIZE, draws.get(0).x, 0.001f);
-        assertEquals(2f * SceneShapeRenderer.CELL_SIZE, draws.get(0).y, 0.001f);
+        assertEquals(1f * SceneWalk.CELL_SIZE, draws.get(0).x, 0.001f);
+        assertEquals(2f * SceneWalk.CELL_SIZE, draws.get(0).y, 0.001f);
         assertEquals(0.1f, draws.get(0).r, 0.001f);
     }
 

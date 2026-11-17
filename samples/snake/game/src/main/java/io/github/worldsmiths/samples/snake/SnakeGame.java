@@ -6,6 +6,7 @@ import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.Matrix4;
 import io.github.worldsmiths.core.Node;
 import io.github.worldsmiths.core.Scene;
+import io.github.worldsmiths.core.SceneWalk;
 import io.github.worldsmiths.core.Sprite;
 import io.github.worldsmiths.core.Transform2D;
 import io.github.worldsmiths.core.WorldsmithsGame;
@@ -22,8 +23,8 @@ public final class SnakeGame implements WorldsmithsGame {
 
     static final int GRID_WIDTH = 20;
     static final int GRID_HEIGHT = 15;
-    /** Matches desktop {@code SceneShapeRenderer.CELL_SIZE}. */
-    static final float CELL_SIZE = 32f;
+    /** Public cell size from {@link SceneWalk}; grid and sprite scale agree. */
+    static final float CELL_SIZE = SceneWalk.CELL_SIZE;
 
     private static final float HEAD_R = 0.2f;
     private static final float HEAD_G = 0.85f;
