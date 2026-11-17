@@ -313,6 +313,7 @@ class SettingsPluginFunctionalTest {
         Assumptions.assumeTrue(
                 androidHome != null && !androidHome.isBlank() && Files.isDirectory(Path.of(androidHome)),
                 "ANDROID_HOME unset; skipping assembleDebug ship-marker assert");
+        ensureAndroidDebugKeystore();
 
         write("gradle.properties", "android.useAndroidX=true\nandroid.builtInKotlin=false\n");
         write("local.properties", "sdk.dir=" + androidHome.replace('\\', '/') + "\n");
@@ -609,6 +610,10 @@ class SettingsPluginFunctionalTest {
                 isMacOsWithXcode(),
                 "macOS+Xcode required for :ios:robovmInstall; generation asserts still cover Windows");
 
+        // Same heap floor as fixtures/ios-phase0 + samples/snake — RoboVM AOT OOMs on
+        // GHA macOS with Gradle 9's default 512m (DaemonStoppedException mid-install).
+        write("gradle.properties", ""
+                + "org.gradle.jvmargs=-Xmx2g -XX:MaxMetaspaceSize=512m -Dfile.encoding=UTF-8\n");
         write("settings.gradle.kts", defaultSettings(""
                 + "    targets {\n"
                 + "        desktop {}\n"
@@ -620,13 +625,16 @@ class SettingsPluginFunctionalTest {
                 + "    }\n"));
         write("assets/ws-ship-marker.txt", "phase0\n");
 
+        // runner() always passes --configuration-cache. RoboVM tasks declare
+        // notCompatibleWithConfigurationCache, so STORED/REUSED may be absent / discarded —
+        // Phase-0 bar is must-not-fail (reuse not required), proven by .build() succeeding.
         BuildResult result = runner(
                 ":ios:robovmInstall",
                 "-Probovm.iosSkipSigning=true").build();
 
         assertRobovmInstallOk(result);
-        assertTrue(
-                result.getOutput().contains(STORED) || result.getOutput().contains(REUSED),
+        assertFalse(
+                result.getOutput().contains("Configuration cache problems found in this build."),
                 "configuration-cache must not fail (reuse not required)\n" + result.getOutput());
         assertTrue(
                 installTreeContainsShipMarker(projectDir.resolve(".worldsmiths/gen/ios/build/robovm")),
@@ -722,6 +730,7 @@ class SettingsPluginFunctionalTest {
         Assumptions.assumeTrue(
                 androidHome != null && !androidHome.isBlank() && Files.isDirectory(Path.of(androidHome)),
                 "ANDROID_HOME unset; skipping assembleDebug");
+        ensureAndroidDebugKeystore();
 
         write("gradle.properties", "android.useAndroidX=true\nandroid.builtInKotlin=false\n");
         write("local.properties", "sdk.dir=" + androidHome.replace('\\', '/') + "\n");
@@ -868,6 +877,50 @@ class SettingsPluginFunctionalTest {
         assertTrue(start >= 0 && end > start, "missing <directory> in\n" + robovmXml);
         // Generator normalizes to '/'; Path.of accepts that on Windows too.
         return Path.of(robovmXml.substring(start + open.length(), end));
+    }
+
+    /**
+     * AGP {@code validateSigningDebug} creates the default debug keystore under
+     * {@code ~/.android} or {@code ~/.config/.android}; both paths can fail on clean CI
+     * runners. Pre-create the standard debug keystore when missing so assemble tests are
+     * not environmentally flake-prone.
+     */
+    private static void ensureAndroidDebugKeystore() throws IOException {
+        Path home = Path.of(System.getProperty("user.home"));
+        for (String relative : new String[] {".android", ".config/.android"}) {
+            Path dir = home.resolve(relative);
+            Files.createDirectories(dir);
+            Path keystore = dir.resolve("debug.keystore");
+            if (Files.isRegularFile(keystore)) {
+                continue;
+            }
+            Process process = new ProcessBuilder(
+                            "keytool",
+                            "-genkeypair",
+                            "-keystore", keystore.toString(),
+                            "-storepass", "android",
+                            "-keypass", "android",
+                            "-alias", "androiddebugkey",
+                            "-keyalg", "RSA",
+                            "-keysize", "2048",
+                            "-validity", "10000",
+                            "-dname", "CN=Android Debug,O=Android,C=US")
+                    .redirectErrorStream(true)
+                    .start();
+            try {
+                if (!process.waitFor(60, TimeUnit.SECONDS)) {
+                    process.destroyForcibly();
+                    throw new IOException("keytool timed out creating " + keystore);
+                }
+                if (process.exitValue() != 0) {
+                    String output = new String(process.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
+                    throw new IOException("keytool failed creating " + keystore + ":\n" + output);
+                }
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new IOException("interrupted creating " + keystore, e);
+            }
+        }
     }
 
     private static boolean isMacOsWithXcode() {
