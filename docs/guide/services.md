@@ -13,15 +13,15 @@ Package: `io.github.worldsmiths.core`.
 | `input()` | [`Input`](input.md) | Poll keys (`Key` enum) + primary pointer |
 | `clock()` | [`Clock`](clock.md) | Frame `delta()` + `total()` |
 | `graphics()` | [`Graphics`](graphics.md) | Size + best-effort `setTitle` |
+| `draw2d()` | [`Draw2D`](draw2d.md) | Immediate-mode lines/rects + ortho |
 | `extensions()` | `EngineServices.Extensions` | Empty stub; unused in D9 |
 
-`draw2d()` and `files()` are **not** on the bag yet — they land with their slices (see below).
+`files()` is **not** on the bag yet — it lands with D9a-S3.
 
 ## Upcoming
 
 | Facade | Slice | Guide |
 | --- | --- | --- |
-| Draw2D | D9a-S2 | `draw2d.md` (upcoming) |
 | Files | D9a-S3 | `files.md` (upcoming) |
 | Thin 3D | D9b | later |
 
@@ -38,4 +38,5 @@ services.input().setKeyDown(Key.LEFT, true);
 services.clock().setDelta(1f / 60f);
 services.graphics().setSize(800, 480);
 game.create(services);
+game.render(); // asserts against services.draw2d() recordings
 ```

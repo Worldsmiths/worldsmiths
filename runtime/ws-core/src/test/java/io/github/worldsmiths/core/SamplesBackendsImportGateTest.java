@@ -12,7 +12,9 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -20,19 +22,25 @@ import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 
 /**
- * AC3: every nested {@code samples/*}/game tree must not import platform backends or
- * {@code *ApplicationConfiguration} types - specifically {@code com.badlogic.gdx.backends},
- * {@code com.github.xpenatan.gdx.teavm.backends}, and any import whose type name contains
- * {@code ApplicationConfiguration}.
- * Runs under root {@code ./gradlew build} via {@code :runtime:ws-core:test} (no display).
+ * Sample game import gate: every nested {@code samples/*}/game tree must not import platform
+ * backends or {@code *}ApplicationConfiguration types. D9a-S2 also bans all {@code
+ * com.badlogic.gdx} imports in snake + minimal; rollball may still use LibGDX core until D9b.
+ *
+ * <p>Runs under root {@code ./gradlew build} via {@code :runtime:ws-core:test} (no display).
  */
 class SamplesBackendsImportGateTest {
 
-    private static final List<String> BANNED_PREFIXES = Arrays.asList(
+    private static final List<String> BANNED_BACKEND_PREFIXES = Arrays.asList(
             "com.badlogic.gdx.backends",
             "com.github.xpenatan.gdx.teavm.backends");
 
     private static final String BANNED_TYPE_FRAGMENT = "ApplicationConfiguration";
+
+    private static final String LIBGDX_CORE_PREFIX = "com.badlogic.gdx";
+
+    /** Samples that must not import any {@code com.badlogic.gdx.*} (D9a-S2 phased gate). */
+    private static final Set<String> LIBGDX_CORE_BANNED_SAMPLES =
+            new HashSet<String>(Arrays.asList("snake", "minimal"));
 
     private static final Pattern IMPORT_LINE =
             Pattern.compile("^\\s*import\\s+(?:static\\s+)?([\\w.]+)\\s*;", Pattern.MULTILINE);
@@ -40,14 +48,14 @@ class SamplesBackendsImportGateTest {
     @Test
     void flagsDesktopGdxBackendsImport() {
         assertTrue(
-                hasBannedImport("import com.badlogic.gdx.backends.lwjgl3.Lwjgl3Application;"),
+                hasBannedBackendImport("import com.badlogic.gdx.backends.lwjgl3.Lwjgl3Application;"),
                 "desktop gdx backends must be banned");
     }
 
     @Test
     void flagsTeavmWebBackendsImport() {
         assertTrue(
-                hasBannedImport(
+                hasBannedBackendImport(
                         "import com.github.xpenatan.gdx.teavm.backends.web.WebApplication;"),
                 "teavm web backends must be banned");
     }
@@ -55,16 +63,35 @@ class SamplesBackendsImportGateTest {
     @Test
     void flagsApplicationConfigurationTypeNameInImport() {
         assertTrue(
-                hasBannedImport(
+                hasBannedBackendImport(
                         "import com.example.other.CustomApplicationConfiguration;"),
                 "ApplicationConfiguration type names must be banned");
     }
 
     @Test
-    void allowsLibgdxCoreImports() {
+    void backendBanAllowsLibgdxCoreImports() {
         assertFalse(
-                hasBannedImport("import com.badlogic.gdx.Gdx;\nimport com.badlogic.gdx.graphics.glutils.ShapeRenderer;"),
-                "LibGDX core imports must remain allowed");
+                hasBannedBackendImport(
+                        "import com.badlogic.gdx.Gdx;\nimport com.badlogic.gdx.graphics.glutils.ShapeRenderer;"),
+                "LibGDX core imports must remain allowed by the backend ban");
+    }
+
+    @Test
+    void phasedCoreBanFlagsLibgdxCoreImport() {
+        assertTrue(
+                hasBannedLibgdxCoreImport("import com.badlogic.gdx.Gdx;"),
+                "phased gate must ban com.badlogic.gdx for snake/minimal");
+        assertTrue(
+                hasBannedLibgdxCoreImport(
+                        "import com.badlogic.gdx.graphics.glutils.ShapeRenderer;"),
+                "phased gate must ban nested com.badlogic.gdx packages");
+    }
+
+    @Test
+    void phasedCoreBanDoesNotFlagEngineImports() {
+        assertFalse(
+                hasBannedLibgdxCoreImport("import io.github.worldsmiths.core.Draw2D;"),
+                "engine imports must remain allowed");
     }
 
     @Test
@@ -75,7 +102,6 @@ class SamplesBackendsImportGateTest {
         List<Path> gameTrees = listSampleGameTrees(samplesRoot);
         assertFalse(gameTrees.isEmpty(), "no samples/*/game trees under " + samplesRoot);
 
-        // D8: gate must cover snake + rollball (and any future samples/*/game).
         List<String> sampleNames = gameTrees.stream()
                 .map(p -> p.getParent().getFileName().toString())
                 .sorted()
@@ -86,10 +112,15 @@ class SamplesBackendsImportGateTest {
         assertTrue(
                 sampleNames.contains("rollball"),
                 "expected samples/rollball/game among scanned trees, got " + sampleNames);
+        assertTrue(
+                sampleNames.contains("minimal"),
+                "expected samples/minimal/game among scanned trees, got " + sampleNames);
 
-        List<String> hits = new ArrayList<String>();
+        List<String> backendHits = new ArrayList<String>();
+        List<String> coreHits = new ArrayList<String>();
         for (Path gameSources : gameTrees) {
             Path sampleRoot = gameSources.getParent();
+            String sampleName = sampleRoot.getFileName().toString();
             List<Path> javaFiles = new ArrayList<Path>();
             try (Stream<Path> walk = Files.walk(gameSources)) {
                 walk.filter(p -> p.toString().endsWith(".java")).forEach(javaFiles::add);
@@ -100,29 +131,52 @@ class SamplesBackendsImportGateTest {
 
             for (Path file : javaFiles) {
                 String text = new String(Files.readAllBytes(file), StandardCharsets.UTF_8);
-                if (hasBannedImport(text)) {
-                    hits.add(samplesRoot.relativize(file).toString());
+                String relative = samplesRoot.relativize(file).toString();
+                if (hasBannedBackendImport(text)) {
+                    backendHits.add(relative);
+                }
+                if (LIBGDX_CORE_BANNED_SAMPLES.contains(sampleName) && hasBannedLibgdxCoreImport(text)) {
+                    coreHits.add(relative);
                 }
             }
         }
-        if (!hits.isEmpty()) {
+        if (!backendHits.isEmpty()) {
             fail("samples/*/game sources must not import banned backend / ApplicationConfiguration types:\n"
-                    + hits.stream().collect(Collectors.joining("\n")));
+                    + backendHits.stream().collect(Collectors.joining("\n")));
+        }
+        if (!coreHits.isEmpty()) {
+            fail("D9a-S2: snake/minimal game sources must not import com.badlogic.gdx:\n"
+                    + coreHits.stream().collect(Collectors.joining("\n")));
         }
     }
 
     /** Package-visible for focused ban assertions above. */
     static boolean hasBannedImport(String source) {
+        return hasBannedBackendImport(source);
+    }
+
+    static boolean hasBannedBackendImport(String source) {
         Matcher matcher = IMPORT_LINE.matcher(source);
         while (matcher.find()) {
             String imported = matcher.group(1);
-            for (String prefix : BANNED_PREFIXES) {
+            for (String prefix : BANNED_BACKEND_PREFIXES) {
                 if (imported.equals(prefix) || imported.startsWith(prefix + ".")) {
                     return true;
                 }
             }
             String simpleName = imported.substring(imported.lastIndexOf('.') + 1);
             if (simpleName.contains(BANNED_TYPE_FRAGMENT)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    static boolean hasBannedLibgdxCoreImport(String source) {
+        Matcher matcher = IMPORT_LINE.matcher(source);
+        while (matcher.find()) {
+            String imported = matcher.group(1);
+            if (imported.equals(LIBGDX_CORE_PREFIX) || imported.startsWith(LIBGDX_CORE_PREFIX + ".")) {
                 return true;
             }
         }

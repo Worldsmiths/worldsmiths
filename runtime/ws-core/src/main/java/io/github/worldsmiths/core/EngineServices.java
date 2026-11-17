@@ -15,6 +15,9 @@ public interface EngineServices {
 
     Graphics graphics();
 
+    /** Immediate-mode 2D overlay drawing (lines/rects). */
+    Draw2D draw2d();
+
     /** Unused in D9 — empty stub for a future plugin/ECS escape hatch. */
     Extensions extensions();
 

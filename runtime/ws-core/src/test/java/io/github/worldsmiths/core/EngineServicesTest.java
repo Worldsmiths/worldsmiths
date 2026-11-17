@@ -17,10 +17,12 @@ class EngineServicesTest {
         assertNotNull(services.input());
         assertNotNull(services.clock());
         assertNotNull(services.graphics());
+        assertNotNull(services.draw2d());
         assertNotNull(services.extensions());
         assertSame(services.input(), services.input());
         assertSame(services.clock(), services.clock());
         assertSame(services.graphics(), services.graphics());
+        assertSame(services.draw2d(), services.draw2d());
     }
 
     @Test
@@ -66,5 +68,38 @@ class EngineServicesTest {
         assertEquals(600, graphics.getHeight());
         graphics.setTitle("Snake — score: 3");
         assertEquals("Snake — score: 3", graphics.lastTitle());
+    }
+
+    @Test
+    void fakeDraw2DRecordsOrthoColorLineRectAndDispose() {
+        FakeEngineServices services = new FakeEngineServices();
+        FakeDraw2D draw2d = services.draw2d();
+
+        draw2d.setOrtho2D(0f, 0f, 640f, 480f);
+        draw2d.begin(DrawMode.LINE);
+        draw2d.setColor(0.25f, 0.25f, 0.28f, 1f);
+        draw2d.line(0f, 0f, 32f, 0f);
+        draw2d.rect(1f, 2f, 3f, 4f);
+        draw2d.end();
+        draw2d.dispose();
+
+        assertEquals(0f, draw2d.lastOrthoX(), 1e-5f);
+        assertEquals(0f, draw2d.lastOrthoY(), 1e-5f);
+        assertEquals(640f, draw2d.lastOrthoWidth(), 1e-5f);
+        assertEquals(480f, draw2d.lastOrthoHeight(), 1e-5f);
+        assertTrue(draw2d.disposed());
+
+        java.util.List<FakeDraw2D.Command> commands = draw2d.commands();
+        assertEquals(FakeDraw2D.Command.Kind.ORTHO, commands.get(0).kind);
+        assertEquals(FakeDraw2D.Command.Kind.BEGIN, commands.get(1).kind);
+        assertEquals(DrawMode.LINE, commands.get(1).mode);
+        assertEquals(FakeDraw2D.Command.Kind.COLOR, commands.get(2).kind);
+        assertEquals(FakeDraw2D.Command.Kind.LINE, commands.get(3).kind);
+        assertEquals(0f, commands.get(3).a, 1e-5f);
+        assertEquals(32f, commands.get(3).c, 1e-5f);
+        assertEquals(FakeDraw2D.Command.Kind.RECT, commands.get(4).kind);
+        assertEquals(3f, commands.get(4).c, 1e-5f);
+        assertEquals(FakeDraw2D.Command.Kind.END, commands.get(5).kind);
+        assertEquals(FakeDraw2D.Command.Kind.DISPOSE, commands.get(6).kind);
     }
 }

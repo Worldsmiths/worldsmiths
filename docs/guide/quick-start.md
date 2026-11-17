@@ -1,10 +1,10 @@
 # Quick start
 
-Minimal lifecycle once P1 services are available. Draw2D / sample GDX scrub come in later slices.
+Minimal lifecycle with portable services. Snake is GDX-free (input / graphics / Draw2D via the bag); rollball still uses LibGDX core until D9b.
 
 1. Implement `WorldsmithsGame` with a no-arg constructor (launchers keep `new Game()`).
 2. Build a `Scene` in `createScene()`.
-3. Receive portable services in `create(EngineServices)` — store the bag; use `input()` / `clock()` / `graphics()`.
+3. Receive portable services in `create(EngineServices)` — store the bag; use `input()` / `clock()` / `graphics()` / `draw2d()`.
 4. Prefer engine facades over `com.badlogic.gdx` in game sources as each slice lands.
 
 ```java
@@ -28,8 +28,20 @@ public final class MyGame implements WorldsmithsGame {
   }
 
   @Override
-  public void render() {}
+  public void render() {
+    Draw2D g = services.draw2d();
+    g.setOrtho2D(0f, 0f, services.graphics().getWidth(), services.graphics().getHeight());
+    g.begin(DrawMode.LINE);
+    g.setColor(1f, 1f, 1f, 1f);
+    g.line(0f, 0f, 100f, 0f);
+    g.end();
+  }
+
+  @Override
+  public void dispose() {
+    services.draw2d().dispose();
+  }
 }
 ```
 
-Headless tests: pass `new FakeEngineServices()` into `create`. See [Services](services.md), [Input](input.md), [Clock](clock.md), [Graphics](graphics.md).
+Headless tests: pass `new FakeEngineServices()` into `create`. See [Services](services.md), [Input](input.md), [Clock](clock.md), [Graphics](graphics.md), [Draw2D](draw2d.md).

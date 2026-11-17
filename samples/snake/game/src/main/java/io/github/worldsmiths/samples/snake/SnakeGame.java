@@ -1,24 +1,26 @@
 package io.github.worldsmiths.samples.snake;
 
-import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.Input;
-import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
-import com.badlogic.gdx.math.Matrix4;
+import io.github.worldsmiths.core.Draw2D;
+import io.github.worldsmiths.core.DrawMode;
+import io.github.worldsmiths.core.EngineServices;
+import io.github.worldsmiths.core.Input;
+import io.github.worldsmiths.core.Key;
 import io.github.worldsmiths.core.Node;
 import io.github.worldsmiths.core.Scene;
 import io.github.worldsmiths.core.SceneWalk;
 import io.github.worldsmiths.core.Sprite;
 import io.github.worldsmiths.core.Transform2D;
-import io.github.worldsmiths.core.EngineServices;
 import io.github.worldsmiths.core.WorldsmithsGame;
 import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Fuller Snake for D3: grid drawn in {@link #render()}, head + body segment + food nodes from
- * {@link #createScene()} with {@link Transform2D} + colored {@link Sprite}, discrete grid move on a
- * step timer, turns via {@link Gdx#input} while alive, restart via R or Space when dead, score in
- * the window title. Touch: swipe to turn while alive; tap (or swipe) to restart when dead.
+ * Fuller Snake for D3: grid drawn in {@link #render()} via engine {@link Draw2D}, head + body
+ * segment + food nodes from {@link #createScene()} with {@link Transform2D} + colored {@link
+ * Sprite}, discrete grid move on a step timer, turns via {@link EngineServices#input()} while
+ * alive, restart via R or Space when dead, score in the window title. Touch: swipe to turn while
+ * alive; tap (or swipe) to restart when dead. Retained sprites still draw through {@link
+ * SceneWalk}.
  */
 public final class SnakeGame implements WorldsmithsGame {
 
@@ -38,11 +40,11 @@ public final class SnakeGame implements WorldsmithsGame {
     private static final float FOOD_B = 0.2f;
 
     private final SnakeController controller;
+    private EngineServices services;
     private Scene scene;
     private Transform2D headTransform;
     private Transform2D foodTransform;
     private final List<Node> bodyNodes = new ArrayList<Node>();
-    private ShapeRenderer shapes;
     private int lastTitleScore = Integer.MIN_VALUE;
     private boolean trackingTouch;
     private float touchDownX;
@@ -71,8 +73,10 @@ public final class SnakeGame implements WorldsmithsGame {
 
     @Override
     public void create(EngineServices services) {
-        // T1 signature stub — Snake still uses Gdx directly until P2 Draw2D migrate.
-        shapes = new ShapeRenderer();
+        if (services == null) {
+            throw new NullPointerException("services");
+        }
+        this.services = services;
         publishTitle(controller.score());
     }
 
@@ -86,9 +90,8 @@ public final class SnakeGame implements WorldsmithsGame {
 
     @Override
     public void dispose() {
-        if (shapes != null) {
-            shapes.dispose();
-            shapes = null;
+        if (services != null) {
+            services.draw2d().dispose();
         }
     }
 
@@ -134,72 +137,62 @@ public final class SnakeGame implements WorldsmithsGame {
         return "Snake — score: " + score;
     }
 
-    /**
-     * Screen-space ortho for pixel coordinates (origin bottom-left). Package-visible test seam;
-     * grid draw applies this via {@link ShapeRenderer#setProjectionMatrix(Matrix4)}.
-     */
-    static Matrix4 screenOrthoMatrix(float width, float height) {
-        return new Matrix4().setToOrtho2D(0f, 0f, width, height);
-    }
-
     @Override
     public void render() {
-        if (shapes == null) {
+        if (services == null) {
             return;
         }
-        if (Gdx.graphics != null) {
-            shapes.setProjectionMatrix(
-                    screenOrthoMatrix(Gdx.graphics.getWidth(), Gdx.graphics.getHeight()));
-        }
-        shapes.begin(ShapeRenderer.ShapeType.Line);
-        shapes.setColor(0.25f, 0.25f, 0.28f, 1f);
+        Draw2D g = services.draw2d();
+        g.setOrtho2D(0f, 0f, services.graphics().getWidth(), services.graphics().getHeight());
+        g.begin(DrawMode.LINE);
+        g.setColor(0.25f, 0.25f, 0.28f, 1f);
         for (int x = 0; x <= GRID_WIDTH; x++) {
             float px = x * CELL_SIZE;
-            shapes.line(px, 0f, px, GRID_HEIGHT * CELL_SIZE);
+            g.line(px, 0f, px, GRID_HEIGHT * CELL_SIZE);
         }
         for (int y = 0; y <= GRID_HEIGHT; y++) {
             float py = y * CELL_SIZE;
-            shapes.line(0f, py, GRID_WIDTH * CELL_SIZE, py);
+            g.line(0f, py, GRID_WIDTH * CELL_SIZE, py);
         }
-        shapes.end();
+        g.end();
     }
 
     private void applyInput() {
-        if (Gdx.input == null) {
+        if (services == null) {
             return;
         }
-        applyTouchInput();
+        Input in = services.input();
+        applyTouchInput(in);
         if (!controller.alive()) {
-            if (Gdx.input.isKeyPressed(Input.Keys.R) || Gdx.input.isKeyPressed(Input.Keys.SPACE)) {
+            if (in.isKeyDown(Key.R) || in.isKeyDown(Key.SPACE)) {
                 restartRun();
             }
             return;
         }
-        if (Gdx.input.isKeyPressed(Input.Keys.LEFT) || Gdx.input.isKeyPressed(Input.Keys.A)) {
+        if (in.isKeyDown(Key.LEFT) || in.isKeyDown(Key.A)) {
             controller.turn(-1, 0);
-        } else if (Gdx.input.isKeyPressed(Input.Keys.RIGHT) || Gdx.input.isKeyPressed(Input.Keys.D)) {
+        } else if (in.isKeyDown(Key.RIGHT) || in.isKeyDown(Key.D)) {
             controller.turn(1, 0);
-        } else if (Gdx.input.isKeyPressed(Input.Keys.UP) || Gdx.input.isKeyPressed(Input.Keys.W)) {
+        } else if (in.isKeyDown(Key.UP) || in.isKeyDown(Key.W)) {
             controller.turn(0, 1);
-        } else if (Gdx.input.isKeyPressed(Input.Keys.DOWN) || Gdx.input.isKeyPressed(Input.Keys.S)) {
+        } else if (in.isKeyDown(Key.DOWN) || in.isKeyDown(Key.S)) {
             controller.turn(0, -1);
         }
     }
 
-    private void applyTouchInput() {
-        if (Gdx.input.justTouched()) {
+    private void applyTouchInput(Input in) {
+        if (in.justTouched()) {
             trackingTouch = true;
-            touchDownX = Gdx.input.getX();
-            touchDownY = Gdx.input.getY();
+            touchDownX = in.getX();
+            touchDownY = in.getY();
             return;
         }
-        if (!trackingTouch || Gdx.input.isTouched()) {
+        if (!trackingTouch || in.isTouched()) {
             return;
         }
         trackingTouch = false;
         SnakeTouchGestures.Gesture gesture =
-                SnakeTouchGestures.classify(
-                        touchDownX, touchDownY, Gdx.input.getX(), Gdx.input.getY());
+                SnakeTouchGestures.classify(touchDownX, touchDownY, in.getX(), in.getY());
         if (!controller.alive()) {
             if (gesture != SnakeTouchGestures.Gesture.NONE) {
                 restartRun();
@@ -239,8 +232,8 @@ public final class SnakeGame implements WorldsmithsGame {
 
     private void publishTitle(int score) {
         lastTitleScore = score;
-        if (Gdx.graphics != null) {
-            Gdx.graphics.setTitle(formatScoreTitle(score));
+        if (services != null) {
+            services.graphics().setTitle(formatScoreTitle(score));
         }
     }
 

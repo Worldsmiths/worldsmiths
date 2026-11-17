@@ -11,7 +11,7 @@ How-to pages for engine facades. ADRs under [`../adr/`](../adr/) record decision
 | [Input](input.md) | P1 |
 | [Clock](clock.md) | P1 |
 | [Graphics](graphics.md) | P1 |
-| Draw2D | Upcoming (D9a-S2) |
+| [Draw2D](draw2d.md) | D9a-S2 |
 | Files | Upcoming (D9a-S3) |
 | Thin 3D | Upcoming (D9b) |
 

@@ -1,6 +1,6 @@
 # Graphics
 
-Framebuffer size and a best-effort window title via `EngineServices.graphics()`. Package: `io.github.worldsmiths.core`. This is meta only — not a draw API (Draw2D ships later).
+Framebuffer size and a best-effort window title via `EngineServices.graphics()`. Package: `io.github.worldsmiths.core`. This is meta only — not a draw API (see [Draw2D](draw2d.md)).
 
 ## API
 
