@@ -18,11 +18,13 @@ class EngineServicesTest {
         assertNotNull(services.clock());
         assertNotNull(services.graphics());
         assertNotNull(services.draw2d());
+        assertNotNull(services.files());
         assertNotNull(services.extensions());
         assertSame(services.input(), services.input());
         assertSame(services.clock(), services.clock());
         assertSame(services.graphics(), services.graphics());
         assertSame(services.draw2d(), services.draw2d());
+        assertSame(services.files(), services.files());
     }
 
     @Test

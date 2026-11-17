@@ -14,21 +14,19 @@ Package: `io.github.worldsmiths.core`.
 | `clock()` | [`Clock`](clock.md) | Frame `delta()` + `total()` |
 | `graphics()` | [`Graphics`](graphics.md) | Size + best-effort `setTitle` |
 | `draw2d()` | [`Draw2D`](draw2d.md) | Immediate-mode lines/rects + ortho |
+| `files()` | [`Files`](files.md) | Sync packaged internal text/bytes |
 | `extensions()` | `EngineServices.Extensions` | Empty stub; unused in D9 |
-
-`files()` is **not** on the bag yet — it lands with D9a-S3.
 
 ## Upcoming
 
 | Facade | Slice | Guide |
 | --- | --- | --- |
-| Files | D9a-S3 | `files.md` (upcoming) |
 | Thin 3D | D9b | later |
 
 ## Honesty limits
 
 - `graphics().setTitle(...)` is best-effort; Android may ignore it.
-- Files on web = internal packaged only (documented when Files ships).
+- Files on web = internal packaged only (see [Files](files.md)).
 
 ## Tests
 
@@ -37,6 +35,7 @@ FakeEngineServices services = new FakeEngineServices();
 services.input().setKeyDown(Key.LEFT, true);
 services.clock().setDelta(1f / 60f);
 services.graphics().setSize(800, 480);
+services.files().putInternal("levels/one.txt", "hello");
 game.create(services);
 game.render(); // asserts against services.draw2d() recordings
 ```

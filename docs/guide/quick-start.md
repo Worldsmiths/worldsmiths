@@ -4,7 +4,7 @@ Minimal lifecycle with portable services. Snake is GDX-free (input / graphics / 
 
 1. Implement `WorldsmithsGame` with a no-arg constructor (launchers keep `new Game()`).
 2. Build a `Scene` in `createScene()`.
-3. Receive portable services in `create(EngineServices)` — store the bag; use `input()` / `clock()` / `graphics()` / `draw2d()`.
+3. Receive portable services in `create(EngineServices)` — store the bag; use `input()` / `clock()` / `graphics()` / `draw2d()` / `files()`.
 4. Prefer engine facades over `com.badlogic.gdx` in game sources as each slice lands.
 
 ```java
@@ -44,4 +44,4 @@ public final class MyGame implements WorldsmithsGame {
 }
 ```
 
-Headless tests: pass `new FakeEngineServices()` into `create`. See [Services](services.md), [Input](input.md), [Clock](clock.md), [Graphics](graphics.md), [Draw2D](draw2d.md).
+Headless tests: pass `new FakeEngineServices()` into `create`. See [Services](services.md), [Input](input.md), [Clock](clock.md), [Graphics](graphics.md), [Draw2D](draw2d.md), [Files](files.md).

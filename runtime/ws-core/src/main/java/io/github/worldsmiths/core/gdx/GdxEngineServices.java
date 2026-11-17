@@ -3,6 +3,7 @@ package io.github.worldsmiths.core.gdx;
 import io.github.worldsmiths.core.Clock;
 import io.github.worldsmiths.core.Draw2D;
 import io.github.worldsmiths.core.EngineServices;
+import io.github.worldsmiths.core.Files;
 import io.github.worldsmiths.core.Graphics;
 import io.github.worldsmiths.core.Input;
 
@@ -14,13 +15,14 @@ import io.github.worldsmiths.core.Input;
 public final class GdxEngineServices {
     private GdxEngineServices() {}
 
-    /** Assembles non-null Input/Clock/Graphics/Draw2D wrappers around {@code Gdx} statics. */
+    /** Assembles non-null Input/Clock/Graphics/Draw2D/Files wrappers around {@code Gdx} statics. */
     public static EngineServices create() {
         return new Bag(
                 new GdxInput(),
                 new GdxClock(),
                 new GdxGraphics(),
                 new GdxDraw2D(),
+                new GdxFiles(),
                 new EngineServices.Extensions());
     }
 
@@ -29,13 +31,21 @@ public final class GdxEngineServices {
         private final Clock clock;
         private final Graphics graphics;
         private final Draw2D draw2d;
+        private final Files files;
         private final Extensions extensions;
 
-        Bag(Input input, Clock clock, Graphics graphics, Draw2D draw2d, Extensions extensions) {
+        Bag(
+                Input input,
+                Clock clock,
+                Graphics graphics,
+                Draw2D draw2d,
+                Files files,
+                Extensions extensions) {
             this.input = input;
             this.clock = clock;
             this.graphics = graphics;
             this.draw2d = draw2d;
+            this.files = files;
             this.extensions = extensions;
         }
 
@@ -57,6 +67,11 @@ public final class GdxEngineServices {
         @Override
         public Draw2D draw2d() {
             return draw2d;
+        }
+
+        @Override
+        public Files files() {
+            return files;
         }
 
         @Override

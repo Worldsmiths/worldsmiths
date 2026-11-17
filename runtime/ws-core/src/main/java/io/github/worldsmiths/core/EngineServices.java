@@ -18,6 +18,9 @@ public interface EngineServices {
     /** Immediate-mode 2D overlay drawing (lines/rects). */
     Draw2D draw2d();
 
+    /** Sync read of packaged internal text/bytes. */
+    Files files();
+
     /** Unused in D9 — empty stub for a future plugin/ECS escape hatch. */
     Extensions extensions();
 
