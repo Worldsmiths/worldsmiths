@@ -45,6 +45,8 @@ jobs:
       - run: ./gradlew build --no-daemon
       - name: Compile and test samples/snake
         run: ./gradlew -p samples/snake :desktop:compileJava :game:test --no-daemon
+      - name: Compile and test samples/rollball
+        run: ./gradlew -p samples/rollball :desktop:compileJava :game:test --no-daemon
 
   # Playwright + system Chrome: ubuntu only (deviation from full OS matrix; macOS/Windows
   # Chrome channel is less reliable in GHA). JS+Wasm TeaVM builds and JS browser check.
