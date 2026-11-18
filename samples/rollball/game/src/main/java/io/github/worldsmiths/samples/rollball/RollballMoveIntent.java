@@ -2,7 +2,7 @@ package io.github.worldsmiths.samples.rollball;
 
 /**
  * Pure move / restart intent for rollball. Keyboard and touch helpers produce this type so {@link
- * RollballGame} can stay a thin {@code Gdx.input} edge.
+ * RollballGame} can stay a thin {@link io.github.worldsmiths.core.Input} edge.
  */
 public final class RollballMoveIntent {
 

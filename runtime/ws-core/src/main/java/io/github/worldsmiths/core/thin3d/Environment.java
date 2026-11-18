@@ -2,7 +2,7 @@ package io.github.worldsmiths.core.thin3d;
 
 /**
  * Lighting environment for {@link ModelBatch#render(ModelInstance, Environment)}. Ambient plus
- * directional lights cover the D9b rollball set.
+ * directional lights cover the D9b rollball set. No dispose.
  */
 public interface Environment {
 

@@ -20,6 +20,30 @@ class Thin3DTest {
     }
 
     @Test
+    void fakeThin3DRecordsPrimitiveDiffuseAlpha() {
+        FakeThin3D thin3d = new FakeThin3D();
+        ModelBuilder builder = thin3d.createModelBuilder();
+        builder.createSphere(1f, 1f, 1f, 8, 8, 0.1f, 0.2f, 0.3f, 0.4f);
+        builder.createBox(2f, 3f, 4f, 0.5f, 0.6f, 0.7f, 0.8f);
+
+        List<FakeThin3D.Command> commands = thin3d.commands();
+        assertEquals(FakeThin3D.Command.Kind.CREATE_SPHERE, commands.get(1).kind);
+        assertEquals(1f, commands.get(1).x, 1e-5f);
+        assertEquals(0.1f, commands.get(1).r, 1e-5f);
+        assertEquals(0.2f, commands.get(1).g, 1e-5f);
+        assertEquals(0.3f, commands.get(1).b, 1e-5f);
+        assertEquals(0.4f, commands.get(1).alpha, 1e-5f);
+        assertEquals(FakeThin3D.Command.Kind.CREATE_BOX, commands.get(2).kind);
+        assertEquals(2f, commands.get(2).x, 1e-5f);
+        assertEquals(3f, commands.get(2).y, 1e-5f);
+        assertEquals(4f, commands.get(2).z, 1e-5f);
+        assertEquals(0.5f, commands.get(2).r, 1e-5f);
+        assertEquals(0.6f, commands.get(2).g, 1e-5f);
+        assertEquals(0.7f, commands.get(2).b, 1e-5f);
+        assertEquals(0.8f, commands.get(2).alpha, 1e-5f);
+    }
+
+    @Test
     void fakeThin3DRecordsCameraLightsPrimitivesBatchAndDispose() {
         FakeEngineServices services = new FakeEngineServices();
         FakeThin3D thin3d = services.thin3d();
@@ -55,7 +79,9 @@ class Thin3DTest {
 
         List<FakeThin3D.Command> commands = thin3d.commands();
         assertEquals(FakeThin3D.Command.Kind.CREATE_CAMERA, commands.get(0).kind);
-        assertEquals(67f, commands.get(0).a, 1e-5f);
+        assertEquals(67f, commands.get(0).x, 1e-5f);
+        assertEquals(800f, commands.get(0).y, 1e-5f);
+        assertEquals(600f, commands.get(0).z, 1e-5f);
         assertEquals(FakeThin3D.Command.Kind.CAMERA_NEAR, commands.get(1).kind);
         assertEquals(FakeThin3D.Command.Kind.CAMERA_FAR, commands.get(2).kind);
         assertEquals(FakeThin3D.Command.Kind.CAMERA_POSITION, commands.get(3).kind);
@@ -64,10 +90,15 @@ class Thin3DTest {
         assertEquals(FakeThin3D.Command.Kind.CAMERA_UPDATE, commands.get(6).kind);
         assertEquals(FakeThin3D.Command.Kind.CREATE_ENVIRONMENT, commands.get(7).kind);
         assertEquals(FakeThin3D.Command.Kind.AMBIENT_LIGHT, commands.get(8).kind);
+        assertEquals(1f, commands.get(8).alpha, 1e-5f);
         assertEquals(FakeThin3D.Command.Kind.DIRECTIONAL_LIGHT, commands.get(9).kind);
         assertEquals(FakeThin3D.Command.Kind.CREATE_BUILDER, commands.get(10).kind);
         assertEquals(FakeThin3D.Command.Kind.CREATE_SPHERE, commands.get(11).kind);
+        assertEquals(0.2f, commands.get(11).r, 1e-5f);
+        assertEquals(1f, commands.get(11).alpha, 1e-5f);
         assertEquals(FakeThin3D.Command.Kind.CREATE_BOX, commands.get(12).kind);
+        assertEquals(0.35f, commands.get(12).r, 1e-5f);
+        assertEquals(1f, commands.get(12).alpha, 1e-5f);
         assertEquals(FakeThin3D.Command.Kind.CREATE_INSTANCE, commands.get(13).kind);
         assertEquals(FakeThin3D.Command.Kind.CREATE_INSTANCE, commands.get(14).kind);
         assertEquals(FakeThin3D.Command.Kind.INSTANCE_TRANSFORM, commands.get(15).kind);

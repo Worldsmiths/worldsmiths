@@ -5,8 +5,10 @@ package io.github.worldsmiths.core;
  * the contract. Retained sprites still go through {@link SceneWalk} / backend scene renderers.
  *
  * <p>Typical frame: {@link #setOrtho2D} → {@link #begin} → {@link #setColor} / {@link #line} /
- * {@link #rect} → {@link #end}. Call {@link #dispose()} once at shutdown when this instance owns GL
- * resources (GDX-backed bags do).
+ * {@link #rect} → {@link #end}.
+ *
+ * <p><b>Ownership:</b> the bag's {@code Draw2D} is bag-owned. Games call {@link #dispose()} once at
+ * shutdown via {@code services.draw2d().dispose()} (GDX-backed bags own a ShapeRenderer).
  */
 public interface Draw2D {
 

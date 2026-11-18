@@ -99,10 +99,10 @@ class EngineServicesTest {
         assertEquals(DrawMode.LINE, commands.get(1).mode);
         assertEquals(FakeDraw2D.Command.Kind.COLOR, commands.get(2).kind);
         assertEquals(FakeDraw2D.Command.Kind.LINE, commands.get(3).kind);
-        assertEquals(0f, commands.get(3).a, 1e-5f);
-        assertEquals(32f, commands.get(3).c, 1e-5f);
+        assertEquals(0f, commands.get(3).x1, 1e-5f);
+        assertEquals(32f, commands.get(3).x2, 1e-5f);
         assertEquals(FakeDraw2D.Command.Kind.RECT, commands.get(4).kind);
-        assertEquals(3f, commands.get(4).c, 1e-5f);
+        assertEquals(3f, commands.get(4).x2, 1e-5f);
         assertEquals(FakeDraw2D.Command.Kind.END, commands.get(5).kind);
         assertEquals(FakeDraw2D.Command.Kind.DISPOSE, commands.get(6).kind);
     }

@@ -231,59 +231,79 @@ public final class FakeThin3D implements Thin3D {
         }
 
         public final Kind kind;
-        public final float a;
+        /** Geometry / vector: FOV, scalar, xyz.x, or primitive width (by kind). */
+        public final float x;
+        /** Geometry / vector: viewport width, xyz.y, or primitive height (by kind). */
+        public final float y;
+        /** Geometry / vector: viewport height, xyz.z, or primitive depth (by kind). */
+        public final float z;
+        /** Transform scale X when kind is {@link Kind#INSTANCE_TRANSFORM}; else 0. */
+        public final float scaleX;
+        /** Transform scale Y when kind is {@link Kind#INSTANCE_TRANSFORM}; else 0. */
+        public final float scaleY;
+        /** Transform scale Z when kind is {@link Kind#INSTANCE_TRANSFORM}; else 0. */
+        public final float scaleZ;
+        public final float r;
+        public final float g;
         public final float b;
-        public final float c;
-        public final float d;
-        public final float e;
-        public final float f;
+        /** RGBA alpha when the kind carries color; else 0. */
+        public final float alpha;
         public final int i0;
         public final int i1;
 
         private Command(
                 Kind kind,
-                float a,
+                float x,
+                float y,
+                float z,
+                float scaleX,
+                float scaleY,
+                float scaleZ,
+                float r,
+                float g,
                 float b,
-                float c,
-                float d,
-                float e,
-                float f,
+                float alpha,
                 int i0,
                 int i1) {
             this.kind = kind;
-            this.a = a;
+            this.x = x;
+            this.y = y;
+            this.z = z;
+            this.scaleX = scaleX;
+            this.scaleY = scaleY;
+            this.scaleZ = scaleZ;
+            this.r = r;
+            this.g = g;
             this.b = b;
-            this.c = c;
-            this.d = d;
-            this.e = e;
-            this.f = f;
+            this.alpha = alpha;
             this.i0 = i0;
             this.i1 = i1;
         }
 
         static Command of(Kind kind) {
-            return new Command(kind, 0f, 0f, 0f, 0f, 0f, 0f, 0, 0);
+            return new Command(kind, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0, 0);
         }
 
         static Command createCamera(float fov, float width, float height) {
-            return new Command(Kind.CREATE_CAMERA, fov, width, height, 0f, 0f, 0f, 0, 0);
+            return new Command(Kind.CREATE_CAMERA, fov, width, height, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0, 0);
         }
 
         static Command scalar(Kind kind, float value) {
-            return new Command(kind, value, 0f, 0f, 0f, 0f, 0f, 0, 0);
+            return new Command(kind, value, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0, 0);
         }
 
         static Command xyz(Kind kind, float x, float y, float z) {
-            return new Command(kind, x, y, z, 0f, 0f, 0f, 0, 0);
+            return new Command(kind, x, y, z, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0, 0);
         }
 
         static Command rgba(Kind kind, float r, float g, float b, float a) {
-            return new Command(kind, r, g, b, a, 0f, 0f, 0, 0);
+            return new Command(kind, 0f, 0f, 0f, 0f, 0f, 0f, r, g, b, a, 0, 0);
         }
 
         static Command directionalLight(
                 float r, float g, float b, float dirX, float dirY, float dirZ) {
-            return new Command(Kind.DIRECTIONAL_LIGHT, r, g, b, dirX, dirY, dirZ, 0, 0);
+            return new Command(
+                    Kind.DIRECTIONAL_LIGHT, dirX, dirY, dirZ, 0f, 0f, 0f, r, g, b, 0f, 0, 0);
         }
 
         static Command createSphere(
@@ -298,33 +318,50 @@ public final class FakeThin3D implements Thin3D {
                 float b,
                 float a) {
             return new Command(
-                    Kind.CREATE_SPHERE, width, height, depth, r, g, b, id, divisionsU + (divisionsV << 16));
+                    Kind.CREATE_SPHERE,
+                    width,
+                    height,
+                    depth,
+                    0f,
+                    0f,
+                    0f,
+                    r,
+                    g,
+                    b,
+                    a,
+                    id,
+                    divisionsU + (divisionsV << 16));
         }
 
         static Command createBox(
                 int id, float width, float height, float depth, float r, float g, float b, float a) {
-            return new Command(Kind.CREATE_BOX, width, height, depth, r, g, b, id, 0);
+            return new Command(Kind.CREATE_BOX, width, height, depth, 0f, 0f, 0f, r, g, b, a, id, 0);
         }
 
         static Command createInstance(int modelId, int instanceId) {
-            return new Command(Kind.CREATE_INSTANCE, 0f, 0f, 0f, 0f, 0f, 0f, modelId, instanceId);
+            return new Command(
+                    Kind.CREATE_INSTANCE, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, modelId, instanceId);
         }
 
         static Command instanceTranslation(int instanceId, float x, float y, float z) {
-            return new Command(Kind.INSTANCE_TRANSLATION, x, y, z, 0f, 0f, 0f, instanceId, 0);
+            return new Command(
+                    Kind.INSTANCE_TRANSLATION, x, y, z, 0f, 0f, 0f, 0f, 0f, 0f, 0f, instanceId, 0);
         }
 
         static Command instanceTransform(
                 int instanceId, float x, float y, float z, float sx, float sy, float sz) {
-            return new Command(Kind.INSTANCE_TRANSFORM, x, y, z, sx, sy, sz, instanceId, 0);
+            return new Command(
+                    Kind.INSTANCE_TRANSFORM, x, y, z, sx, sy, sz, 0f, 0f, 0f, 0f, instanceId, 0);
         }
 
         static Command batchRender(int instanceId) {
-            return new Command(Kind.BATCH_RENDER, 0f, 0f, 0f, 0f, 0f, 0f, instanceId, 0);
+            return new Command(
+                    Kind.BATCH_RENDER, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, instanceId, 0);
         }
 
         static Command modelDispose(int modelId) {
-            return new Command(Kind.MODEL_DISPOSE, 0f, 0f, 0f, 0f, 0f, 0f, modelId, 0);
+            return new Command(
+                    Kind.MODEL_DISPOSE, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, modelId, 0);
         }
     }
 }

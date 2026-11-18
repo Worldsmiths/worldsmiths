@@ -2,7 +2,7 @@ package io.github.worldsmiths.core.thin3d;
 
 /**
  * Builds primitive meshes in code. Diffuse color is RGBA; position+normal attributes are always
- * included so directional lights shade correctly.
+ * included so directional lights shade correctly. No dispose — dispose the {@link Model}s you create.
  */
 public interface ModelBuilder {
 

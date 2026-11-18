@@ -1,8 +1,8 @@
 package io.github.worldsmiths.core.thin3d;
 
 /**
- * Immediate-mode 3D batch. Typical frame: {@link #begin} → {@link #render}… → {@link #end}. Call
- * {@link #dispose()} once at shutdown when this instance owns GL resources.
+ * Immediate-mode 3D batch. Typical frame: {@link #begin} → {@link #render}… → {@link #end}.
+ * Author-owned: call {@link #dispose()} once at shutdown (GDX-backed batches own GL resources).
  */
 public interface ModelBatch {
 

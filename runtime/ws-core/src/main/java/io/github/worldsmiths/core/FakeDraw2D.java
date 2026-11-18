@@ -124,35 +124,39 @@ public final class FakeDraw2D implements Draw2D {
 
         public final Kind kind;
         public final DrawMode mode;
-        public final float a;
-        public final float b;
-        public final float c;
-        public final float d;
+        /** LINE: x1; ORTHO/RECT: x. */
+        public final float x1;
+        /** LINE: y1; ORTHO/RECT: y. */
+        public final float y1;
+        /** LINE: x2; ORTHO/RECT: width. */
+        public final float x2;
+        /** LINE: y2; ORTHO/RECT: height. */
+        public final float y2;
         public final float r;
         public final float g;
-        public final float bl;
+        public final float b;
         public final float alpha;
 
         private Command(
                 Kind kind,
                 DrawMode mode,
-                float a,
-                float b,
-                float c,
-                float d,
+                float x1,
+                float y1,
+                float x2,
+                float y2,
                 float r,
                 float g,
-                float bl,
+                float b,
                 float alpha) {
             this.kind = kind;
             this.mode = mode;
-            this.a = a;
-            this.b = b;
-            this.c = c;
-            this.d = d;
+            this.x1 = x1;
+            this.y1 = y1;
+            this.x2 = x2;
+            this.y2 = y2;
             this.r = r;
             this.g = g;
-            this.bl = bl;
+            this.b = b;
             this.alpha = alpha;
         }
 

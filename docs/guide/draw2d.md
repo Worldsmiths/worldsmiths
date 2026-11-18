@@ -4,6 +4,10 @@ Immediate-mode 2D overlay drawing through `EngineServices.draw2d()`. Package: `i
 
 Use this for author-drawn grids, debug overlays, and simple shapes. Retained sprites still go through `Scene` / `SceneWalk` (backends draw them via their scene renderer).
 
+## Ownership / dispose
+
+The bag's `Draw2D` is **bag-owned**. Games must call `services.draw2d().dispose()` once at shutdown (GDX-backed impls own a `ShapeRenderer`). Do not create a second Draw2D; reuse the bag instance.
+
 ## API
 
 | Method | Meaning |
@@ -37,7 +41,7 @@ public void dispose() {
 }
 ```
 
-Hold the bag from `create(EngineServices)`. Pair every `begin` with `end`. Dispose the bag's Draw2D when the game shuts down (GDX-backed impls own a ShapeRenderer).
+Hold the bag from `create(EngineServices)`. Pair every `begin` with `end`. Dispose the bag's Draw2D when the game shuts down.
 
 ## Tests
 

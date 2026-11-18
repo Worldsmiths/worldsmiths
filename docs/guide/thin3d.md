@@ -4,6 +4,12 @@ Minimal 3D author surface through `EngineServices.thin3d()`. Package: `io.github
 
 Covers the D9b rollball set: perspective camera, ambient + directional lights, primitive sphere/box meshes, model instances, and batch `begin` / `render` / `end` / `dispose`. No `.g3dj` / AssetManager load in D9.
 
+## Ownership / dispose
+
+`Thin3D` from the bag is a **factory**, not a disposable resource. Authors own dispose of every `Model` and `ModelBatch` they create (`model.dispose()`, `batch.dispose()` at shutdown).
+
+These types need **no** dispose: `Thin3D` itself, `PerspectiveCamera`, `Environment`, `ModelBuilder`, and `ModelInstance`.
+
 ## API
 
 ### Factory (`Thin3D`)
@@ -23,9 +29,9 @@ Covers the D9b rollball set: perspective camera, ambient + directional lights, p
 | `PerspectiveCamera` | `setNear` / `setFar` / `setPosition` / `setUp` / `lookAt` / `update` |
 | `Environment` | `setAmbientLight(r,g,b,a)` / `addDirectionalLight(r,g,b,dirX,dirY,dirZ)` |
 | `ModelBuilder` | `createSphere(...)` / `createBox(...)` — RGBA diffuse; position+normal attrs included |
-| `Model` | `dispose()` |
+| `Model` | `dispose()` (author-owned) |
 | `ModelInstance` | `setTranslation` / `setTranslationAndScaling` (full overwrite) |
-| `ModelBatch` | `begin(camera)` / `render(instance, environment)` / `end()` / `dispose()` |
+| `ModelBatch` | `begin(camera)` / `render(instance, environment)` / `end()` / `dispose()` (author-owned) |
 
 ## Usage
 
@@ -70,7 +76,7 @@ public void dispose() {
 }
 ```
 
-Hold the bag from `create(EngineServices)`. Pair every `begin` with `end`. Dispose models and the batch at shutdown (GDX-backed bags own ModelBatch / Model GL resources).
+Hold the bag from `create(EngineServices)`. Pair every `begin` with `end`. Dispose author-created models and the batch at shutdown — not the bag's `Thin3D`.
 
 ## Tests
 
