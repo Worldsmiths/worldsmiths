@@ -58,6 +58,7 @@ class ModuleCoordinateContractTest {
         assertBareIncludeBuild(readEngine("samples/snake/settings.gradle.kts"));
         assertBareIncludeBuild(readEngine("samples/rollball/settings.gradle.kts"));
         assertBareIncludeBuild(readEngine("samples/minimal/settings.gradle.kts"));
+        assertBareIncludeBuild(readEngine("samples/relay/settings.gradle.kts"));
         assertBareIncludeBuild(readEngine("fixtures/ios-phase0/settings.gradle.kts"));
     }
 
@@ -76,6 +77,13 @@ class ModuleCoordinateContractTest {
     }
 
     @Test
+    void relayOptsInAndroidTargetWithGoogleMaven() throws IOException {
+        String relay = readEngine("samples/relay/settings.gradle.kts");
+        assertTrue(relay.contains("google()"), relay);
+        assertTrue(relay.contains("android {"), relay);
+    }
+
+    @Test
     void snakeOptsInIosTarget() throws IOException {
         String snake = readEngine("samples/snake/settings.gradle.kts");
         assertTrue(snake.contains("ios {"), snake);
@@ -85,6 +93,12 @@ class ModuleCoordinateContractTest {
     void rollballOptsInIosTarget() throws IOException {
         String rollball = readEngine("samples/rollball/settings.gradle.kts");
         assertTrue(rollball.contains("ios {"), rollball);
+    }
+
+    @Test
+    void relayOptsInIosTarget() throws IOException {
+        String relay = readEngine("samples/relay/settings.gradle.kts");
+        assertTrue(relay.contains("ios {"), relay);
     }
 
     @Test

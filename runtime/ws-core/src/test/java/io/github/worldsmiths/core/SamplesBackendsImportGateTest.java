@@ -24,7 +24,7 @@ import org.junit.jupiter.api.Test;
 /**
  * Sample game import gate: every nested {@code samples/*}/game tree must not import platform
  * backends, {@code *}ApplicationConfiguration types, or any {@code com.badlogic.gdx} (full D9b ban:
- * snake + rollball + minimal).
+ * snake + rollball + minimal + relay).
  *
  * <p>Runs under root {@code ./gradlew build} via {@code :runtime:ws-core:test} (no display).
  */
@@ -40,7 +40,7 @@ class SamplesBackendsImportGateTest {
 
     /** All samples must not import any {@code com.badlogic.gdx.*} (D9b full gate). */
     private static final Set<String> LIBGDX_CORE_BANNED_SAMPLES =
-            new HashSet<String>(Arrays.asList("snake", "rollball", "minimal"));
+            new HashSet<String>(Arrays.asList("snake", "rollball", "minimal", "relay"));
 
     private static final Pattern IMPORT_LINE =
             Pattern.compile("^\\s*import\\s+(?:static\\s+)?([\\w.]+)\\s*;", Pattern.MULTILINE);
@@ -115,6 +115,9 @@ class SamplesBackendsImportGateTest {
         assertTrue(
                 sampleNames.contains("minimal"),
                 "expected samples/minimal/game among scanned trees, got " + sampleNames);
+        assertTrue(
+                sampleNames.contains("relay"),
+                "expected samples/relay/game among scanned trees, got " + sampleNames);
 
         List<String> backendHits = new ArrayList<String>();
         List<String> coreHits = new ArrayList<String>();
@@ -145,7 +148,7 @@ class SamplesBackendsImportGateTest {
                     + backendHits.stream().collect(Collectors.joining("\n")));
         }
         if (!coreHits.isEmpty()) {
-            fail("D9b: snake/rollball/minimal game sources must not import com.badlogic.gdx:\n"
+            fail("D9b: snake/rollball/minimal/relay game sources must not import com.badlogic.gdx:\n"
                     + coreHits.stream().collect(Collectors.joining("\n")));
         }
     }
