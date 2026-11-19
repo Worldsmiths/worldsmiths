@@ -1,9 +1,9 @@
-# ADR-0005: Object model, and no ECS in 1.0
+# ADR-0005: Object model — scene tree + services; ECS beside (opt-in)
 
-- Status: accepted
+- Status: accepted (amended 2026-11-19)
 - Date: 2026-11-12
 - Deciders: founder
-- Related: HLD Q5, [R03 §3.1], [R04 ECS]
+- Related: HLD Q5, [R03 §3.1], [R04 ECS]; ladder D10; `.agent-docs/hld-planner-post-d9-roadmap/`
 
 ## Context
 
@@ -17,9 +17,12 @@ The engine has to feel like a general game engine, hide its machinery, and also 
 
 ## Decision
 
-Option 1. Version 1.0 ships the scene tree and services only. `ws-ecs` is post-1.0 and starts from benchmarks, not from a library choice.
+Option 1. The **default author model** is the scene tree + services (`EngineServices`). `ws-ecs` is an **optional module beside** services — not a replacement of the tree, and not a required bag getter.
+
+**Amendment (2026-11-19):** The engine ladder may introduce `ws-ecs` in **0.x as D10** when a living probe (incremental showcase) needs it — still opt-in, game-owned World, bag floor unchanged. “Post-1.0 only” is no longer a hard calendar ban; **1.0 may still ship without requiring ECS** for every game. Library choice and benchmarks still gate *how* ECS is implemented, not whether the milestone may exist in 0.x.
 
 ## Consequences
 
-- Requirements FR-S01 to FR-S06 are in scope. FR-S07 is out of 1.0.
-- Services are the extension point for physics, rendering and audio, so a later ECS can sit beside them instead of replacing them.
+- Requirements FR-S01 to FR-S06 stay the default path. FR-S07 (ECS) is opt-in, not the 1.0 floor.
+- Services remain the extension point for physics, rendering and audio; ECS sits beside them.
+- Minimal/Snake/rollball may stay non-ECS while a showcase opts in.
