@@ -39,6 +39,7 @@ public final class FakeAudio implements Audio {
 
     private final class FakeSound implements Sound {
         private final String path;
+        private boolean disposed;
 
         FakeSound(String path) {
             this.path = path;
@@ -56,6 +57,10 @@ public final class FakeAudio implements Audio {
 
         @Override
         public void dispose() {
+            if (disposed) {
+                return;
+            }
+            disposed = true;
             commands.add(Command.dispose(path));
         }
     }

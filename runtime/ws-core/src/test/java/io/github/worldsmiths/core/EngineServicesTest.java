@@ -131,6 +131,7 @@ class EngineServicesTest {
         sound.play();
         sound.stop();
         sound.dispose();
+        sound.dispose();
 
         java.util.List<FakeAudio.Command> commands = audio.commands();
         assertEquals(4, commands.size());

@@ -94,6 +94,25 @@ class GdxAudioTest {
         assertEquals(2, gdxSound.attempts);
     }
 
+    @Test
+    void disposeIsIdempotentAndCallsDelegateOnce() {
+        RecordingGdxSound gdxSound = new RecordingGdxSound();
+        GdxAudio audio =
+                new GdxAudio(
+                        new GdxAudio.SoundOpener() {
+                            @Override
+                            public com.badlogic.gdx.audio.Sound open(String path) {
+                                return gdxSound;
+                            }
+                        });
+
+        Sound sound = audio.createSound("audio/cue.wav");
+        sound.dispose();
+        sound.dispose();
+
+        assertEquals(java.util.Arrays.asList("dispose"), gdxSound.calls);
+    }
+
     private static final class RecordingGdxSound implements com.badlogic.gdx.audio.Sound {
         final List<String> calls = new ArrayList<String>();
 
