@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import io.github.worldsmiths.core.FakeAudio;
 import io.github.worldsmiths.core.FakeEngineServices;
+import io.github.worldsmiths.core.FakeUi;
 import io.github.worldsmiths.core.Key;
 import io.github.worldsmiths.core.thin3d.FakeThin3D;
 import java.util.List;
@@ -121,10 +122,48 @@ class RelayGameThin3DTest {
         assertTrue(controller.agentX() > startX);
     }
 
+    @Test
+    void elapsedHudUsesFakeUiCreateDrawAndDispose() {
+        FakeEngineServices services = seededServices();
+        RelayController controller = new RelayController();
+        RelayGame game = new RelayGame(controller);
+        game.createScene();
+        game.create(services);
+
+        FakeUi ui = services.ui();
+        assertTrue(containsUiKind(ui.commands(), FakeUi.Command.Kind.CREATE_FONT));
+
+        game.update(1.5f);
+        game.render();
+
+        assertTrue(containsUiKind(ui.commands(), FakeUi.Command.Kind.DRAW_STRING));
+        FakeUi.Command drawn = firstUiKind(ui.commands(), FakeUi.Command.Kind.DRAW_STRING);
+        assertTrue(drawn.text != null && drawn.text.contains("1.5"), drawn.text);
+
+        float[] gate = controller.activeCheckpointCenter();
+        controller.placeAgent(gate[0], RelayController.AGENT_RADIUS, gate[1]);
+        game.update(0.016f);
+        assertTrue(controller.legComplete());
+
+        services.input().setKeyDown(Key.R, true);
+        game.update(0.2f);
+        game.render();
+
+        assertFalse(controller.legComplete());
+        FakeUi.Command afterRestart = lastUiKind(ui.commands(), FakeUi.Command.Kind.DRAW_STRING);
+        assertTrue(
+                afterRestart.text != null && afterRestart.text.contains("0.2"),
+                afterRestart.text);
+
+        game.dispose();
+        assertTrue(containsUiKind(ui.commands(), FakeUi.Command.Kind.DISPOSE));
+    }
+
     private static FakeEngineServices seededServices() {
         FakeEngineServices services = new FakeEngineServices();
         services.graphics().setSize(800, 600);
         services.audio().putSound(RelayGame.LEG_COMPLETE_CUE);
+        services.ui().putFont(RelayGame.HUD_FONT);
         return services;
     }
 
@@ -146,5 +185,38 @@ class RelayGameThin3DTest {
             }
         }
         return false;
+    }
+
+    private static boolean containsUiKind(List<FakeUi.Command> commands, FakeUi.Command.Kind kind) {
+        for (FakeUi.Command command : commands) {
+            if (command.kind == kind) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static FakeUi.Command firstUiKind(
+            List<FakeUi.Command> commands, FakeUi.Command.Kind kind) {
+        for (FakeUi.Command command : commands) {
+            if (command.kind == kind) {
+                return command;
+            }
+        }
+        throw new AssertionError("missing FakeUi kind " + kind);
+    }
+
+    private static FakeUi.Command lastUiKind(
+            List<FakeUi.Command> commands, FakeUi.Command.Kind kind) {
+        FakeUi.Command last = null;
+        for (FakeUi.Command command : commands) {
+            if (command.kind == kind) {
+                last = command;
+            }
+        }
+        if (last == null) {
+            throw new AssertionError("missing FakeUi kind " + kind);
+        }
+        return last;
     }
 }

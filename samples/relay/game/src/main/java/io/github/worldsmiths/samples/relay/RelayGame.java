@@ -1,6 +1,7 @@
 package io.github.worldsmiths.samples.relay;
 
 import io.github.worldsmiths.core.EngineServices;
+import io.github.worldsmiths.core.Font;
 import io.github.worldsmiths.core.Input;
 import io.github.worldsmiths.core.Key;
 import io.github.worldsmiths.core.Node;
@@ -19,18 +20,23 @@ import io.github.worldsmiths.core.thin3d.Thin3D;
 /**
  * P2 relay stub: agent on a ground plane, one active checkpoint (AABB), optional inactive second
  * gate mesh. Keyboard WASD/arrows + touch drag-stick; R or tap restarts after leg complete. Plays a
- * packaged one-shot cue on leg-complete via {@code services.audio()}. Title is the temporary HUD
- * ({@code setTitle}).
+ * packaged one-shot cue on leg-complete via {@code services.audio()}. Draws run-elapsed via {@code
+ * services.ui()} ({@link Font}); window title still dual-writes status.
  */
 public final class RelayGame implements WorldsmithsGame {
 
     /** Packaged internal path for the leg-complete one-shot cue. */
     public static final String LEG_COMPLETE_CUE = "audio/leg-complete.wav";
 
+    /** Packaged internal BitmapFont path for the run-elapsed HUD. */
+    public static final String HUD_FONT = "fonts/hud.fnt";
+
     private static final float FLOOR_HALF = 5f;
     private static final float FLOOR_THICKNESS = 0.2f;
     private static final float GATE_MESH_SIZE = RelayController.CHECKPOINT_HALF * 2f;
     private static final float GATE_MESH_HEIGHT = 1.2f;
+    private static final float HUD_X = 8f;
+    private static final float HUD_Y = 24f;
 
     private final RelayController controller;
     private EngineServices services;
@@ -50,6 +56,8 @@ public final class RelayGame implements WorldsmithsGame {
     private ModelInstance activeGateInstance;
     private ModelInstance inactiveGateInstance;
     private Sound legCompleteCue;
+    private Font hudFont;
+    private float runElapsed;
 
     private boolean trackingTouch;
     private float touchOriginX;
@@ -136,6 +144,8 @@ public final class RelayGame implements WorldsmithsGame {
         camera.setFar(100f);
         updateCamera();
         legCompleteCue = services.audio().createSound(LEG_COMPLETE_CUE);
+        hudFont = services.ui().createFont(HUD_FONT);
+        runElapsed = 0f;
         wasLegComplete = controller.legComplete();
         publishTitle();
     }
@@ -143,6 +153,7 @@ public final class RelayGame implements WorldsmithsGame {
     @Override
     public void update(float delta) {
         applyInput(delta);
+        runElapsed += delta;
         syncScene();
         playLegCompleteCueIfNeeded();
         publishTitleIfChanged();
@@ -161,10 +172,15 @@ public final class RelayGame implements WorldsmithsGame {
         modelBatch.render(activeGateInstance, environment);
         modelBatch.render(agentInstance, environment);
         modelBatch.end();
+        drawHud();
     }
 
     @Override
     public void dispose() {
+        if (hudFont != null) {
+            hudFont.dispose();
+            hudFont = null;
+        }
         if (legCompleteCue != null) {
             legCompleteCue.dispose();
             legCompleteCue = null;
@@ -205,6 +221,18 @@ public final class RelayGame implements WorldsmithsGame {
         return "Relay — running";
     }
 
+    /** Run-elapsed HUD text (seconds + optional leg marker). Package-visible test seam. */
+    static String formatElapsedHud(float runElapsedSeconds) {
+        return formatOneDecimal(runElapsedSeconds) + "  1/1";
+    }
+
+    private static String formatOneDecimal(float value) {
+        int tenths = Math.round(value * 10f);
+        int whole = tenths / 10;
+        int frac = Math.abs(tenths % 10);
+        return whole + "." + frac;
+    }
+
     private void applyInput(float delta) {
         if (services == null) {
             controller.update(delta, 0f, 0f);
@@ -223,11 +251,19 @@ public final class RelayGame implements WorldsmithsGame {
         RelayMoveIntent intent = RelayMoveIntent.compose(keyIntent, touchIntent);
         if (intent.restart()) {
             controller.restart();
+            runElapsed = 0f;
             syncScene();
             publishTitle();
             return;
         }
         controller.update(delta, intent.axisX(), intent.axisZ());
+    }
+
+    private void drawHud() {
+        if (hudFont == null) {
+            return;
+        }
+        hudFont.drawString(formatElapsedHud(runElapsed), HUD_X, HUD_Y);
     }
 
     private RelayMoveIntent pollTouchIntent(boolean terminal) {
