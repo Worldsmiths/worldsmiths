@@ -16,6 +16,7 @@ Package: `io.github.worldsmiths.core`.
 | `draw2d()` | [`Draw2D`](draw2d.md) | Immediate-mode lines/rects + ortho |
 | `files()` | [`Files`](files.md) | Sync packaged internal text/bytes |
 | `thin3d()` | [`Thin3D`](thin3d.md) | Camera, lights, primitive meshes, batch |
+| `audio()` | [`Audio`](audio.md) | One-shot sound load / play / stop / dispose |
 | `extensions()` | `EngineServices.Extensions` | Empty stub; unused in D9 |
 
 ## Honesty limits

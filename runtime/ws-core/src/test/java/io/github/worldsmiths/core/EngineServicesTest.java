@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.Test;
@@ -20,6 +21,7 @@ class EngineServicesTest {
         assertNotNull(services.draw2d());
         assertNotNull(services.files());
         assertNotNull(services.thin3d());
+        assertNotNull(services.audio());
         assertNotNull(services.extensions());
         assertSame(services.input(), services.input());
         assertSame(services.clock(), services.clock());
@@ -27,6 +29,7 @@ class EngineServicesTest {
         assertSame(services.draw2d(), services.draw2d());
         assertSame(services.files(), services.files());
         assertSame(services.thin3d(), services.thin3d());
+        assertSame(services.audio(), services.audio());
     }
 
     @Test
@@ -105,5 +108,36 @@ class EngineServicesTest {
         assertEquals(3f, commands.get(4).x2, 1e-5f);
         assertEquals(FakeDraw2D.Command.Kind.END, commands.get(5).kind);
         assertEquals(FakeDraw2D.Command.Kind.DISPOSE, commands.get(6).kind);
+    }
+
+    @Test
+    void fakeAudioFailClosedMissingCreateSound() {
+        FakeEngineServices services = new FakeEngineServices();
+        FakeAudio audio = services.audio();
+
+        EngineException thrown =
+                assertThrows(EngineException.class, () -> audio.createSound("missing.wav"));
+        assertTrue(thrown.getMessage().contains("missing.wav"));
+        assertTrue(audio.commands().isEmpty());
+    }
+
+    @Test
+    void fakeAudioRecordsCreatePlayStopDisposeKinds() {
+        FakeEngineServices services = new FakeEngineServices();
+        FakeAudio audio = services.audio();
+        audio.putSound("audio/cue.wav");
+
+        Sound sound = audio.createSound("audio/cue.wav");
+        sound.play();
+        sound.stop();
+        sound.dispose();
+
+        java.util.List<FakeAudio.Command> commands = audio.commands();
+        assertEquals(4, commands.size());
+        assertEquals(FakeAudio.Command.Kind.CREATE_SOUND, commands.get(0).kind);
+        assertEquals("audio/cue.wav", commands.get(0).path);
+        assertEquals(FakeAudio.Command.Kind.PLAY, commands.get(1).kind);
+        assertEquals(FakeAudio.Command.Kind.STOP, commands.get(2).kind);
+        assertEquals(FakeAudio.Command.Kind.DISPOSE, commands.get(3).kind);
     }
 }

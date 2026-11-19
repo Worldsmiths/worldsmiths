@@ -35,6 +35,7 @@ class IosGameListenerTest {
         assertNotNull(game.services.input());
         assertNotNull(game.services.clock());
         assertNotNull(game.services.graphics());
+        assertNotNull(game.services.audio());
     }
 
     @Test

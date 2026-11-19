@@ -1,5 +1,6 @@
 package io.github.worldsmiths.core.gdx;
 
+import io.github.worldsmiths.core.Audio;
 import io.github.worldsmiths.core.Clock;
 import io.github.worldsmiths.core.Draw2D;
 import io.github.worldsmiths.core.EngineServices;
@@ -17,7 +18,7 @@ public final class GdxEngineServices {
     private GdxEngineServices() {}
 
     /**
-     * Assembles non-null Input/Clock/Graphics/Draw2D/Files/Thin3D wrappers around {@code Gdx}
+     * Assembles non-null Input/Clock/Graphics/Draw2D/Files/Thin3D/Audio wrappers around {@code Gdx}
      * statics.
      */
     public static EngineServices create() {
@@ -28,6 +29,7 @@ public final class GdxEngineServices {
                 new GdxDraw2D(),
                 new GdxFiles(),
                 new GdxThin3D(),
+                new GdxAudio(),
                 new EngineServices.Extensions());
     }
 
@@ -38,6 +40,7 @@ public final class GdxEngineServices {
         private final Draw2D draw2d;
         private final Files files;
         private final Thin3D thin3d;
+        private final Audio audio;
         private final Extensions extensions;
 
         Bag(
@@ -47,6 +50,7 @@ public final class GdxEngineServices {
                 Draw2D draw2d,
                 Files files,
                 Thin3D thin3d,
+                Audio audio,
                 Extensions extensions) {
             this.input = input;
             this.clock = clock;
@@ -54,6 +58,7 @@ public final class GdxEngineServices {
             this.draw2d = draw2d;
             this.files = files;
             this.thin3d = thin3d;
+            this.audio = audio;
             this.extensions = extensions;
         }
 
@@ -85,6 +90,11 @@ public final class GdxEngineServices {
         @Override
         public Thin3D thin3d() {
             return thin3d;
+        }
+
+        @Override
+        public Audio audio() {
+            return audio;
         }
 
         @Override
