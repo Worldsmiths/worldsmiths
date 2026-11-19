@@ -1,26 +1,26 @@
 # Relay sample
 
-P2 showcase scaffold: move an agent into **one** active checkpoint, see run elapsed on-screen and
-leg complete in the window title, hear a short packaged cue, then restart. An optional second gate
-mesh is visible but inactive (does not complete the leg). Checkpoint overlap uses an **AABB**
-volume (implementer choice for P2).
+P2 showcase scaffold: ordered **two-leg** race on the ground plane — touch the **+X** gate, then the
+**−X** gate, under a hard run-par (`RelayController.RUN_PAR_SECONDS`). Beat the par → **CLEAR**;
+elapsed ≥ par before the last gate → **FAIL**. Elapsed freezes on either terminal; restart retries
+from leg 1. Checkpoint overlap uses an **AABB** volume (implementer choice for P2).
 
 Uses engine `Thin3D` (camera / lights / primitive meshes / batch), `Transform3D` → ModelInstance
-sync, `Audio` / `Sound` for the one-shot cue at `audio/leg-complete.wav` (plays on leg-complete
-only; restart does not replay), and `Ui` / `Font` for the run-elapsed HUD from packaged
-`fonts/hud.fnt` (+ page `fonts/hud.png`). Elapsed accumulates from `update(delta)` and resets on
-restart; each frame draws seconds plus optional `1/1`. Window title still dual-writes status
-(`setTitle`) alongside the on-screen HUD.
+sync, `Audio` / `Sound` for the one-shot cue at `audio/leg-complete.wav` (plays on rising **CLEAR**
+only — not on intermediate gates, not on FAIL, not on restart), and `Ui` / `Font` for the single-line
+HUD from packaged `fonts/hud.fnt` (+ page `fonts/hud.png`). HUD shows live elapsed + `N/M` (current
+target vs 2) and appends `CLEAR` / `FAIL` when terminal; window title dual-writes thinly (`setTitle`)
+while the on-screen HUD is the source of truth.
 
 Desktop, browser (TeaVM / gdx-teavm), Android, and iOS (RoboVM) share the same `:game` sources.
 P2 CI only runs desktop compile + `:game:test` — no relay ship / android / ios archive jobs yet.
 
 ## Controls
 
-- **Move (desktop / keyboard):** WASD or arrow keys (ignored while leg complete)
+- **Move (desktop / keyboard):** WASD or arrow keys (ignored while terminal CLEAR/FAIL)
 - **Move (Android / iOS / touch):** drag-stick — finger-down is origin; drag while held steers;
   release zeros intent
-- **Restart after leg complete:** `R` or Space (keyboard); tap (touch)
+- **Restart when terminal:** `R` or Space (keyboard); tap (touch) — not available mid-run
 
 ## Requirements
 
@@ -45,9 +45,10 @@ From the monorepo root (`worldsmiths/`). On Windows use `.\gradlew.bat` instead 
 ./gradlew -p samples/relay :desktop:run
 ```
 
-Smoke: window opens → elapsed HUD ticks → WASD/arrows (or drag-stick) move the agent → enter the
-**+X** gate → title shows `leg complete` and the short cue plays → the **−X** gate is visible but
-does nothing → `R`/Space or tap restarts (elapsed resets; no cue on restart).
+Smoke: window opens → elapsed HUD ticks with `1/2` → WASD/arrows (or drag-stick) move the agent →
+enter the **+X** gate (HUD → `2/2`, no cue) → enter the **−X** gate under par → HUD/title show
+`CLEAR` and the short cue plays → dawdle past par instead → `FAIL` with no cue → `R`/Space or tap
+restarts (elapsed 0; leg 1; no cue on restart).
 
 **CI compile/test ≠ play confirmation.** There is no GPU / Playwright / real-audio / font-raster CI
-for this sample; `:game:test` asserts FakeAudio and FakeUi kind-presence only.
+for this sample; `:game:test` asserts FakeAudio / FakeUi markers and controller rules headlessly.

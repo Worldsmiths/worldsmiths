@@ -54,7 +54,7 @@ public final class RelayMoveIntent {
 
     /**
      * Builds intent from digital keys. Axes are world XZ (right +, forward/up key → −Z). When {@code
-     * terminal} (leg complete), move axes are zeroed and {@code restartKey} is honored; otherwise
+     * terminal} (CLEAR or FAIL), move axes are zeroed and {@code restartKey} is honored; otherwise
      * restart is always false.
      */
     public static RelayMoveIntent fromKeys(

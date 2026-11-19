@@ -18,10 +18,10 @@ import io.github.worldsmiths.core.thin3d.PerspectiveCamera;
 import io.github.worldsmiths.core.thin3d.Thin3D;
 
 /**
- * P2 relay stub: agent on a ground plane, one active checkpoint (AABB), optional inactive second
- * gate mesh. Keyboard WASD/arrows + touch drag-stick; R or tap restarts after leg complete. Plays a
- * packaged one-shot cue on leg-complete via {@code services.audio()}. Draws run-elapsed via {@code
- * services.ui()} ({@link Font}); window title still dual-writes status.
+ * P2 relay: ordered two-leg race (+X then −X), hard run-par FAIL, freeze-on-terminal. Keyboard
+ * WASD/arrows + touch drag-stick; R or tap restarts when terminal. Plays a packaged one-shot cue on
+ * rising CLEAR via {@code services.audio()}. Draws elapsed + live {@code N/M} (+ CLEAR/FAIL) via
+ * {@code services.ui()} ({@link Font}); window title dual-writes thinly.
  */
 public final class RelayGame implements WorldsmithsGame {
 
@@ -66,7 +66,7 @@ public final class RelayGame implements WorldsmithsGame {
     private float touchLastY;
 
     private String lastTitle = "";
-    private boolean wasLegComplete;
+    private boolean wasClear;
 
     public RelayGame() {
         this(new RelayController());
@@ -146,16 +146,18 @@ public final class RelayGame implements WorldsmithsGame {
         legCompleteCue = services.audio().createSound(LEG_COMPLETE_CUE);
         hudFont = services.ui().createFont(HUD_FONT);
         runElapsed = 0f;
-        wasLegComplete = controller.legComplete();
+        wasClear = controller.cleared();
         publishTitle();
     }
 
     @Override
     public void update(float delta) {
+        if (!controller.terminal()) {
+            runElapsed += delta;
+        }
         applyInput(delta);
-        runElapsed += delta;
         syncScene();
-        playLegCompleteCueIfNeeded();
+        playClearCueIfNeeded();
         publishTitleIfChanged();
     }
 
@@ -203,6 +205,11 @@ public final class RelayGame implements WorldsmithsGame {
         }
     }
 
+    /** Package-visible test seam for post-advance gate sync. */
+    Transform3D activeGateTransform() {
+        return activeGateTransform;
+    }
+
     /** Writes controller state into scene transforms. Package-visible test seam. */
     void syncScene() {
         if (scene == null || agentTransform == null) {
@@ -211,19 +218,46 @@ public final class RelayGame implements WorldsmithsGame {
         agentTransform.x = controller.agentX();
         agentTransform.y = controller.agentY();
         agentTransform.z = controller.agentZ();
+        if (activeGateTransform != null) {
+            float[] active = controller.activeCheckpointCenter();
+            activeGateTransform.x = active[0];
+            activeGateTransform.y = GATE_MESH_HEIGHT * 0.5f;
+            activeGateTransform.z = active[1];
+        }
+        if (inactiveGateTransform != null) {
+            float[] inactive = controller.inactiveCheckpointCenter();
+            inactiveGateTransform.x = inactive[0];
+            inactiveGateTransform.y = GATE_MESH_HEIGHT * 0.5f;
+            inactiveGateTransform.z = inactive[1];
+        }
     }
 
     /** Window title format. Package-visible test seam. */
-    static String formatTitle(boolean legComplete) {
-        if (legComplete) {
-            return "Relay — leg complete";
+    static String formatTitle(RelayController.TerminalKind kind) {
+        if (kind == RelayController.TerminalKind.CLEAR) {
+            return "Relay — CLEAR";
+        }
+        if (kind == RelayController.TerminalKind.FAIL) {
+            return "Relay — FAIL";
         }
         return "Relay — running";
     }
 
-    /** Run-elapsed HUD text (seconds + optional leg marker). Package-visible test seam. */
-    static String formatElapsedHud(float runElapsedSeconds) {
-        return formatOneDecimal(runElapsedSeconds) + "  1/1";
+    /** Run-elapsed HUD text (seconds + live N/M + CLEAR/FAIL). Package-visible test seam. */
+    static String formatElapsedHud(float runElapsedSeconds, RelayController controller) {
+        String base =
+                formatOneDecimal(runElapsedSeconds)
+                        + "  "
+                        + controller.currentLeg()
+                        + "/"
+                        + controller.totalLegs();
+        if (controller.terminalKind() == RelayController.TerminalKind.CLEAR) {
+            return base + " CLEAR";
+        }
+        if (controller.terminalKind() == RelayController.TerminalKind.FAIL) {
+            return base + " FAIL";
+        }
+        return base;
     }
 
     private static String formatOneDecimal(float value) {
@@ -235,7 +269,7 @@ public final class RelayGame implements WorldsmithsGame {
 
     private void applyInput(float delta) {
         if (services == null) {
-            controller.update(delta, 0f, 0f);
+            controller.update(delta, 0f, 0f, runElapsed);
             return;
         }
         Input input = services.input();
@@ -252,18 +286,19 @@ public final class RelayGame implements WorldsmithsGame {
         if (intent.restart()) {
             controller.restart();
             runElapsed = 0f;
+            wasClear = false;
             syncScene();
             publishTitle();
             return;
         }
-        controller.update(delta, intent.axisX(), intent.axisZ());
+        controller.update(delta, intent.axisX(), intent.axisZ(), runElapsed);
     }
 
     private void drawHud() {
         if (hudFont == null) {
             return;
         }
-        hudFont.drawString(formatElapsedHud(runElapsed), HUD_X, HUD_Y);
+        hudFont.drawString(formatElapsedHud(runElapsed, controller), HUD_X, HUD_Y);
     }
 
     private RelayMoveIntent pollTouchIntent(boolean terminal) {
@@ -322,23 +357,23 @@ public final class RelayGame implements WorldsmithsGame {
         camera.update();
     }
 
-    private void playLegCompleteCueIfNeeded() {
-        boolean complete = controller.legComplete();
-        if (complete && !wasLegComplete && legCompleteCue != null) {
+    private void playClearCueIfNeeded() {
+        boolean clear = controller.cleared();
+        if (clear && !wasClear && legCompleteCue != null) {
             legCompleteCue.play();
         }
-        wasLegComplete = complete;
+        wasClear = clear;
     }
 
     private void publishTitleIfChanged() {
-        String title = formatTitle(controller.legComplete());
+        String title = formatTitle(controller.terminalKind());
         if (!title.equals(lastTitle)) {
             publishTitle();
         }
     }
 
     private void publishTitle() {
-        lastTitle = formatTitle(controller.legComplete());
+        lastTitle = formatTitle(controller.terminalKind());
         if (services != null) {
             services.graphics().setTitle(lastTitle);
         }
