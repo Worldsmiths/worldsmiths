@@ -65,15 +65,15 @@ class RelayGameThin3DTest {
         controller.restart();
         controller.update(0.016f, 0f, 0f, RelayController.RUN_PAR_SECONDS);
         assertEquals(
-                formatFailHud(RelayController.RUN_PAR_SECONDS),
+                "8.0  1/2 FAIL",
                 RelayGame.formatElapsedHud(RelayController.RUN_PAR_SECONDS, controller));
     }
 
     @Test
     void formatTitleExactForRunningClearAndFail() {
-        assertEquals("Relay — running", RelayGame.formatTitle(RelayController.TerminalKind.RUNNING));
-        assertEquals("Relay — CLEAR", RelayGame.formatTitle(RelayController.TerminalKind.CLEAR));
-        assertEquals("Relay — FAIL", RelayGame.formatTitle(RelayController.TerminalKind.FAIL));
+        assertEquals("Relay — running", RelayGame.formatTitle(RelayController.CourseState.RUNNING));
+        assertEquals("Relay — CLEAR", RelayGame.formatTitle(RelayController.CourseState.CLEAR));
+        assertEquals("Relay — FAIL", RelayGame.formatTitle(RelayController.CourseState.FAIL));
     }
 
     @Test
@@ -156,6 +156,31 @@ class RelayGameThin3DTest {
     }
 
     @Test
+    void restartKeyAfterFailResetsLegElapsedAndTitle() {
+        FakeEngineServices services = seededServices();
+        RelayController controller = new RelayController();
+        RelayGame game = new RelayGame(controller);
+        game.createScene();
+        game.create(services);
+
+        game.update(RelayController.RUN_PAR_SECONDS);
+        assertTrue(controller.failed());
+        assertEquals(1, controller.currentLeg());
+
+        services.input().setKeyDown(Key.R, true);
+        game.update(0.016f);
+
+        assertFalse(controller.terminal());
+        assertEquals(RelayController.CourseState.RUNNING, controller.courseState());
+        assertEquals(1, controller.currentLeg());
+        assertTrue(services.graphics().lastTitle().contains("running"));
+        game.render();
+        FakeUi.Command hud = lastUiKind(services.ui().commands(), FakeUi.Command.Kind.DRAW_STRING);
+        assertTrue(hud.text != null && hud.text.startsWith("0.0"), hud.text);
+        assertFalse(hud.text.contains("FAIL"), hud.text);
+    }
+
+    @Test
     void updateMovesAgentWhenKeyDownViaFakeInput() {
         FakeEngineServices services = seededServices();
         RelayController controller = new RelayController();
@@ -234,6 +259,12 @@ class RelayGameThin3DTest {
         FakeUi.Command failHud = lastUiKind(ui.commands(), FakeUi.Command.Kind.DRAW_STRING);
         assertTrue(failHud.text != null && failHud.text.contains("FAIL"), failHud.text);
         assertTrue(failHud.text.contains("1/2"), failHud.text);
+        float failFrozen = extractLeadingSeconds(failHud.text);
+        game.update(0.5f);
+        game.render();
+        FakeUi.Command failFrozenHud = lastUiKind(ui.commands(), FakeUi.Command.Kind.DRAW_STRING);
+        assertTrue(failFrozenHud.text != null && failFrozenHud.text.contains("FAIL"), failFrozenHud.text);
+        assertEquals(failFrozen, extractLeadingSeconds(failFrozenHud.text), 1e-5f);
 
         game.dispose();
         assertTrue(containsUiKind(ui.commands(), FakeUi.Command.Kind.DISPOSE));
@@ -254,12 +285,6 @@ class RelayGameThin3DTest {
         assertEquals(0f, active[1], 1e-5f);
         assertEquals(-3f, game.activeGateTransform().x, 1e-5f);
         assertEquals(0f, game.activeGateTransform().z, 1e-5f);
-    }
-
-    private static String formatFailHud(float elapsed) {
-        RelayController failed = new RelayController();
-        failed.update(0.016f, 0f, 0f, elapsed);
-        return RelayGame.formatElapsedHud(elapsed, failed);
     }
 
     private static void advanceToLeg2(RelayController controller) {

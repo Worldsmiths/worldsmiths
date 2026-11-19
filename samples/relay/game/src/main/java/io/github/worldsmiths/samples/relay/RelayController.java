@@ -6,7 +6,7 @@ package io.github.worldsmiths.samples.relay;
  */
 public final class RelayController {
 
-    public enum TerminalKind {
+    public enum CourseState {
         RUNNING,
         CLEAR,
         FAIL
@@ -29,7 +29,7 @@ public final class RelayController {
     private float agentY = AGENT_RADIUS;
     private float agentZ;
     private int currentLeg = 1;
-    private TerminalKind terminalKind = TerminalKind.RUNNING;
+    private CourseState courseState = CourseState.RUNNING;
 
     public float agentX() {
         return agentX;
@@ -52,22 +52,22 @@ public final class RelayController {
         return TOTAL_LEGS;
     }
 
-    public TerminalKind terminalKind() {
-        return terminalKind;
+    public CourseState courseState() {
+        return courseState;
     }
 
     /** True only for course CLEAR (final gate under par). */
     public boolean cleared() {
-        return terminalKind == TerminalKind.CLEAR;
+        return courseState == CourseState.CLEAR;
     }
 
     /** True only for hard-par FAIL. */
     public boolean failed() {
-        return terminalKind == TerminalKind.FAIL;
+        return courseState == CourseState.FAIL;
     }
 
     public boolean terminal() {
-        return terminalKind != TerminalKind.RUNNING;
+        return courseState != CourseState.RUNNING;
     }
 
     /** Active (current target) gate center as {@code {x, z}}. */
@@ -99,11 +99,11 @@ public final class RelayController {
      * agent center.
      */
     public void update(float delta, float axisX, float axisZ, float runElapsed) {
-        if (terminalKind != TerminalKind.RUNNING) {
+        if (courseState != CourseState.RUNNING) {
             return;
         }
         if (runElapsed >= RUN_PAR_SECONDS) {
-            terminalKind = TerminalKind.FAIL;
+            courseState = CourseState.FAIL;
             return;
         }
         if (delta > 0f) {
@@ -125,18 +125,18 @@ public final class RelayController {
             if (currentLeg == 1) {
                 currentLeg = 2;
             } else {
-                terminalKind = TerminalKind.CLEAR;
+                courseState = CourseState.CLEAR;
             }
         }
     }
 
-    /** Restores agent, leg index, and terminal kind to the initial run. */
+    /** Restores agent, leg index, and course state to the initial run. */
     public void restart() {
         agentX = 0f;
         agentY = AGENT_RADIUS;
         agentZ = 0f;
         currentLeg = 1;
-        terminalKind = TerminalKind.RUNNING;
+        courseState = CourseState.RUNNING;
     }
 
     private boolean overlapsAabb(float centerX, float centerZ) {

@@ -233,11 +233,11 @@ public final class RelayGame implements WorldsmithsGame {
     }
 
     /** Window title format. Package-visible test seam. */
-    static String formatTitle(RelayController.TerminalKind kind) {
-        if (kind == RelayController.TerminalKind.CLEAR) {
+    static String formatTitle(RelayController.CourseState state) {
+        if (state == RelayController.CourseState.CLEAR) {
             return "Relay — CLEAR";
         }
-        if (kind == RelayController.TerminalKind.FAIL) {
+        if (state == RelayController.CourseState.FAIL) {
             return "Relay — FAIL";
         }
         return "Relay — running";
@@ -251,10 +251,10 @@ public final class RelayGame implements WorldsmithsGame {
                         + controller.currentLeg()
                         + "/"
                         + controller.totalLegs();
-        if (controller.terminalKind() == RelayController.TerminalKind.CLEAR) {
+        if (controller.courseState() == RelayController.CourseState.CLEAR) {
             return base + " CLEAR";
         }
-        if (controller.terminalKind() == RelayController.TerminalKind.FAIL) {
+        if (controller.courseState() == RelayController.CourseState.FAIL) {
             return base + " FAIL";
         }
         return base;
@@ -366,14 +366,14 @@ public final class RelayGame implements WorldsmithsGame {
     }
 
     private void publishTitleIfChanged() {
-        String title = formatTitle(controller.terminalKind());
+        String title = formatTitle(controller.courseState());
         if (!title.equals(lastTitle)) {
             publishTitle();
         }
     }
 
     private void publishTitle() {
-        lastTitle = formatTitle(controller.terminalKind());
+        lastTitle = formatTitle(controller.courseState());
         if (services != null) {
             services.graphics().setTitle(lastTitle);
         }

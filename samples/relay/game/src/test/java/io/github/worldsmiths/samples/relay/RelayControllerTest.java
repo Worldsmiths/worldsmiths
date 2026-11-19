@@ -20,7 +20,7 @@ class RelayControllerTest {
 
         assertEquals(2, controller.currentLeg());
         assertFalse(controller.terminal());
-        assertEquals(RelayController.TerminalKind.RUNNING, controller.terminalKind());
+        assertEquals(RelayController.CourseState.RUNNING, controller.courseState());
         float[] gate2 = controller.activeCheckpointCenter();
         assertEquals(-3f, gate2[0], 1e-5f);
         assertEquals(0f, gate2[1], 1e-5f);
@@ -38,7 +38,7 @@ class RelayControllerTest {
         assertTrue(controller.terminal());
         assertTrue(controller.cleared());
         assertFalse(controller.failed());
-        assertEquals(RelayController.TerminalKind.CLEAR, controller.terminalKind());
+        assertEquals(RelayController.CourseState.CLEAR, controller.courseState());
     }
 
     @Test
@@ -49,7 +49,7 @@ class RelayControllerTest {
         assertTrue(controller.terminal());
         assertTrue(controller.failed());
         assertFalse(controller.cleared());
-        assertEquals(RelayController.TerminalKind.FAIL, controller.terminalKind());
+        assertEquals(RelayController.CourseState.FAIL, controller.courseState());
     }
 
     @Test
@@ -77,7 +77,7 @@ class RelayControllerTest {
         controller.restart();
 
         assertFalse(controller.terminal());
-        assertEquals(RelayController.TerminalKind.RUNNING, controller.terminalKind());
+        assertEquals(RelayController.CourseState.RUNNING, controller.courseState());
         assertEquals(1, controller.currentLeg());
         assertEquals(0f, controller.agentX(), 1e-5f);
         assertEquals(RelayController.AGENT_RADIUS, controller.agentY(), 1e-5f);
