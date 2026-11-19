@@ -12,6 +12,6 @@ public interface Sound {
     /** Stops playback. Best-effort — must not throw to fail the game. */
     void stop();
 
-    /** Releases native resources. Safe to call once when the author is done with the handle. */
+    /** Releases native resources. Safe to call more than once. */
     void dispose();
 }

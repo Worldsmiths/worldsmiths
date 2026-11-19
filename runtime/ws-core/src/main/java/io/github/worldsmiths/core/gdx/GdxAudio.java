@@ -56,6 +56,7 @@ final class GdxAudio implements Audio {
 
     private static final class GdxSound implements Sound {
         private final com.badlogic.gdx.audio.Sound delegate;
+        private boolean disposed;
 
         GdxSound(com.badlogic.gdx.audio.Sound delegate) {
             this.delegate = delegate;
@@ -81,6 +82,10 @@ final class GdxAudio implements Audio {
 
         @Override
         public void dispose() {
+            if (disposed) {
+                return;
+            }
+            disposed = true;
             delegate.dispose();
         }
     }

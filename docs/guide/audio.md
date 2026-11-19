@@ -4,6 +4,10 @@ One-shot sound load and playback through `EngineServices.audio()`. Package: `io.
 
 Loads use packaged **internal** asset paths only (same ceiling as [Files](files.md)).
 
+## Ownership / dispose
+
+`Audio` from the bag is a **factory**, not a disposable resource. Authors own dispose of every `Sound` they create (`sound.dispose()` when finished). Safe to call more than once.
+
 ## API
 
 | Type / method | Meaning |
