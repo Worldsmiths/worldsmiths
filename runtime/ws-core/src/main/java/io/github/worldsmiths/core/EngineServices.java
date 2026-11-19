@@ -4,7 +4,7 @@ import io.github.worldsmiths.core.thin3d.Thin3D;
 
 /**
  * Services bag passed to {@link WorldsmithsGame#create(EngineServices)}. Fixed getters cover the D9
- * floor systems plus jam audio; {@link #extensions()} is an unused stub reserved for plugins/ECS
+ * floor systems plus jam audio/ui; {@link #extensions()} is an unused stub reserved for plugins/ECS
  * later.
  *
  * <p>Every getter returns a non-null instance once {@code create} runs. Tests supply
@@ -29,6 +29,9 @@ public interface EngineServices {
 
     /** One-shot sound load/play from packaged internal paths. */
     Audio audio();
+
+    /** Bitmap font load/draw from packaged internal paths. */
+    Ui ui();
 
     /** Unused in D9 — empty stub for a future plugin/ECS escape hatch. */
     Extensions extensions();

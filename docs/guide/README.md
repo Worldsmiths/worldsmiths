@@ -15,5 +15,6 @@ How-to pages for engine facades. ADRs under [`../adr/`](../adr/) record decision
 | [Files](files.md) | D9a-S3 |
 | [Thin3D](thin3d.md) | D9b |
 | [Audio](audio.md) | Jam facade (relay) |
+| [Ui](ui.md) | Jam facade (relay) |
 
 Each facade ships its guide page in the same change-set as the API. Cursor skills / agent knowledge later consume these pages (no second source of truth).

@@ -22,6 +22,7 @@ class EngineServicesTest {
         assertNotNull(services.files());
         assertNotNull(services.thin3d());
         assertNotNull(services.audio());
+        assertNotNull(services.ui());
         assertNotNull(services.extensions());
         assertSame(services.input(), services.input());
         assertSame(services.clock(), services.clock());
@@ -30,6 +31,7 @@ class EngineServicesTest {
         assertSame(services.files(), services.files());
         assertSame(services.thin3d(), services.thin3d());
         assertSame(services.audio(), services.audio());
+        assertSame(services.ui(), services.ui());
     }
 
     @Test
@@ -140,5 +142,38 @@ class EngineServicesTest {
         assertEquals(FakeAudio.Command.Kind.PLAY, commands.get(1).kind);
         assertEquals(FakeAudio.Command.Kind.STOP, commands.get(2).kind);
         assertEquals(FakeAudio.Command.Kind.DISPOSE, commands.get(3).kind);
+    }
+
+    @Test
+    void fakeUiFailClosedMissingCreateFont() {
+        FakeEngineServices services = new FakeEngineServices();
+        FakeUi ui = services.ui();
+
+        EngineException thrown =
+                assertThrows(EngineException.class, () -> ui.createFont("missing.fnt"));
+        assertTrue(thrown.getMessage().contains("missing.fnt"));
+        assertTrue(ui.commands().isEmpty());
+    }
+
+    @Test
+    void fakeUiRecordsCreateDrawDisposeKinds() {
+        FakeEngineServices services = new FakeEngineServices();
+        FakeUi ui = services.ui();
+        ui.putFont("fonts/hud.fnt");
+
+        Font font = ui.createFont("fonts/hud.fnt");
+        font.drawString("1:23", 8f, 24f);
+        font.dispose();
+        font.dispose();
+
+        java.util.List<FakeUi.Command> commands = ui.commands();
+        assertEquals(3, commands.size());
+        assertEquals(FakeUi.Command.Kind.CREATE_FONT, commands.get(0).kind);
+        assertEquals("fonts/hud.fnt", commands.get(0).path);
+        assertEquals(FakeUi.Command.Kind.DRAW_STRING, commands.get(1).kind);
+        assertEquals("1:23", commands.get(1).text);
+        assertEquals(8f, commands.get(1).x, 1e-5f);
+        assertEquals(24f, commands.get(1).y, 1e-5f);
+        assertEquals(FakeUi.Command.Kind.DISPOSE, commands.get(2).kind);
     }
 }

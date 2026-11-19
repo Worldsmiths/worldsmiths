@@ -36,6 +36,7 @@ class WebGameListenerTest {
         assertNotNull(game.services.clock());
         assertNotNull(game.services.graphics());
         assertNotNull(game.services.audio());
+        assertNotNull(game.services.ui());
     }
 
     @Test

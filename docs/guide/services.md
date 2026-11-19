@@ -17,6 +17,7 @@ Package: `io.github.worldsmiths.core`.
 | `files()` | [`Files`](files.md) | Sync packaged internal text/bytes |
 | `thin3d()` | [`Thin3D`](thin3d.md) | Camera, lights, primitive meshes, batch |
 | `audio()` | [`Audio`](audio.md) | One-shot sound load / play / stop / dispose |
+| `ui()` | [`Ui`](ui.md) | Bitmap font load / draw / dispose |
 | `extensions()` | `EngineServices.Extensions` | Empty stub; unused in D9 |
 
 ## Honesty limits
