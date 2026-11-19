@@ -3,6 +3,7 @@ package io.github.worldsmiths.samples.relay;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import io.github.worldsmiths.core.FakeAudio;
 import io.github.worldsmiths.core.FakeEngineServices;
 import io.github.worldsmiths.core.Key;
 import io.github.worldsmiths.core.thin3d.FakeThin3D;
@@ -16,8 +17,7 @@ class RelayGameThin3DTest {
 
     @Test
     void createAndRenderRecordPrimitivesBatchAndTitleWithoutGl() {
-        FakeEngineServices services = new FakeEngineServices();
-        services.graphics().setSize(800, 600);
+        FakeEngineServices services = seededServices();
         RelayGame game = new RelayGame();
         game.createScene();
         game.create(services);
@@ -49,8 +49,7 @@ class RelayGameThin3DTest {
 
     @Test
     void overlappingActiveGatePublishesLegCompleteTitle() {
-        FakeEngineServices services = new FakeEngineServices();
-        services.graphics().setSize(800, 600);
+        FakeEngineServices services = seededServices();
         RelayController controller = new RelayController();
         RelayGame game = new RelayGame(controller);
         game.createScene();
@@ -66,9 +65,30 @@ class RelayGameThin3DTest {
     }
 
     @Test
+    void legCompletePlaysPackagedCueViaFakeAudio() {
+        FakeEngineServices services = seededServices();
+        RelayController controller = new RelayController();
+        RelayGame game = new RelayGame(controller);
+        game.createScene();
+        game.create(services);
+
+        FakeAudio audio = services.audio();
+        assertTrue(containsAudioKind(audio.commands(), FakeAudio.Command.Kind.CREATE_SOUND));
+
+        float[] gate = controller.activeCheckpointCenter();
+        controller.placeAgent(gate[0], RelayController.AGENT_RADIUS, gate[1]);
+        game.update(0.016f);
+
+        assertTrue(controller.legComplete());
+        assertTrue(containsAudioKind(audio.commands(), FakeAudio.Command.Kind.PLAY));
+
+        game.dispose();
+        assertTrue(containsAudioKind(audio.commands(), FakeAudio.Command.Kind.DISPOSE));
+    }
+
+    @Test
     void restartKeyAfterLegCompleteResetsTitle() {
-        FakeEngineServices services = new FakeEngineServices();
-        services.graphics().setSize(800, 600);
+        FakeEngineServices services = seededServices();
         RelayController controller = new RelayController();
         RelayGame game = new RelayGame(controller);
         game.createScene();
@@ -88,8 +108,7 @@ class RelayGameThin3DTest {
 
     @Test
     void updateMovesAgentWhenKeyDownViaFakeInput() {
-        FakeEngineServices services = new FakeEngineServices();
-        services.graphics().setSize(800, 600);
+        FakeEngineServices services = seededServices();
         RelayController controller = new RelayController();
         float startX = controller.agentX();
         RelayGame game = new RelayGame(controller);
@@ -102,9 +121,26 @@ class RelayGameThin3DTest {
         assertTrue(controller.agentX() > startX);
     }
 
+    private static FakeEngineServices seededServices() {
+        FakeEngineServices services = new FakeEngineServices();
+        services.graphics().setSize(800, 600);
+        services.audio().putSound(RelayGame.LEG_COMPLETE_CUE);
+        return services;
+    }
+
     private static boolean containsKind(
             List<FakeThin3D.Command> commands, FakeThin3D.Command.Kind kind) {
         for (FakeThin3D.Command command : commands) {
+            if (command.kind == kind) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static boolean containsAudioKind(
+            List<FakeAudio.Command> commands, FakeAudio.Command.Kind kind) {
+        for (FakeAudio.Command command : commands) {
             if (command.kind == kind) {
                 return true;
             }

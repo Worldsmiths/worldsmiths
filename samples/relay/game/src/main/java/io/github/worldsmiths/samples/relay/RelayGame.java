@@ -5,6 +5,7 @@ import io.github.worldsmiths.core.Input;
 import io.github.worldsmiths.core.Key;
 import io.github.worldsmiths.core.Node;
 import io.github.worldsmiths.core.Scene;
+import io.github.worldsmiths.core.Sound;
 import io.github.worldsmiths.core.Transform3D;
 import io.github.worldsmiths.core.WorldsmithsGame;
 import io.github.worldsmiths.core.thin3d.Environment;
@@ -17,10 +18,14 @@ import io.github.worldsmiths.core.thin3d.Thin3D;
 
 /**
  * P2 relay stub: agent on a ground plane, one active checkpoint (AABB), optional inactive second
- * gate mesh. Keyboard WASD/arrows + touch drag-stick; R or tap restarts after leg complete. Title
- * is the temporary HUD ({@code setTitle}).
+ * gate mesh. Keyboard WASD/arrows + touch drag-stick; R or tap restarts after leg complete. Plays a
+ * packaged one-shot cue on leg-complete via {@code services.audio()}. Title is the temporary HUD
+ * ({@code setTitle}).
  */
 public final class RelayGame implements WorldsmithsGame {
+
+    /** Packaged internal path for the leg-complete one-shot cue. */
+    public static final String LEG_COMPLETE_CUE = "audio/leg-complete.wav";
 
     private static final float FLOOR_HALF = 5f;
     private static final float FLOOR_THICKNESS = 0.2f;
@@ -44,6 +49,7 @@ public final class RelayGame implements WorldsmithsGame {
     private ModelInstance floorInstance;
     private ModelInstance activeGateInstance;
     private ModelInstance inactiveGateInstance;
+    private Sound legCompleteCue;
 
     private boolean trackingTouch;
     private float touchOriginX;
@@ -52,6 +58,7 @@ public final class RelayGame implements WorldsmithsGame {
     private float touchLastY;
 
     private String lastTitle = "";
+    private boolean wasLegComplete;
 
     public RelayGame() {
         this(new RelayController());
@@ -128,6 +135,8 @@ public final class RelayGame implements WorldsmithsGame {
         camera.setNear(0.1f);
         camera.setFar(100f);
         updateCamera();
+        legCompleteCue = services.audio().createSound(LEG_COMPLETE_CUE);
+        wasLegComplete = controller.legComplete();
         publishTitle();
     }
 
@@ -135,6 +144,7 @@ public final class RelayGame implements WorldsmithsGame {
     public void update(float delta) {
         applyInput(delta);
         syncScene();
+        playLegCompleteCueIfNeeded();
         publishTitleIfChanged();
     }
 
@@ -155,6 +165,10 @@ public final class RelayGame implements WorldsmithsGame {
 
     @Override
     public void dispose() {
+        if (legCompleteCue != null) {
+            legCompleteCue.dispose();
+            legCompleteCue = null;
+        }
         if (modelBatch != null) {
             modelBatch.dispose();
             modelBatch = null;
@@ -270,6 +284,14 @@ public final class RelayGame implements WorldsmithsGame {
         camera.setUp(0f, 1f, 0f);
         camera.lookAt(0f, 0f, 0f);
         camera.update();
+    }
+
+    private void playLegCompleteCueIfNeeded() {
+        boolean complete = controller.legComplete();
+        if (complete && !wasLegComplete && legCompleteCue != null) {
+            legCompleteCue.play();
+        }
+        wasLegComplete = complete;
     }
 
     private void publishTitleIfChanged() {
