@@ -361,11 +361,11 @@ public final class FakeThin3D implements Thin3D {
         public final float y;
         /** Geometry / vector: viewport height, xyz.z, or primitive depth (by kind). */
         public final float z;
-        /** Transform scale X when kind is {@link Kind#INSTANCE_TRANSFORM}; else 0. */
+        /** Transform scale X when kind is {@link Kind#INSTANCE_TRANSFORM} or {@link Kind#INSTANCE_TRS}; else 0. */
         public final float scaleX;
-        /** Transform scale Y when kind is {@link Kind#INSTANCE_TRANSFORM}; else 0. */
+        /** Transform scale Y when kind is {@link Kind#INSTANCE_TRANSFORM} or {@link Kind#INSTANCE_TRS}; else 0. */
         public final float scaleY;
-        /** Transform scale Z when kind is {@link Kind#INSTANCE_TRANSFORM}; else 0. */
+        /** Transform scale Z when kind is {@link Kind#INSTANCE_TRANSFORM} or {@link Kind#INSTANCE_TRS}; else 0. */
         public final float scaleZ;
         public final float r;
         public final float g;

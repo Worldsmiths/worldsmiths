@@ -25,8 +25,13 @@ class Thin3DTest {
         camera.lookAt(0f, 0f, 0f);
         camera.update();
 
+        Environment environment = thin3d.createEnvironment();
+        Model box = thin3d.createModelBuilder().createBox(1f, 1f, 1f, 1f, 1f, 1f, 1f);
+        ModelInstance instance = thin3d.createInstance(box);
+
         ModelBatch batch = thin3d.createModelBatch();
         batch.begin(camera);
+        batch.render(instance, environment);
         batch.end();
 
         List<FakeThin3D.Command> commands = thin3d.commands();
@@ -39,9 +44,14 @@ class Thin3DTest {
         assertEquals(FakeThin3D.Command.Kind.CAMERA_UP, commands.get(4).kind);
         assertEquals(FakeThin3D.Command.Kind.CAMERA_LOOK_AT, commands.get(5).kind);
         assertEquals(FakeThin3D.Command.Kind.CAMERA_UPDATE, commands.get(6).kind);
-        assertEquals(FakeThin3D.Command.Kind.CREATE_BATCH, commands.get(7).kind);
-        assertEquals(FakeThin3D.Command.Kind.BATCH_BEGIN, commands.get(8).kind);
-        assertEquals(FakeThin3D.Command.Kind.BATCH_END, commands.get(9).kind);
+        assertEquals(FakeThin3D.Command.Kind.CREATE_ENVIRONMENT, commands.get(7).kind);
+        assertEquals(FakeThin3D.Command.Kind.CREATE_BUILDER, commands.get(8).kind);
+        assertEquals(FakeThin3D.Command.Kind.CREATE_BOX, commands.get(9).kind);
+        assertEquals(FakeThin3D.Command.Kind.CREATE_INSTANCE, commands.get(10).kind);
+        assertEquals(FakeThin3D.Command.Kind.CREATE_BATCH, commands.get(11).kind);
+        assertEquals(FakeThin3D.Command.Kind.BATCH_BEGIN, commands.get(12).kind);
+        assertEquals(FakeThin3D.Command.Kind.BATCH_RENDER, commands.get(13).kind);
+        assertEquals(FakeThin3D.Command.Kind.BATCH_END, commands.get(14).kind);
     }
 
     @Test
