@@ -110,6 +110,75 @@ class Thin3DTest {
     }
 
     @Test
+    void fakeThin3DRecordsBoxEmissiveDiffuseAndEmissiveRgba() {
+        FakeThin3D thin3d = new FakeThin3D();
+        ModelBuilder builder = thin3d.createModelBuilder();
+        builder.createBoxEmissive(
+                0.1f, 0.1f, 2f, 1f, 1f, 1f, 1f, 1f, 0.4f, 0.1f, 1f);
+
+        List<FakeThin3D.Command> commands = thin3d.commands();
+        FakeThin3D.Command cmd = commands.get(1);
+        assertEquals(FakeThin3D.Command.Kind.CREATE_BOX_EMISSIVE, cmd.kind);
+        assertEquals(0.1f, cmd.x, 1e-5f);
+        assertEquals(0.1f, cmd.y, 1e-5f);
+        assertEquals(2f, cmd.z, 1e-5f);
+        assertEquals(1f, cmd.r, 1e-5f);
+        assertEquals(1f, cmd.g, 1e-5f);
+        assertEquals(1f, cmd.b, 1e-5f);
+        assertEquals(1f, cmd.alpha, 1e-5f);
+        assertEquals(1f, cmd.emissiveR, 1e-5f);
+        assertEquals(0.4f, cmd.emissiveG, 1e-5f);
+        assertEquals(0.1f, cmd.emissiveB, 1e-5f);
+        assertEquals(1f, cmd.emissiveA, 1e-5f);
+    }
+
+    @Test
+    void fakeThin3DRecordsSphereEmissiveDiffuseAndEmissiveRgba() {
+        FakeThin3D thin3d = new FakeThin3D();
+        ModelBuilder builder = thin3d.createModelBuilder();
+        builder.createSphereEmissive(
+                1f, 1f, 1f, 16, 16, 0.2f, 0.3f, 0.4f, 0.5f, 0.9f, 0.8f, 0.1f, 1f);
+
+        List<FakeThin3D.Command> commands = thin3d.commands();
+        FakeThin3D.Command cmd = commands.get(1);
+        assertEquals(FakeThin3D.Command.Kind.CREATE_SPHERE_EMISSIVE, cmd.kind);
+        assertEquals(1f, cmd.x, 1e-5f);
+        assertEquals(1f, cmd.y, 1e-5f);
+        assertEquals(1f, cmd.z, 1e-5f);
+        assertEquals(0.2f, cmd.r, 1e-5f);
+        assertEquals(0.3f, cmd.g, 1e-5f);
+        assertEquals(0.4f, cmd.b, 1e-5f);
+        assertEquals(0.5f, cmd.alpha, 1e-5f);
+        assertEquals(0.9f, cmd.emissiveR, 1e-5f);
+        assertEquals(0.8f, cmd.emissiveG, 1e-5f);
+        assertEquals(0.1f, cmd.emissiveB, 1e-5f);
+        assertEquals(1f, cmd.emissiveA, 1e-5f);
+        assertEquals(16 + (16 << 16), cmd.i1);
+    }
+
+    @Test
+    void fakeThin3DRecordsTranslationRotationScaling() {
+        FakeThin3D thin3d = new FakeThin3D();
+        ModelBuilder builder = thin3d.createModelBuilder();
+        Model box = builder.createBox(1f, 1f, 1f, 1f, 1f, 1f, 1f);
+        ModelInstance instance = thin3d.createInstance(box);
+        instance.setTranslationRotationScaling(0f, 0.05f, 0f, 10f, 45f, 20f, 1f, 2f, 3f);
+
+        List<FakeThin3D.Command> commands = thin3d.commands();
+        FakeThin3D.Command cmd = commands.get(commands.size() - 1);
+        assertEquals(FakeThin3D.Command.Kind.INSTANCE_TRS, cmd.kind);
+        assertEquals(0f, cmd.x, 1e-5f);
+        assertEquals(0.05f, cmd.y, 1e-5f);
+        assertEquals(0f, cmd.z, 1e-5f);
+        assertEquals(10f, cmd.eulerX, 1e-5f);
+        assertEquals(45f, cmd.eulerY, 1e-5f);
+        assertEquals(20f, cmd.eulerZ, 1e-5f);
+        assertEquals(1f, cmd.scaleX, 1e-5f);
+        assertEquals(2f, cmd.scaleY, 1e-5f);
+        assertEquals(3f, cmd.scaleZ, 1e-5f);
+    }
+
+    @Test
     void fakeThin3DRecordsCameraLightsPrimitivesBatchAndDispose() {
         FakeEngineServices services = new FakeEngineServices();
         FakeThin3D thin3d = services.thin3d();
