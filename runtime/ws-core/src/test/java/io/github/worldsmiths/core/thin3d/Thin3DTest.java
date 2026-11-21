@@ -2,6 +2,7 @@ package io.github.worldsmiths.core.thin3d;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -54,6 +55,9 @@ class Thin3DTest {
         Ray actual = camera.getPickRay(400f, 300f);
 
         assertEquals(expected, actual);
+        assertNotSame(expected, actual);
+        assertNotSame(expected.origin, actual.origin);
+        assertNotSame(expected.direction, actual.direction);
         assertEquals(1f, actual.origin.x, 1e-5f);
         assertEquals(2f, actual.origin.y, 1e-5f);
         assertEquals(3f, actual.origin.z, 1e-5f);

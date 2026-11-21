@@ -1,6 +1,5 @@
 package io.github.worldsmiths.core.gdx;
 
-import com.badlogic.gdx.Gdx;
 import io.github.worldsmiths.core.thin3d.PerspectiveCamera;
 import io.github.worldsmiths.core.thin3d.Ray;
 
@@ -44,11 +43,7 @@ final class GdxPerspectiveCamera implements PerspectiveCamera {
 
     @Override
     public Ray getPickRay(float screenX, float screenY) {
-        if (Gdx.graphics == null) {
-            throw new IllegalStateException("Gdx.graphics required for PerspectiveCamera.getPickRay");
-        }
-        return GdxPickRays.fromCamera(
-                camera, screenX, screenY, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
+        return GdxPickRays.fromGdxCamera(camera, screenX, screenY);
     }
 
     com.badlogic.gdx.graphics.PerspectiveCamera delegate() {

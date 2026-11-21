@@ -1,6 +1,8 @@
 package io.github.worldsmiths.core.gdx;
 
+import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.math.Vector3;
+import io.github.worldsmiths.core.EngineException;
 import io.github.worldsmiths.core.thin3d.Ray;
 import io.github.worldsmiths.core.thin3d.Vec3;
 
@@ -11,6 +13,19 @@ import io.github.worldsmiths.core.thin3d.Vec3;
  */
 final class GdxPickRays {
     private GdxPickRays() {}
+
+    /**
+     * Pick through a live {@link Gdx#graphics} surface. Throws {@link EngineException} when graphics
+     * is missing (no pixel size for unproject).
+     */
+    static Ray fromGdxCamera(
+            com.badlogic.gdx.graphics.Camera camera, float screenX, float screenY) {
+        if (Gdx.graphics == null) {
+            throw new EngineException("Gdx.graphics required for Camera.getPickRay");
+        }
+        return fromCamera(
+                camera, screenX, screenY, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
+    }
 
     /**
      * Builds an immutable engine {@link Ray} for the given Input-space screen pixel through {@code

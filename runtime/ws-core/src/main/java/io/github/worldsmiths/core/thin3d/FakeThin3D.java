@@ -105,7 +105,9 @@ public final class FakeThin3D implements Thin3D {
         if (seeded == null) {
             throw new EngineException("No seeded pick ray; call FakeThin3D.seedPickRay before getPickRay");
         }
-        return seeded;
+        return new Ray(
+                new Vec3(seeded.origin.x, seeded.origin.y, seeded.origin.z),
+                new Vec3(seeded.direction.x, seeded.direction.y, seeded.direction.z));
     }
 
     private abstract class FakeCameraBase implements Camera {
