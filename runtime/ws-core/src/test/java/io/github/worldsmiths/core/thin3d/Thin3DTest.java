@@ -3,13 +3,79 @@ package io.github.worldsmiths.core.thin3d;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import io.github.worldsmiths.core.EngineException;
 import io.github.worldsmiths.core.FakeEngineServices;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
 class Thin3DTest {
+
+    @Test
+    void fakeOrthoCreatePoseBeginRecordsOrthoAndBatchBegin() {
+        FakeThin3D thin3d = new FakeThin3D();
+
+        OrthographicCamera camera = thin3d.createOrthographicCamera(12f, 12f);
+        camera.setNear(1f);
+        camera.setFar(100f);
+        camera.setPosition(0f, 10f, 10f);
+        camera.setUp(0f, 1f, 0f);
+        camera.lookAt(0f, 0f, 0f);
+        camera.update();
+
+        ModelBatch batch = thin3d.createModelBatch();
+        batch.begin(camera);
+        batch.end();
+
+        List<FakeThin3D.Command> commands = thin3d.commands();
+        assertEquals(FakeThin3D.Command.Kind.CREATE_ORTHO_CAMERA, commands.get(0).kind);
+        assertEquals(12f, commands.get(0).x, 1e-5f);
+        assertEquals(12f, commands.get(0).y, 1e-5f);
+        assertEquals(FakeThin3D.Command.Kind.CAMERA_NEAR, commands.get(1).kind);
+        assertEquals(FakeThin3D.Command.Kind.CAMERA_FAR, commands.get(2).kind);
+        assertEquals(FakeThin3D.Command.Kind.CAMERA_POSITION, commands.get(3).kind);
+        assertEquals(FakeThin3D.Command.Kind.CAMERA_UP, commands.get(4).kind);
+        assertEquals(FakeThin3D.Command.Kind.CAMERA_LOOK_AT, commands.get(5).kind);
+        assertEquals(FakeThin3D.Command.Kind.CAMERA_UPDATE, commands.get(6).kind);
+        assertEquals(FakeThin3D.Command.Kind.CREATE_BATCH, commands.get(7).kind);
+        assertEquals(FakeThin3D.Command.Kind.BATCH_BEGIN, commands.get(8).kind);
+        assertEquals(FakeThin3D.Command.Kind.BATCH_END, commands.get(9).kind);
+    }
+
+    @Test
+    void seededFakePickRayReturnsSeedAndRecordsScreenCoords() {
+        FakeThin3D thin3d = new FakeThin3D();
+        OrthographicCamera camera = thin3d.createOrthographicCamera(12f, 12f);
+        Ray expected = new Ray(new Vec3(1f, 2f, 3f), new Vec3(0f, -1f, 0f));
+        thin3d.seedPickRay(expected);
+
+        Ray actual = camera.getPickRay(400f, 300f);
+
+        assertEquals(expected, actual);
+        assertEquals(1f, actual.origin.x, 1e-5f);
+        assertEquals(2f, actual.origin.y, 1e-5f);
+        assertEquals(3f, actual.origin.z, 1e-5f);
+        assertEquals(0f, actual.direction.x, 1e-5f);
+        assertEquals(-1f, actual.direction.y, 1e-5f);
+        assertEquals(0f, actual.direction.z, 1e-5f);
+        List<FakeThin3D.Command> commands = thin3d.commands();
+        FakeThin3D.Command pick = commands.get(commands.size() - 1);
+        assertEquals(FakeThin3D.Command.Kind.CAMERA_PICK_RAY, pick.kind);
+        assertEquals(400f, pick.x, 1e-5f);
+        assertEquals(300f, pick.y, 1e-5f);
+    }
+
+    @Test
+    void emptyFakePickSeedThrowsEngineException() {
+        FakeThin3D thin3d = new FakeThin3D();
+        OrthographicCamera camera = thin3d.createOrthographicCamera(12f, 12f);
+
+        EngineException thrown =
+                assertThrows(EngineException.class, () -> camera.getPickRay(10f, 20f));
+        assertTrue(thrown.getMessage().contains("seed"));
+    }
 
     @Test
     void fakeBagExposesStableThin3D() {

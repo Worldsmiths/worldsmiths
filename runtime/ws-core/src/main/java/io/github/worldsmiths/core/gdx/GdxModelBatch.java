@@ -1,9 +1,9 @@
 package io.github.worldsmiths.core.gdx;
 
+import io.github.worldsmiths.core.thin3d.Camera;
 import io.github.worldsmiths.core.thin3d.Environment;
 import io.github.worldsmiths.core.thin3d.ModelBatch;
 import io.github.worldsmiths.core.thin3d.ModelInstance;
-import io.github.worldsmiths.core.thin3d.PerspectiveCamera;
 
 /** GDX-backed {@link ModelBatch}. Not part of the author-facing API. */
 final class GdxModelBatch implements ModelBatch {
@@ -15,12 +15,8 @@ final class GdxModelBatch implements ModelBatch {
     }
 
     @Override
-    public void begin(PerspectiveCamera camera) {
-        if (!(camera instanceof GdxPerspectiveCamera)) {
-            throw new IllegalArgumentException(
-                    "camera must come from Thin3D.createPerspectiveCamera()");
-        }
-        batch.begin(((GdxPerspectiveCamera) camera).delegate());
+    public void begin(Camera camera) {
+        batch.begin(unwrap(camera));
     }
 
     @Override
@@ -49,5 +45,16 @@ final class GdxModelBatch implements ModelBatch {
         }
         disposed = true;
         batch.dispose();
+    }
+
+    private static com.badlogic.gdx.graphics.Camera unwrap(Camera camera) {
+        if (camera instanceof GdxPerspectiveCamera) {
+            return ((GdxPerspectiveCamera) camera).delegate();
+        }
+        if (camera instanceof GdxOrthographicCamera) {
+            return ((GdxOrthographicCamera) camera).delegate();
+        }
+        throw new IllegalArgumentException(
+                "camera must come from Thin3D.createPerspectiveCamera() or createOrthographicCamera()");
     }
 }

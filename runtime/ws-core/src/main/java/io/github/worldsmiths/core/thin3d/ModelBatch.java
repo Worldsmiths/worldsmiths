@@ -6,7 +6,7 @@ package io.github.worldsmiths.core.thin3d;
  */
 public interface ModelBatch {
 
-    void begin(PerspectiveCamera camera);
+    void begin(Camera camera);
 
     void render(ModelInstance instance, Environment environment);
 

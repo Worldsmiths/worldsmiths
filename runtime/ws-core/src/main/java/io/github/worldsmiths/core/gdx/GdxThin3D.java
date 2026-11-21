@@ -5,6 +5,7 @@ import io.github.worldsmiths.core.thin3d.Model;
 import io.github.worldsmiths.core.thin3d.ModelBatch;
 import io.github.worldsmiths.core.thin3d.ModelBuilder;
 import io.github.worldsmiths.core.thin3d.ModelInstance;
+import io.github.worldsmiths.core.thin3d.OrthographicCamera;
 import io.github.worldsmiths.core.thin3d.PerspectiveCamera;
 import io.github.worldsmiths.core.thin3d.Thin3D;
 
@@ -23,6 +24,12 @@ final class GdxThin3D implements Thin3D {
         return new GdxPerspectiveCamera(
                 new com.badlogic.gdx.graphics.PerspectiveCamera(
                         fieldOfViewY, viewportWidth, viewportHeight));
+    }
+
+    @Override
+    public OrthographicCamera createOrthographicCamera(float viewportWidth, float viewportHeight) {
+        return new GdxOrthographicCamera(
+                new com.badlogic.gdx.graphics.OrthographicCamera(viewportWidth, viewportHeight));
     }
 
     @Override

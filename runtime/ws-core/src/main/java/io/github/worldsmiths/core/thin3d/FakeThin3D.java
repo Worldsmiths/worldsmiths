@@ -1,15 +1,20 @@
 package io.github.worldsmiths.core.thin3d;
 
+import io.github.worldsmiths.core.EngineException;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Queue;
 
 /**
  * Recording {@link Thin3D} for headless tests. Captures camera, lights, primitive builds, and batch
- * commands without touching GL.
+ * commands without touching GL. Seed pick-ray returns via {@link #seedPickRay} before {@link
+ * Camera#getPickRay}; an empty seed queue throws {@link EngineException}.
  */
 public final class FakeThin3D implements Thin3D {
     private final List<Command> commands = new ArrayList<Command>();
+    private final Queue<Ray> seededPickRays = new ArrayDeque<Ray>();
     private boolean batchDisposed;
     private boolean modelsDisposed;
     private int nextModelId;
@@ -19,7 +24,13 @@ public final class FakeThin3D implements Thin3D {
     public PerspectiveCamera createPerspectiveCamera(
             float fieldOfViewY, float viewportWidth, float viewportHeight) {
         commands.add(Command.createCamera(fieldOfViewY, viewportWidth, viewportHeight));
-        return new FakeCamera();
+        return new FakePerspectiveCamera();
+    }
+
+    @Override
+    public OrthographicCamera createOrthographicCamera(float viewportWidth, float viewportHeight) {
+        commands.add(Command.createOrthoCamera(viewportWidth, viewportHeight));
+        return new FakeOrthographicCamera();
     }
 
     @Override
@@ -48,6 +59,25 @@ public final class FakeThin3D implements Thin3D {
         return new FakeModelInstance(instanceId);
     }
 
+    /** Queues the next {@link Camera#getPickRay} return value (FIFO). */
+    public void seedPickRay(Ray ray) {
+        if (ray == null) {
+            throw new IllegalArgumentException("ray must be non-null");
+        }
+        seededPickRays.add(ray);
+    }
+
+    /** Convenience overload: queues a pick ray from origin and direction components. */
+    public void seedPickRay(
+            float originX,
+            float originY,
+            float originZ,
+            float dirX,
+            float dirY,
+            float dirZ) {
+        seedPickRay(new Ray(new Vec3(originX, originY, originZ), new Vec3(dirX, dirY, dirZ)));
+    }
+
     public List<Command> commands() {
         return Collections.unmodifiableList(commands);
     }
@@ -62,13 +92,23 @@ public final class FakeThin3D implements Thin3D {
 
     public void clear() {
         commands.clear();
+        seededPickRays.clear();
         batchDisposed = false;
         modelsDisposed = false;
         nextModelId = 0;
         nextInstanceId = 0;
     }
 
-    private final class FakeCamera implements PerspectiveCamera {
+    private Ray nextPickRay(float screenX, float screenY) {
+        commands.add(Command.pickRay(screenX, screenY));
+        Ray seeded = seededPickRays.poll();
+        if (seeded == null) {
+            throw new EngineException("No seeded pick ray; call FakeThin3D.seedPickRay before getPickRay");
+        }
+        return seeded;
+    }
+
+    private abstract class FakeCameraBase implements Camera {
         @Override
         public void setNear(float near) {
             commands.add(Command.scalar(Command.Kind.CAMERA_NEAR, near));
@@ -98,7 +138,16 @@ public final class FakeThin3D implements Thin3D {
         public void update() {
             commands.add(Command.of(Command.Kind.CAMERA_UPDATE));
         }
+
+        @Override
+        public Ray getPickRay(float screenX, float screenY) {
+            return nextPickRay(screenX, screenY);
+        }
     }
+
+    private final class FakePerspectiveCamera extends FakeCameraBase implements PerspectiveCamera {}
+
+    private final class FakeOrthographicCamera extends FakeCameraBase implements OrthographicCamera {}
 
     private final class FakeEnvironment implements Environment {
         @Override
@@ -180,7 +229,7 @@ public final class FakeThin3D implements Thin3D {
 
     private final class FakeModelBatch implements ModelBatch {
         @Override
-        public void begin(PerspectiveCamera camera) {
+        public void begin(Camera camera) {
             commands.add(Command.of(Command.Kind.BATCH_BEGIN));
         }
 
@@ -207,12 +256,14 @@ public final class FakeThin3D implements Thin3D {
     public static final class Command {
         public enum Kind {
             CREATE_CAMERA,
+            CREATE_ORTHO_CAMERA,
             CAMERA_NEAR,
             CAMERA_FAR,
             CAMERA_POSITION,
             CAMERA_UP,
             CAMERA_LOOK_AT,
             CAMERA_UPDATE,
+            CAMERA_PICK_RAY,
             CREATE_ENVIRONMENT,
             AMBIENT_LIGHT,
             DIRECTIONAL_LIGHT,
@@ -231,9 +282,9 @@ public final class FakeThin3D implements Thin3D {
         }
 
         public final Kind kind;
-        /** Geometry / vector: FOV, scalar, xyz.x, or primitive width (by kind). */
+        /** Geometry / vector: FOV, scalar, xyz.x, ortho width, or pick screenX (by kind). */
         public final float x;
-        /** Geometry / vector: viewport width, xyz.y, or primitive height (by kind). */
+        /** Geometry / vector: viewport width, xyz.y, ortho height, or pick screenY (by kind). */
         public final float y;
         /** Geometry / vector: viewport height, xyz.z, or primitive depth (by kind). */
         public final float z;
@@ -286,6 +337,16 @@ public final class FakeThin3D implements Thin3D {
 
         static Command createCamera(float fov, float width, float height) {
             return new Command(Kind.CREATE_CAMERA, fov, width, height, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0, 0);
+        }
+
+        static Command createOrthoCamera(float width, float height) {
+            return new Command(
+                    Kind.CREATE_ORTHO_CAMERA, width, height, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0, 0);
+        }
+
+        static Command pickRay(float screenX, float screenY) {
+            return new Command(
+                    Kind.CAMERA_PICK_RAY, screenX, screenY, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0, 0);
         }
 
         static Command scalar(Kind kind, float value) {

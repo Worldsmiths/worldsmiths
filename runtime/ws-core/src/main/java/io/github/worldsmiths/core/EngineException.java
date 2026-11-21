@@ -2,8 +2,9 @@ package io.github.worldsmiths.core;
 
 /**
  * Unchecked engine failure. Used when a packaged internal file is missing or cannot be read via
- * {@link Files}, or when a sound cannot be loaded via {@link Audio}; may grow to other fail-closed
- * engine errors later.
+ * {@link Files}, when a sound cannot be loaded via {@link Audio}, or when {@link
+ * io.github.worldsmiths.core.thin3d.FakeThin3D} {@code getPickRay} is called with an empty seed
+ * queue; may grow to other fail-closed engine errors later.
  */
 public class EngineException extends RuntimeException {
 
