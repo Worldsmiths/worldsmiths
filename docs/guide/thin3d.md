@@ -41,7 +41,9 @@ These types need **no** dispose: `Thin3D` itself, `Camera` / `PerspectiveCamera`
 
 `Camera.getPickRay(screenX, screenY)` takes **Input-space** screen coords: origin at the **top-left**, **Y down** — the same convention as `Input.getX()` / `Input.getY()`. Pass those values directly; do not flip Y for Thin3D. Call `camera.update()` after pose changes before picking or `ModelBatch.begin`. Skipping `update` leaves pick / begin undefined.
 
-Each `getPickRay` returns a **fresh** immutable `Ray` (never a reused buffer). The game owns board-plane intersection; Thin3D does not project to cells.
+Live GDX-backed cameras need a running graphics surface: viewport size comes from `Gdx.graphics`. If graphics is missing, the engine throws `EngineException` (fail-closed). `FakeThin3D` does not need graphics — use `seedPickRay` instead.
+
+Each `getPickRay` returns a **fresh** immutable `Ray` (never a reused buffer). On Fake, that is a **copy** of the seeded ray (fields match the seed; not identity reuse). The game owns board-plane intersection; Thin3D does not project to cells.
 
 ### Board-plane intersect (author-owned)
 
@@ -126,4 +128,4 @@ Diffuse `createSphere` / `createBox` stay unchanged. Emissive creates take the s
 
 ## Tests
 
-`FakeEngineServices.thin3d()` returns a recording `FakeThin3D`: inspect `commands()`, `batchDisposed()`, and `modelsDisposed()` without a GPU. Seed pick returns with `seedPickRay` before `getPickRay` (empty seed throws). Sample sync helpers may still skip `create()`; prefer FakeThin3D when asserting the create/render path.
+`FakeEngineServices.thin3d()` returns a recording `FakeThin3D`: inspect `commands()`, `batchDisposed()`, and `modelsDisposed()` without a GPU. Seed pick returns with `seedPickRay` before `getPickRay` (empty seed throws `EngineException`). Each Fake `getPickRay` returns a fresh `Ray` whose fields match the seed. Sample sync helpers may still skip `create()`; prefer FakeThin3D when asserting the create/render path.
