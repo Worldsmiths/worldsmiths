@@ -4,6 +4,7 @@ import io.github.worldsmiths.core.Draw2D;
 import io.github.worldsmiths.core.Font;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 /** Shared hybrid-leaf session: layout, hit, focus, and draw for Default and Fake kits. */
 final class UiSession {
@@ -266,9 +267,8 @@ final class UiSession {
     if (!laidOut) {
       layout();
     }
-    if (draw2d == null || font == null) {
-      return;
-    }
+    Objects.requireNonNull(draw2d, "draw2d");
+    Objects.requireNonNull(font, "font");
     draw2d.setOrtho2D(0f, 0f, viewportWidth, viewportHeight);
     float flip = viewportHeight;
 
