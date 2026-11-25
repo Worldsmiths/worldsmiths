@@ -1,7 +1,11 @@
 package io.github.worldsmiths.core.ui;
 
-/** Read-only text leaf. Layout/draw land in T2. */
+/** Read-only text leaf. */
 public interface Label {
 
-    String id();
+  String id();
+
+  String text();
+
+  UiBounds bounds();
 }

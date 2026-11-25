@@ -6,28 +6,33 @@ import io.github.worldsmiths.core.Font;
 /**
  * Session widget toolkit: hybrid leaves, layout, hit, focus, and draw via {@link Draw2D} / {@link
  * Font}. Obtain via {@link io.github.worldsmiths.core.EngineServices#uiKit()}.
- *
- * <p>Leaf implementations and layout/hit matrix land incrementally; T1 wires the bag getter and
- * session shells only.
  */
 public interface UiKit {
 
-    void setTheme(Theme theme);
+  void setTheme(Theme theme);
 
-    void setViewport(int width, int height, Insets insets, float uiScale);
+  void setViewport(int width, int height, Insets insets, float uiScale);
 
-    /** Drop all roots; idempotent. */
-    void clear();
+  /** Drop all roots; idempotent. */
+  void clear();
 
-    Button button(String id, String label);
+  Button button(String id, String label);
 
-    Label label(String id, String text);
+  Label label(String id, String text);
 
-    FocusScope focusScope();
+  Panel panel(String id);
 
-    void layout();
+  TraySlot traySlot(String id);
 
-    UiHit hit(float x, float y);
+  Swatch swatch(String id);
 
-    void draw(Draw2D draw2d, Font font);
+  ModalOverlay modalOverlay(String id);
+
+  FocusScope focusScope();
+
+  void layout();
+
+  UiHit hit(float x, float y);
+
+  void draw(Draw2D draw2d, Font font);
 }

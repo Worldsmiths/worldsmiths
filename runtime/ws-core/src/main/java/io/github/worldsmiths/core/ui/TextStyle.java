@@ -1,7 +1,15 @@
 package io.github.worldsmiths.core.ui;
 
-/** Named text role within a {@link Theme}. Stub for hybrid leaves in T2. */
+/** Named text role within a {@link Theme}. */
 public final class TextStyle {
 
-    private TextStyle() {}
+  public final float size;
+
+  public TextStyle(float size) {
+    this.size = size;
+  }
+
+  public static TextStyle body() {
+    return new TextStyle(14f);
+  }
 }

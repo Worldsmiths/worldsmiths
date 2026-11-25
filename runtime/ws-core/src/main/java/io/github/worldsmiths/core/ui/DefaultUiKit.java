@@ -3,73 +3,73 @@ package io.github.worldsmiths.core.ui;
 import io.github.worldsmiths.core.Draw2D;
 import io.github.worldsmiths.core.Font;
 
-/** Pure-Java session kit for production bags. Leaf behaviour lands in T2. */
+/** Pure-Java session kit for production bags. */
 public final class DefaultUiKit implements UiKit {
-    private final DefaultFocusScope focusScope = new DefaultFocusScope();
 
-    @Override
-    public void setTheme(Theme theme) {}
+  private final UiSession session = new UiSession(new DefaultUiMeasure(), UiRecorder.NONE);
 
-    @Override
-    public void setViewport(int width, int height, Insets insets, float uiScale) {}
+  @Override
+  public void setTheme(Theme theme) {
+    session.setTheme(theme);
+  }
 
-    @Override
-    public void clear() {}
+  @Override
+  public void setViewport(int width, int height, Insets insets, float uiScale) {
+    session.setViewport(width, height, insets, uiScale);
+  }
 
-    @Override
-    public Button button(String id, String label) {
-        return new DefaultButton(id);
-    }
+  @Override
+  public void clear() {
+    session.clear();
+  }
 
-    @Override
-    public Label label(String id, String text) {
-        return new DefaultLabel(id);
-    }
+  @Override
+  public Button button(String id, String label) {
+    return session.button(id, label);
+  }
 
-    @Override
-    public FocusScope focusScope() {
-        return focusScope;
-    }
+  @Override
+  public Label label(String id, String text) {
+    return session.label(id, text);
+  }
 
-    @Override
-    public void layout() {}
+  @Override
+  public Panel panel(String id) {
+    return session.panel(id);
+  }
 
-    @Override
-    public UiHit hit(float x, float y) {
-        return UiHit.none();
-    }
+  @Override
+  public TraySlot traySlot(String id) {
+    return session.traySlot(id);
+  }
 
-    @Override
-    public void draw(Draw2D draw2d, Font font) {}
+  @Override
+  public Swatch swatch(String id) {
+    return session.swatch(id);
+  }
 
-    private static final class DefaultButton implements Button {
-        private final String id;
+  @Override
+  public ModalOverlay modalOverlay(String id) {
+    return session.modalOverlay(id);
+  }
 
-        DefaultButton(String id) {
-            this.id = id;
-        }
+  @Override
+  public FocusScope focusScope() {
+    return session.focusScope();
+  }
 
-        @Override
-        public String id() {
-            return id;
-        }
-    }
+  @Override
+  public void layout() {
+    session.layout();
+  }
 
-    private static final class DefaultLabel implements Label {
-        private final String id;
+  @Override
+  public UiHit hit(float x, float y) {
+    return session.hit(x, y);
+  }
 
-        DefaultLabel(String id) {
-            this.id = id;
-        }
-
-        @Override
-        public String id() {
-            return id;
-        }
-    }
-
-    private static final class DefaultFocusScope implements FocusScope {
-        @Override
-        public void add(Button button) {}
-    }
+  @Override
+  public void draw(Draw2D draw2d, Font font) {
+    session.draw(draw2d, font);
+  }
 }

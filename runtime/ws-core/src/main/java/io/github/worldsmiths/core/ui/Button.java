@@ -1,8 +1,15 @@
 package io.github.worldsmiths.core.ui;
 
-/** Focusable action leaf. Layout/hit/draw land in T2. */
+/** Focusable action leaf. */
 public interface Button {
 
-    /** Stable author id for hit and Fake recording. */
-    String id();
+  String id();
+
+  String label();
+
+  Button enabled(boolean enabled);
+
+  boolean enabled();
+
+  UiBounds bounds();
 }
