@@ -16,6 +16,10 @@ import io.github.worldsmiths.core.thin3d.ModelBuilder;
 import io.github.worldsmiths.core.thin3d.ModelInstance;
 import io.github.worldsmiths.core.thin3d.PerspectiveCamera;
 import io.github.worldsmiths.core.thin3d.Thin3D;
+import io.github.worldsmiths.core.ui.Button;
+import io.github.worldsmiths.core.ui.Insets;
+import io.github.worldsmiths.core.ui.Theme;
+import io.github.worldsmiths.core.ui.UiKit;
 
 /**
  * P2 relay: ordered two-leg race (+X then −X), hard run-par FAIL, freeze-on-terminal. Keyboard
@@ -30,6 +34,12 @@ public final class RelayGame implements WorldsmithsGame {
 
     /** Packaged internal BitmapFont path for the run-elapsed HUD. */
     public static final String HUD_FONT = "fonts/hud.fnt";
+
+    /** UiKit panel ids (headless tests assert FakeUiKit recording). */
+    static final String KIT_GO_ID = "relay-go";
+    static final String KIT_LABEL_ID = "relay-label";
+    private static final String KIT_GO_LABEL = "Go";
+    private static final String KIT_STATUS_TEXT = "Relay kit";
 
     private static final float FLOOR_HALF = 5f;
     private static final float FLOOR_THICKNESS = 0.2f;
@@ -67,6 +77,7 @@ public final class RelayGame implements WorldsmithsGame {
 
     private String lastTitle = "";
     private boolean wasClear;
+    private boolean uiKitBuilt;
 
     public RelayGame() {
         this(new RelayController());
@@ -148,6 +159,7 @@ public final class RelayGame implements WorldsmithsGame {
         runElapsed = 0f;
         wasClear = controller.cleared();
         publishTitle();
+        buildUiKitPanel((int) w, (int) h);
     }
 
     @Override
@@ -175,6 +187,7 @@ public final class RelayGame implements WorldsmithsGame {
         modelBatch.render(agentInstance, environment);
         modelBatch.end();
         drawHud();
+        drawUiKitPanel();
     }
 
     @Override
@@ -202,6 +215,10 @@ public final class RelayGame implements WorldsmithsGame {
         if (gateModel != null) {
             gateModel.dispose();
             gateModel = null;
+        }
+        if (services != null && uiKitBuilt) {
+            services.uiKit().clear();
+            uiKitBuilt = false;
         }
     }
 
@@ -299,6 +316,39 @@ public final class RelayGame implements WorldsmithsGame {
             return;
         }
         hudFont.drawString(formatElapsedHud(runElapsed, controller), HUD_X, HUD_Y);
+    }
+
+    private void buildUiKitPanel(int width, int height) {
+        if (services == null) {
+            return;
+        }
+        UiKit kit = services.uiKit();
+        kit.setTheme(Theme.defaults());
+        kit.setViewport(width, height, Insets.ZERO, 1f);
+        kit.clear();
+        Button go = kit.button(KIT_GO_ID, KIT_GO_LABEL);
+        kit.label(KIT_LABEL_ID, KIT_STATUS_TEXT);
+        kit.focusScope().add(go);
+        kit.layout();
+        uiKitBuilt = true;
+    }
+
+    private void drawUiKitPanel() {
+        if (services == null || !uiKitBuilt || hudFont == null) {
+            return;
+        }
+        float w = services.graphics().getWidth();
+        float h = services.graphics().getHeight();
+        if (w <= 0f) {
+            w = 800f;
+        }
+        if (h <= 0f) {
+            h = 600f;
+        }
+        UiKit kit = services.uiKit();
+        kit.setViewport((int) w, (int) h, Insets.ZERO, 1f);
+        kit.layout();
+        kit.draw(services.draw2d(), hudFont);
     }
 
     private RelayMoveIntent pollTouchIntent(boolean terminal) {
