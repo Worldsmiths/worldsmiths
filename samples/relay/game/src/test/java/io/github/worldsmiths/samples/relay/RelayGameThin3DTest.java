@@ -5,8 +5,10 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import io.github.worldsmiths.core.FakeAudio;
+import io.github.worldsmiths.core.FakeDraw2D;
 import io.github.worldsmiths.core.FakeEngineServices;
 import io.github.worldsmiths.core.FakeUi;
+import io.github.worldsmiths.core.ui.FakeUiKit;
 import io.github.worldsmiths.core.Key;
 import io.github.worldsmiths.core.thin3d.FakeThin3D;
 import java.util.List;
@@ -175,7 +177,7 @@ class RelayGameThin3DTest {
         assertEquals(1, controller.currentLeg());
         assertTrue(services.graphics().lastTitle().contains("running"));
         game.render();
-        FakeUi.Command hud = lastUiKind(services.ui().commands(), FakeUi.Command.Kind.DRAW_STRING);
+        FakeUi.Command hud = lastHudDrawString(services.ui().commands());
         assertTrue(hud.text != null && hud.text.startsWith("0.0"), hud.text);
         assertFalse(hud.text.contains("FAIL"), hud.text);
     }
@@ -226,13 +228,13 @@ class RelayGameThin3DTest {
 
         game.update(1.5f);
         game.render();
-        FakeUi.Command running = lastUiKind(ui.commands(), FakeUi.Command.Kind.DRAW_STRING);
+        FakeUi.Command running = lastHudDrawString(ui.commands());
         assertTrue(running.text != null && running.text.contains("1.5"), running.text);
         assertTrue(running.text.contains("1/2"), running.text);
 
         advanceToLeg2ViaGame(controller, game);
         game.render();
-        FakeUi.Command leg2 = lastUiKind(ui.commands(), FakeUi.Command.Kind.DRAW_STRING);
+        FakeUi.Command leg2 = lastHudDrawString(ui.commands());
         assertTrue(leg2.text != null && leg2.text.contains("2/2"), leg2.text);
         assertFalse(leg2.text.contains("CLEAR"), leg2.text);
 
@@ -241,13 +243,13 @@ class RelayGameThin3DTest {
         game.update(0.016f);
         assertTrue(controller.cleared());
         game.render();
-        FakeUi.Command clearHud = lastUiKind(ui.commands(), FakeUi.Command.Kind.DRAW_STRING);
+        FakeUi.Command clearHud = lastHudDrawString(ui.commands());
         assertTrue(clearHud.text != null && clearHud.text.contains("CLEAR"), clearHud.text);
         assertTrue(clearHud.text.contains("2/2"), clearHud.text);
         float frozen = extractLeadingSeconds(clearHud.text);
         game.update(0.5f);
         game.render();
-        FakeUi.Command frozenHud = lastUiKind(ui.commands(), FakeUi.Command.Kind.DRAW_STRING);
+        FakeUi.Command frozenHud = lastHudDrawString(ui.commands());
         assertTrue(frozenHud.text != null && frozenHud.text.contains("CLEAR"), frozenHud.text);
         assertEquals(frozen, extractLeadingSeconds(frozenHud.text), 1e-5f);
 
@@ -256,18 +258,46 @@ class RelayGameThin3DTest {
         services.input().setKeyDown(Key.R, false);
         game.update(RelayController.RUN_PAR_SECONDS);
         game.render();
-        FakeUi.Command failHud = lastUiKind(ui.commands(), FakeUi.Command.Kind.DRAW_STRING);
+        FakeUi.Command failHud = lastHudDrawString(ui.commands());
         assertTrue(failHud.text != null && failHud.text.contains("FAIL"), failHud.text);
         assertTrue(failHud.text.contains("1/2"), failHud.text);
         float failFrozen = extractLeadingSeconds(failHud.text);
         game.update(0.5f);
         game.render();
-        FakeUi.Command failFrozenHud = lastUiKind(ui.commands(), FakeUi.Command.Kind.DRAW_STRING);
+        FakeUi.Command failFrozenHud = lastHudDrawString(ui.commands());
         assertTrue(failFrozenHud.text != null && failFrozenHud.text.contains("FAIL"), failFrozenHud.text);
         assertEquals(failFrozen, extractLeadingSeconds(failFrozenHud.text), 1e-5f);
 
         game.dispose();
         assertTrue(containsUiKind(ui.commands(), FakeUi.Command.Kind.DISPOSE));
+    }
+
+    @Test
+    void createAndRenderRecordsUiKitLeafKindsAndSparsePaint() {
+        FakeEngineServices services = seededServices();
+        RelayGame game = new RelayGame();
+        game.createScene();
+        game.create(services);
+
+        FakeUiKit uiKit = services.uiKit();
+        List<FakeUiKit.Command> afterCreate = uiKit.commands();
+        assertTrue(containsUiKitKind(afterCreate, FakeUiKit.Command.Kind.CREATE));
+        assertTrue(containsUiKitCreate(afterCreate, "relay-go", FakeUiKit.Command.Kind.CREATE));
+        assertTrue(containsUiKitCreate(afterCreate, "relay-label", FakeUiKit.Command.Kind.CREATE));
+        assertTrue(containsUiKitKind(afterCreate, FakeUiKit.Command.Kind.LAYOUT));
+
+        uiKit.clearCommands();
+        game.render();
+
+        List<FakeUiKit.Command> frame = uiKit.commands();
+        assertTrue(containsUiKitKind(frame, FakeUiKit.Command.Kind.DRAW_BUTTON));
+        assertTrue(containsUiKitKind(frame, FakeUiKit.Command.Kind.DRAW_LABEL));
+        assertTrue(containsUiKitKind(frame, FakeUiKit.Command.Kind.LAYOUT));
+
+        FakeDraw2D draw2d = services.draw2d();
+        assertTrue(containsDraw2dKind(draw2d.commands(), FakeDraw2D.Command.Kind.RECT));
+
+        assertTrue(containsUiKind(services.ui().commands(), FakeUi.Command.Kind.DRAW_STRING));
     }
 
     @Test
@@ -320,6 +350,9 @@ class RelayGameThin3DTest {
         services.graphics().setSize(800, 600);
         services.audio().putSound(RelayGame.LEG_COMPLETE_CUE);
         services.ui().putFont(RelayGame.HUD_FONT);
+        FakeUiKit uiKit = services.uiKit();
+        uiKit.seedMeasureAdvance("Go", 48f);
+        uiKit.seedMeasureAdvance("Relay kit", 80f);
         return services;
     }
 
@@ -362,16 +395,48 @@ class RelayGameThin3DTest {
         return false;
     }
 
-    private static FakeUi.Command lastUiKind(
-            List<FakeUi.Command> commands, FakeUi.Command.Kind kind) {
+    private static boolean containsUiKitKind(
+            List<FakeUiKit.Command> commands, FakeUiKit.Command.Kind kind) {
+        for (FakeUiKit.Command command : commands) {
+            if (command.kind == kind) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static boolean containsUiKitCreate(
+            List<FakeUiKit.Command> commands, String id, FakeUiKit.Command.Kind kind) {
+        for (FakeUiKit.Command command : commands) {
+            if (command.kind == kind && id.equals(command.id)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static boolean containsDraw2dKind(
+            List<FakeDraw2D.Command> commands, FakeDraw2D.Command.Kind kind) {
+        for (FakeDraw2D.Command command : commands) {
+            if (command.kind == kind) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /** Last Font HUD draw (live N/M marker); excludes UiKit widget strings. */
+    private static FakeUi.Command lastHudDrawString(List<FakeUi.Command> commands) {
         FakeUi.Command last = null;
         for (FakeUi.Command command : commands) {
-            if (command.kind == kind) {
+            if (command.kind == FakeUi.Command.Kind.DRAW_STRING
+                    && command.text != null
+                    && command.text.contains("/")) {
                 last = command;
             }
         }
         if (last == null) {
-            throw new AssertionError("missing FakeUi kind " + kind);
+            throw new AssertionError("missing Font HUD DRAW_STRING");
         }
         return last;
     }

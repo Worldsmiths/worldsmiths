@@ -51,4 +51,5 @@ enter the **+X** gate (HUD → `2/2`, no cue) → enter the **−X** gate under 
 restarts (elapsed 0; leg 1; no cue on restart).
 
 **CI compile/test ≠ play confirmation.** There is no GPU / Playwright / real-audio / font-raster CI
-for this sample; `:game:test` asserts FakeAudio / FakeUi markers and controller rules headlessly.
+for this sample; `:game:test` asserts FakeAudio / FakeUi / FakeUiKit markers and controller rules
+headlessly (`seedMeasureAdvance` on kit label/button text before layout).
