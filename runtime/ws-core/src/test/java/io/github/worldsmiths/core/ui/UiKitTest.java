@@ -56,18 +56,20 @@ class UiKitTest {
     Button dismiss = modal.dismiss("dismiss", "OK");
     kit.focusScope().add(go);
     kit.layout();
-    return new MatrixTree(go, slots, dismiss);
+    return new MatrixTree(go, slots, dismiss, modal);
   }
 
   private static final class MatrixTree {
     final Button go;
     final List<Button> slots;
     final Button dismiss;
+    final ModalOverlay modal;
 
-    MatrixTree(Button go, List<Button> slots, Button dismiss) {
+    MatrixTree(Button go, List<Button> slots, Button dismiss, ModalOverlay modal) {
       this.go = go;
       this.slots = slots;
       this.dismiss = dismiss;
+      this.modal = modal;
     }
   }
 
@@ -79,18 +81,24 @@ class UiKitTest {
 
     UiBounds goB = tree.go.bounds();
     UiBounds dismissB = tree.dismiss.bounds();
+    UiBounds modalB = tree.modal.bounds();
     assertOnScreen(goB, w, h);
     assertOnScreen(dismissB, w, h);
+    assertOnScreen(modalB, w, h);
     assertMinHit(goB);
     assertMinHit(dismissB);
+
+    kit.clearCommands();
 
     UiHit hitGo = kit.hit(goB.centerX(), goB.centerY());
     assertEquals("go", hitGo.id());
     assertTrue(hitGo.activated());
+    assertTrue(containsKind(kit.commands(), FakeUiKit.Command.Kind.HIT));
 
     UiHit hitDismiss = kit.hit(dismissB.centerX(), dismissB.centerY());
     assertEquals("dismiss", hitDismiss.id());
     assertTrue(hitDismiss.activated());
+    assertTrue(containsKind(kit.commands(), FakeUiKit.Command.Kind.HIT));
 
     for (int i = 0; i < tree.slots.size(); i++) {
       Button slot = tree.slots.get(i);
@@ -98,9 +106,14 @@ class UiKitTest {
       assertOnScreen(slotB, w, h);
       assertMinHit(slotB);
       assertNoOverlap(goB, slotB);
+      assertNoOverlap(modalB, goB);
+      assertNoOverlap(modalB, slotB);
+      assertNoOverlap(dismissB, goB);
+      assertNoOverlap(dismissB, slotB);
       UiHit slotHit = kit.hit(slotB.centerX(), slotB.centerY());
       assertEquals("slot-" + i, slotHit.id());
       assertTrue(slotHit.activated());
+      assertTrue(containsKind(kit.commands(), FakeUiKit.Command.Kind.HIT));
     }
   }
 
@@ -122,6 +135,23 @@ class UiKitTest {
     kit.setViewport(400, 600, Insets.ZERO, 1f);
     kit.label("lbl", "missing-seed");
     assertThrows(EngineException.class, kit::layout);
+  }
+
+  @Test
+  void drawThrowsWhenDraw2dOrFontNull() {
+    FakeUiKit kit = new FakeUiKit();
+    kit.setViewport(400, 600, Insets.ZERO, 1f);
+    seedAllText(kit, "Go");
+    kit.button("go", "Go");
+    kit.layout();
+
+    FakeDraw2D draw2d = new FakeDraw2D();
+    FakeUi ui = new FakeUi();
+    ui.putFont("fonts/hud.fnt");
+    Font font = ui.createFont("fonts/hud.fnt");
+
+    assertThrows(NullPointerException.class, () -> kit.draw(null, font));
+    assertThrows(NullPointerException.class, () -> kit.draw(draw2d, null));
   }
 
   @Test
