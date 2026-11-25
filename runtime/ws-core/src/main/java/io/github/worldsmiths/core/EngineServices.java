@@ -1,6 +1,7 @@
 package io.github.worldsmiths.core;
 
 import io.github.worldsmiths.core.thin3d.Thin3D;
+import io.github.worldsmiths.core.ui.UiKit;
 
 /**
  * Services bag passed to {@link WorldsmithsGame#create(EngineServices)}. Fixed getters cover the D9
@@ -32,6 +33,9 @@ public interface EngineServices {
 
     /** Bitmap font load/draw from packaged internal paths. */
     Ui ui();
+
+    /** Session widget toolkit (layout, hit, focus, draw). */
+    UiKit uiKit();
 
     /** Unused in D9 — empty stub for a future plugin/ECS escape hatch. */
     Extensions extensions();
