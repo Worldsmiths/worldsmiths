@@ -73,9 +73,9 @@ Keep using [`ui()`](ui.md) for author-owned fonts (`createFont` / `font.dispose(
 
 `hit` auto-runs `layout()` if needed. Disabled buttons still report `id` from `hit` but `activated()` is false; `activateFocused` does not record `ACTIVATE` when disabled.
 
-## Missing `Font` on draw
+## Null draw arguments
 
-`draw(draw2d, font)` is a no-op when `draw2d` or `font` is null: no throw, no Fake draw leaf kinds, no sparse `FakeDraw2D` / `FakeUi` markers. Load a font via `ui().createFont(...)` before drawing text chrome.
+`draw(draw2d, font)` throws `NullPointerException` when `draw2d` or `font` is null (fail-closed, same policy as other engine facades). Load a font via `ui().createFont(...)` and obtain `Draw2D` from `services.draw2d()` before calling `draw`.
 
 ## Usage
 
