@@ -9,6 +9,8 @@ import io.github.worldsmiths.core.Graphics;
 import io.github.worldsmiths.core.Input;
 import io.github.worldsmiths.core.Ui;
 import io.github.worldsmiths.core.thin3d.Thin3D;
+import io.github.worldsmiths.core.ui.DefaultUiKit;
+import io.github.worldsmiths.core.ui.UiKit;
 
 /**
  * Factory for a GDX-backed {@link EngineServices} bag. Backends call {@link #create()} after the
@@ -32,6 +34,7 @@ public final class GdxEngineServices {
                 new GdxThin3D(),
                 new GdxAudio(),
                 new GdxUi(),
+                new DefaultUiKit(),
                 new EngineServices.Extensions());
     }
 
@@ -44,6 +47,7 @@ public final class GdxEngineServices {
         private final Thin3D thin3d;
         private final Audio audio;
         private final Ui ui;
+        private final UiKit uiKit;
         private final Extensions extensions;
 
         Bag(
@@ -55,6 +59,7 @@ public final class GdxEngineServices {
                 Thin3D thin3d,
                 Audio audio,
                 Ui ui,
+                UiKit uiKit,
                 Extensions extensions) {
             this.input = input;
             this.clock = clock;
@@ -64,6 +69,7 @@ public final class GdxEngineServices {
             this.thin3d = thin3d;
             this.audio = audio;
             this.ui = ui;
+            this.uiKit = uiKit;
             this.extensions = extensions;
         }
 
@@ -105,6 +111,11 @@ public final class GdxEngineServices {
         @Override
         public Ui ui() {
             return ui;
+        }
+
+        @Override
+        public UiKit uiKit() {
+            return uiKit;
         }
 
         @Override
