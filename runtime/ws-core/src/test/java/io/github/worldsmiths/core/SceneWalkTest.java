@@ -1,6 +1,7 @@
 package io.github.worldsmiths.core;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -8,8 +9,8 @@ import org.junit.jupiter.api.Test;
 class SceneWalkTest {
 
     @Test
-    void collectsFilledRectForVisibleSpriteUsingCellCoordsAndRgba() {
-        Sprite sprite = new Sprite("ignored.png");
+    void texturedSpriteYieldsCommandWithTextureKeyAndTint() {
+        Sprite sprite = new Sprite("hero.png");
         sprite.r = 0.2f;
         sprite.g = 0.4f;
         sprite.b = 0.6f;
@@ -22,6 +23,7 @@ class SceneWalkTest {
 
         assertEquals(1, draws.size());
         RectDraw draw = draws.get(0);
+        assertEquals("hero.png", draw.textureKey);
         assertEquals(3f * SceneWalk.CELL_SIZE, draw.x, 0.001f);
         assertEquals(5f * SceneWalk.CELL_SIZE, draw.y, 0.001f);
         assertEquals(SceneWalk.CELL_SIZE, draw.width, 0.001f);
@@ -30,6 +32,46 @@ class SceneWalkTest {
         assertEquals(0.4f, draw.g, 0.001f);
         assertEquals(0.6f, draw.b, 0.001f);
         assertEquals(0.8f, draw.a, 0.001f);
+    }
+
+    @Test
+    void nullTextureYieldsNullKeyAndRgbaRect() {
+        Sprite sprite = new Sprite(null);
+        sprite.r = 0.1f;
+        sprite.g = 0.3f;
+        sprite.b = 0.5f;
+        sprite.a = 0.7f;
+
+        Scene scene = new Scene("test");
+        scene.add(new Node("plain").add(new Transform2D(1f, 2f)).add(sprite));
+
+        List<RectDraw> draws = SceneWalk.collectDrawCommands(scene);
+
+        assertEquals(1, draws.size());
+        RectDraw draw = draws.get(0);
+        assertNull(draw.textureKey);
+        assertEquals(1f * SceneWalk.CELL_SIZE, draw.x, 0.001f);
+        assertEquals(2f * SceneWalk.CELL_SIZE, draw.y, 0.001f);
+        assertEquals(0.1f, draw.r, 0.001f);
+        assertEquals(0.3f, draw.g, 0.001f);
+        assertEquals(0.5f, draw.b, 0.001f);
+        assertEquals(0.7f, draw.a, 0.001f);
+    }
+
+    @Test
+    void blankTextureYieldsNullKey() {
+        Sprite empty = new Sprite("");
+        Sprite whitespace = new Sprite("   ");
+
+        Scene scene = new Scene("test");
+        scene.add(new Node("empty").add(new Transform2D(0f, 0f)).add(empty));
+        scene.add(new Node("ws").add(new Transform2D(1f, 0f)).add(whitespace));
+
+        List<RectDraw> draws = SceneWalk.collectDrawCommands(scene);
+
+        assertEquals(2, draws.size());
+        assertNull(draws.get(0).textureKey);
+        assertNull(draws.get(1).textureKey);
     }
 
     @Test
@@ -73,8 +115,10 @@ class SceneWalkTest {
         List<RectDraw> draws = SceneWalk.collectDrawCommands(scene);
 
         assertEquals(2, draws.size());
+        assertEquals("root.png", draws.get(0).textureKey);
         assertEquals(0f, draws.get(0).x, 0.001f);
         assertEquals(1f, draws.get(0).r, 0.001f);
+        assertEquals("child.png", draws.get(1).textureKey);
         assertEquals(2f * SceneWalk.CELL_SIZE, draws.get(1).x, 0.001f);
         assertEquals(0.5f, draws.get(1).r, 0.001f);
     }
