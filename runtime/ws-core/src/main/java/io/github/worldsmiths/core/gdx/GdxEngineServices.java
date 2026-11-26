@@ -7,6 +7,8 @@ import io.github.worldsmiths.core.Audio;
 import io.github.worldsmiths.core.Clock;
 import io.github.worldsmiths.core.Draw2D;
 import io.github.worldsmiths.core.EngineServices;
+import io.github.worldsmiths.core.FakeAssets;
+import io.github.worldsmiths.core.FakeEngineServices;
 import io.github.worldsmiths.core.Files;
 import io.github.worldsmiths.core.Graphics;
 import io.github.worldsmiths.core.Input;
@@ -26,11 +28,13 @@ public final class GdxEngineServices {
     private GdxEngineServices() {}
 
     /**
-     * Assembles non-null Input/Clock/Graphics/Draw2D/Files/Thin3D/Audio/Ui/Textures/Log wrappers
-     * around {@code Gdx} statics. Sets Application log level to {@link Application#LOG_DEBUG} so
-     * author {@code debug} calls are visible on every backend.
+     * Assembles non-null Input/Clock/Graphics/Draw2D/Files/Thin3D/Audio/Ui/Textures/Log/Assets
+     * wrappers around {@code Gdx} statics. Sets Application log level to {@link
+     * Application#LOG_DEBUG} so author {@code debug} calls are visible on every backend.
      */
     public static EngineServices create() {
+        GdxTextures textures = new GdxTextures();
+        GdxAssets assets = new GdxAssets(textures);
         return new Bag(
                 new GdxInput(),
                 new GdxClock(),
@@ -40,10 +44,31 @@ public final class GdxEngineServices {
                 new GdxThin3D(),
                 new GdxAudio(),
                 new GdxUi(),
-                new GdxTextures(),
+                textures,
+                assets,
                 createLog(gdxAppLogging()),
                 new DefaultUiKit(),
                 new EngineServices.Extensions());
+    }
+
+    /**
+     * Advances in-flight async loads for a bag from {@link #create()}, or a {@link FakeAssets} when
+     * tests inject {@link FakeEngineServices}. No-op for unknown bags. Call once per frame before
+     * {@code game.update}.
+     */
+    public static void pumpAssets(EngineServices services) {
+        if (services instanceof Bag) {
+            ((Bag) services).gdxAssets.pump();
+            return;
+        }
+        if (services instanceof FakeEngineServices) {
+            ((FakeEngineServices) services).assets().pump();
+        } else if (services != null) {
+            Assets assets = services.assets();
+            if (assets instanceof FakeAssets) {
+                ((FakeAssets) assets).pump();
+            }
+        }
     }
 
     /**
@@ -115,12 +140,35 @@ public final class GdxEngineServices {
     }
 
     /**
-     * Disposes the engine-owned texture cache when {@code services} was assembled by {@link
-     * #create()}. No-op for Fake / injected bags. Call from backend listener teardown after the
-     * scene renderer shuts down.
+     * Package-visible headless bag for {@link GdxAssets} / pump / dispose tests without a live
+     * Application / GL context. Only {@link EngineServices#textures()}, {@link
+     * EngineServices#assets()}, and dispose/pump helpers are valid.
+     */
+    static EngineServices bagForAssetsTest(GdxTextures textures, GdxAssets assets) {
+        return new Bag(
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                textures,
+                assets,
+                null,
+                null,
+                new EngineServices.Extensions());
+    }
+
+    /**
+     * Disposes in-flight async loads then the engine-owned texture cache when {@code services} was
+     * assembled by {@link #create()}. No-op for Fake / injected bags. Call from backend listener
+     * teardown after the scene renderer shuts down.
      */
     public static void disposeTextures(EngineServices services) {
         if (services instanceof Bag) {
+            ((Bag) services).gdxAssets.dispose();
             ((Bag) services).gdxTextures.dispose();
         }
     }
@@ -135,6 +183,7 @@ public final class GdxEngineServices {
         private final Audio audio;
         private final Ui ui;
         private final GdxTextures gdxTextures;
+        private final GdxAssets gdxAssets;
         private final Log log;
         private final UiKit uiKit;
         private final Extensions extensions;
@@ -149,6 +198,7 @@ public final class GdxEngineServices {
                 Audio audio,
                 Ui ui,
                 GdxTextures gdxTextures,
+                GdxAssets gdxAssets,
                 Log log,
                 UiKit uiKit,
                 Extensions extensions) {
@@ -161,6 +211,7 @@ public final class GdxEngineServices {
             this.audio = audio;
             this.ui = ui;
             this.gdxTextures = gdxTextures;
+            this.gdxAssets = gdxAssets;
             this.log = log;
             this.uiKit = uiKit;
             this.extensions = extensions;
@@ -223,8 +274,7 @@ public final class GdxEngineServices {
 
         @Override
         public Assets assets() {
-            // T1 temporary stub until T2 wires GdxAssets.
-            throw new UnsupportedOperationException("GdxAssets not wired yet (T2)");
+            return gdxAssets;
         }
 
         @Override

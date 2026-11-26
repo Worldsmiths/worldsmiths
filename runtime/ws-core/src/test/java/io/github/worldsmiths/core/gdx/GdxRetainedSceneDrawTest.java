@@ -37,6 +37,11 @@ class GdxRetainedSceneDrawTest {
                                 fail("null texture key must not hit the cache");
                                 return null;
                             }
+
+                            @Override
+                            public boolean isAsyncInFlight(String path) {
+                                return false;
+                            }
                         });
 
         drawer.draw(
@@ -71,6 +76,11 @@ class GdxRetainedSceneDrawTest {
                                 lookups.add(path);
                                 return stubTexture;
                             }
+
+                            @Override
+                            public boolean isAsyncInFlight(String path) {
+                                return false;
+                            }
                         });
 
         drawer.draw(
@@ -91,6 +101,39 @@ class GdxRetainedSceneDrawTest {
     }
 
     @Test
+    void inFlightAsyncTextureKeySkipsWithoutCallingRequire() {
+        RecordingShapeBatch shapes = new RecordingShapeBatch();
+        RecordingSpriteBatch sprites = new RecordingSpriteBatch();
+        final AtomicBoolean required = new AtomicBoolean();
+        GdxRetainedSceneDraw drawer =
+                new GdxRetainedSceneDraw(
+                        shapes,
+                        sprites,
+                        new GdxRetainedSceneDraw.TextureLookup() {
+                            @Override
+                            public Texture require(String path) {
+                                required.set(true);
+                                fail("in-flight async key must not sync-require");
+                                return null;
+                            }
+
+                            @Override
+                            public boolean isAsyncInFlight(String path) {
+                                return "textures/heavy.png".equals(path);
+                            }
+                        });
+
+        drawer.draw(
+                Collections.singletonList(
+                        new RectDraw(8f, 16f, 32f, 32f, 1f, 0.5f, 0.25f, 0.75f, "textures/heavy.png")),
+                new Matrix4().setToOrtho2D(0f, 0f, 640f, 480f));
+
+        assertFalse(required.get());
+        assertTrue(sprites.calls.isEmpty());
+        assertTrue(shapes.calls.isEmpty());
+    }
+
+    @Test
     void mixedCommandsEndOneBatcherBeforeBeginningTheOther() {
         RecordingShapeBatch shapes = new RecordingShapeBatch();
         RecordingSpriteBatch sprites = new RecordingSpriteBatch();
@@ -102,6 +145,11 @@ class GdxRetainedSceneDrawTest {
                             @Override
                             public Texture require(String path) {
                                 return null;
+                            }
+
+                            @Override
+                            public boolean isAsyncInFlight(String path) {
+                                return false;
                             }
                         });
 

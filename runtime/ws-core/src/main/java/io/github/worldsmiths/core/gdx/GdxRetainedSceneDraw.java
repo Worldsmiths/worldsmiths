@@ -11,8 +11,9 @@ import java.util.List;
 /**
  * Shared retained-scene draw path for backend {@code SceneShapeRenderer}s. Null/empty texture keys
  * paint filled rgba rects via {@link ShapeRenderer}; set keys paint tinted textured quads via {@link
- * SpriteBatch} using the engine {@link GdxTextures} cache. Ends one batcher before beginning the
- * other. Not part of the author-facing API.
+ * SpriteBatch} using the engine {@link GdxTextures} cache. Async in-flight texture keys are skipped
+ * (no sync {@code require}/opener). Ends one batcher before beginning the other. Not part of the
+ * author-facing API.
  */
 public final class GdxRetainedSceneDraw {
     private final ShapeBatch shapes;
@@ -69,6 +70,10 @@ public final class GdxRetainedSceneDraw {
                     shapes.setColor(command.r, command.g, command.b, command.a);
                     shapes.rect(command.x, command.y, command.width, command.height);
                 } else {
+                    // In-flight async keys: skip textured draw — never sync-require / opener.open.
+                    if (textures.isAsyncInFlight(command.textureKey)) {
+                        continue;
+                    }
                     if (shapesOpen) {
                         shapes.end();
                         shapesOpen = false;
@@ -136,9 +141,15 @@ public final class GdxRetainedSceneDraw {
         boolean isDrawing();
     }
 
-    /** Cache lookup used for textured commands — typically {@link GdxTextures#require(String)}. */
+    /**
+     * Cache lookup used for textured commands — typically {@link GdxTextures#require(String)}.
+     * {@link #isAsyncInFlight(String)} lets draw skip keys that {@link GdxAssets} is still loading.
+     */
     interface TextureLookup {
         Texture require(String path);
+
+        /** When true, retained draw skips the textured command (no sync open). */
+        boolean isAsyncInFlight(String path);
     }
 
     private static TextureLookup texturesLookup(final GdxTextures textures) {
@@ -146,6 +157,11 @@ public final class GdxRetainedSceneDraw {
             @Override
             public Texture require(String path) {
                 return textures.require(path);
+            }
+
+            @Override
+            public boolean isAsyncInFlight(String path) {
+                return textures.isAsyncInFlight(path);
             }
         };
     }

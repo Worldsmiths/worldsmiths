@@ -20,7 +20,8 @@ public final class FakeEngineServices implements EngineServices {
     private final FakeTextures textures = new FakeTextures();
     private final FakeUiKit uiKit = new FakeUiKit();
     private final FakeLog log = new FakeLog();
-    private final FakeAssets assets = new FakeAssets();
+    /** Shares {@link #textures} so async TEXTURE COMPLETE merges into the sync cache (AC4). */
+    private final FakeAssets assets = new FakeAssets(textures);
     private final Extensions extensions = new Extensions();
 
     @Override

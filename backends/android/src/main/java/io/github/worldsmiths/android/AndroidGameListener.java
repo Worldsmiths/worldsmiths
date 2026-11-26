@@ -89,6 +89,7 @@ public final class AndroidGameListener implements ApplicationListener {
      * Runs after {@code game.render()} so author {@code Draw2D} batches are expected to be ended.
      */
     void updateAndRender(float delta) {
+        GdxEngineServices.pumpAssets(services);
         game.update(delta);
         game.render();
         if (sceneRenderer != null && scene != null) {

@@ -6,14 +6,19 @@ import com.badlogic.gdx.graphics.Texture;
 import io.github.worldsmiths.core.EngineException;
 import io.github.worldsmiths.core.Textures;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * GDX-backed {@link Textures} with a sync FileHandle-managed texture cache keyed by internal path.
- * Not part of the author-facing API — backends assemble this via {@link GdxEngineServices}.
+ * Async {@link GdxAssets} merges completes into the same cache and marks in-flight keys so retained
+ * draw can skip without a sync open. Not part of the author-facing API — backends assemble this via
+ * {@link GdxEngineServices}.
  */
 final class GdxTextures implements Textures {
     private final Map<String, LoadedTexture> cache = new HashMap<String, LoadedTexture>();
+    private final Set<String> asyncInFlight = new HashSet<String>();
     private final TextureOpener opener;
 
     GdxTextures() {
@@ -76,6 +81,46 @@ final class GdxTextures implements Textures {
         return ensureCached(internalPath);
     }
 
+    /** Cache hit without sync open; {@code null} when absent. */
+    LoadedTexture getIfPresent(String internalPath) {
+        return cache.get(internalPath);
+    }
+
+    /** True while an async TEXTURE request for {@code path} is in flight (not yet cached). */
+    boolean isAsyncInFlight(String internalPath) {
+        return asyncInFlight.contains(internalPath);
+    }
+
+    void beginAsyncLoad(String internalPath) {
+        asyncInFlight.add(internalPath);
+    }
+
+    void endAsyncLoad(String internalPath) {
+        asyncInFlight.remove(internalPath);
+    }
+
+    /**
+     * Opens via the injected opener without putting into the cache — used by {@link GdxAssets}
+     * during pump. Returns {@code null} on miss; may throw on unloadable decode.
+     */
+    LoadedTexture openForAsync(String internalPath) {
+        return opener.open(internalPath);
+    }
+
+    /**
+     * Merges an async-loaded texture into the sync cache (no second open). Clears the in-flight
+     * mark for {@code internalPath}.
+     */
+    void putFromAsync(String internalPath, LoadedTexture loaded) {
+        if (loaded == null) {
+            return;
+        }
+        if (!cache.containsKey(internalPath)) {
+            cache.put(internalPath, loaded);
+        }
+        asyncInFlight.remove(internalPath);
+    }
+
     /**
      * Disposes every cached managed texture and clears the cache. Idempotent — safe at listener /
      * bag teardown. Engine-owned; authors do not call this.
@@ -85,6 +130,12 @@ final class GdxTextures implements Textures {
             loaded.dispose();
         }
         cache.clear();
+        asyncInFlight.clear();
+    }
+
+    /** Package-visible for headless dispose assertions. */
+    int cacheSizeForTest() {
+        return cache.size();
     }
 
     private LoadedTexture ensureCached(String internalPath) {

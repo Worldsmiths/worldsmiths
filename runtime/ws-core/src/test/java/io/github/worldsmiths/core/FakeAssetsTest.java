@@ -234,4 +234,29 @@ class FakeAssetsTest {
         assertEquals(FakeAssets.Command.Kind.REQUEST, commands.get(0).kind);
         assertEquals(FakeAssets.Command.Kind.FAIL, commands.get(1).kind);
     }
+
+    @Test
+    void completeMergesIntoFakeTexturesSoResolveDoesNotCreateTwice() {
+        FakeEngineServices services = new FakeEngineServices();
+        FakeAssets assets = services.assets();
+        FakeTextures textures = services.textures();
+        assets.putTexture("textures/heavy.png");
+
+        LoadHandle handle = assets.request("textures/heavy.png", AssetKind.TEXTURE);
+        assets.pump();
+        assertEquals(LoadState.COMPLETE, handle.state());
+
+        textures.resolve("textures/heavy.png");
+
+        int creates = 0;
+        for (FakeTextures.Command command : textures.commands()) {
+            if (command.kind == FakeTextures.Command.Kind.CREATE) {
+                creates++;
+            }
+        }
+        assertEquals(1, creates);
+        assertEquals(FakeTextures.Command.Kind.CREATE, textures.commands().get(0).kind);
+        assertEquals("textures/heavy.png", textures.commands().get(0).path);
+        assertEquals(FakeTextures.Command.Kind.RESOLVE, textures.commands().get(1).kind);
+    }
 }

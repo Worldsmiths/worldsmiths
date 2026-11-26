@@ -13,6 +13,9 @@ import java.util.Set;
  * never {@code Thread.sleep}. Seed TEXTURE paths with {@link #putTexture}; optional {@link
  * #script(String, float...)} for discrete loading steps; assert command kinds ({@code REQUEST},
  * {@code PROGRESS}, {@code COMPLETE}, {@code FAIL}, {@code LISTENER}, {@code UPDATE}).
+ *
+ * <p>When constructed with a {@link FakeTextures} (via {@link FakeEngineServices}), COMPLETE merges
+ * into that texture cache so {@code textures().resolve} is a hit without a second CREATE.
  */
 public final class FakeAssets implements Assets {
     private final Set<String> availableTextures = new HashSet<String>();
@@ -20,10 +23,27 @@ public final class FakeAssets implements Assets {
     private final Map<String, FakeLoadHandle> handlesByKey = new HashMap<String, FakeLoadHandle>();
     private final List<Command> commands = new ArrayList<Command>();
     private final List<FakeLoadHandle> inFlight = new ArrayList<FakeLoadHandle>();
+    private final FakeTextures textures;
+
+    /** Standalone FakeAssets with no texture-cache merge. */
+    public FakeAssets() {
+        this(null);
+    }
+
+    /**
+     * Wire to a {@link FakeTextures} so TEXTURE COMPLETE merges into the same sync cache (AC4 Fake
+     * path).
+     */
+    public FakeAssets(FakeTextures textures) {
+        this.textures = textures;
+    }
 
     /** Marks an internal path as a loadable TEXTURE for later {@link #request} calls. */
     public void putTexture(String internalPath) {
         availableTextures.add(internalPath);
+        if (textures != null) {
+            textures.putTexture(internalPath);
+        }
     }
 
     /**
@@ -104,6 +124,9 @@ public final class FakeAssets implements Assets {
         }
         handle.state = LoadState.COMPLETE;
         handle.progress = 1f;
+        if (textures != null && handle.kind == AssetKind.TEXTURE) {
+            textures.cacheFromAsync(handle.path);
+        }
         commands.add(Command.complete(handle.path, handle.kind));
         inFlight.remove(handle);
         handle.fireTerminal();

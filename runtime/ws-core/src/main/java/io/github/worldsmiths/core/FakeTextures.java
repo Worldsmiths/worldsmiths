@@ -20,6 +20,17 @@ public final class FakeTextures implements Textures {
         available.add(internalPath);
     }
 
+    /**
+     * Merges an async TEXTURE complete into the sync cache (records {@code CREATE} once). Used by
+     * {@link FakeAssets} so {@link #resolve} after COMPLETE is a cache hit.
+     */
+    public void cacheFromAsync(String internalPath) {
+        available.add(internalPath);
+        if (cached.add(internalPath)) {
+            commands.add(Command.create(internalPath));
+        }
+    }
+
     @Override
     public void preload(String internalPath) {
         ensureCached(internalPath);

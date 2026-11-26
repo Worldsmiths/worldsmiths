@@ -6,8 +6,12 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.badlogic.gdx.graphics.GL20;
+import io.github.worldsmiths.core.AssetKind;
 import io.github.worldsmiths.core.EngineServices;
+import io.github.worldsmiths.core.FakeAssets;
 import io.github.worldsmiths.core.FakeEngineServices;
+import io.github.worldsmiths.core.LoadHandle;
+import io.github.worldsmiths.core.LoadState;
 import io.github.worldsmiths.core.Node;
 import io.github.worldsmiths.core.Scene;
 import io.github.worldsmiths.core.SceneWalk;
@@ -42,11 +46,53 @@ class DesktopGameListenerTest {
     @Test
     void updateAndRenderForwardToTheGameWithoutStartingLwjgl() {
         RecordingGame game = new RecordingGame();
-        DesktopGameListener listener = new DesktopGameListener(game);
+        FakeEngineServices fake = new FakeEngineServices();
+        DesktopGameListener listener = new DesktopGameListener(game, null, fake);
+        listener.create();
+        game.calls.clear();
 
         listener.updateAndRender(0.016f);
 
         assertEquals(Arrays.asList("update:0.016", "render"), game.calls);
+    }
+
+    @Test
+    void updateAndRenderPumpsAssetsBeforeGameUpdate() {
+        final LoadHandle[] observed = new LoadHandle[1];
+        WorldsmithsGame game =
+                new WorldsmithsGame() {
+                    private final Scene scene = new Scene("async");
+                    private EngineServices services;
+
+                    @Override
+                    public Scene createScene() {
+                        return scene;
+                    }
+
+                    @Override
+                    public void create(EngineServices services) {
+                        this.services = services;
+                        ((FakeAssets) services.assets()).putTexture("textures/heavy.png");
+                        observed[0] =
+                                services.assets().request("textures/heavy.png", AssetKind.TEXTURE);
+                    }
+
+                    @Override
+                    public void update(float delta) {
+                        assertEquals(LoadState.COMPLETE, observed[0].state());
+                    }
+
+                    @Override
+                    public void render() {}
+                };
+        FakeEngineServices fake = new FakeEngineServices();
+        DesktopGameListener listener = new DesktopGameListener(game, null, fake);
+        listener.create();
+        assertEquals(LoadState.QUEUED, observed[0].state());
+
+        listener.updateAndRender(0.016f);
+
+        assertEquals(LoadState.COMPLETE, observed[0].state());
     }
 
     @Test
