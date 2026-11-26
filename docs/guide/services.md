@@ -19,6 +19,7 @@ Package: `io.github.worldsmiths.core`.
 | `audio()` | [`Audio`](audio.md) | One-shot sound load / play / stop / dispose |
 | `ui()` | [`Ui`](ui.md) | Bitmap font load / draw / dispose |
 | `textures()` | [`Textures`](textures.md) | Sync preload / resolve; engine-owned cache |
+| `assets()` | [`Assets`](assets.md) | Async request → handle; merges TEXTURE into textures cache |
 | `log()` | [`Log`](log.md) | Portable debug / info / warn / error |
 | `uiKit()` | [`UiKit`](uikit.md) | Session widgets — layout, hit, focus, draw |
 | `extensions()` | `EngineServices.Extensions` | Empty stub; unused in D9 |
@@ -27,6 +28,7 @@ Package: `io.github.worldsmiths.core`.
 
 - `graphics().setTitle(...)` is best-effort; Android may ignore it.
 - Files on web = internal packaged only (see [Files](files.md)).
+- Async assets: hybrid backends (AssetManager on desktop/Android/iOS; cooperative on web) — see [Assets](assets.md).
 
 ## Tests
 

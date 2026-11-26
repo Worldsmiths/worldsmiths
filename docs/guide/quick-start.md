@@ -4,7 +4,7 @@ Minimal lifecycle with portable services. Snake and rollball are GDX-free (input
 
 1. Implement `WorldsmithsGame` with a no-arg constructor (launchers keep `new Game()`).
 2. Build a `Scene` in `createScene()`.
-3. Receive portable services in `create(EngineServices)` — store the bag; use `input()` / `clock()` / `graphics()` / `draw2d()` / `files()` / `thin3d()` / `audio()` / `ui()` / `textures()` / `log()`.
+3. Receive portable services in `create(EngineServices)` — store the bag; use `input()` / `clock()` / `graphics()` / `draw2d()` / `files()` / `thin3d()` / `audio()` / `ui()` / `textures()` / `assets()` / `log()`.
 4. Prefer engine facades over `com.badlogic.gdx` in game sources.
 
 ```java
@@ -44,4 +44,4 @@ public final class MyGame implements WorldsmithsGame {
 }
 ```
 
-Headless tests: pass `new FakeEngineServices()` into `create`. See [Services](services.md), [Input](input.md), [Clock](clock.md), [Graphics](graphics.md), [Draw2D](draw2d.md), [Files](files.md), [Thin3D](thin3d.md), [Audio](audio.md), [Ui](ui.md), [Textures](textures.md), [Log](log.md).
+Headless tests: pass `new FakeEngineServices()` into `create`. See [Services](services.md), [Input](input.md), [Clock](clock.md), [Graphics](graphics.md), [Draw2D](draw2d.md), [Files](files.md), [Thin3D](thin3d.md), [Audio](audio.md), [Ui](ui.md), [Textures](textures.md), [Assets](assets.md), [Log](log.md).
