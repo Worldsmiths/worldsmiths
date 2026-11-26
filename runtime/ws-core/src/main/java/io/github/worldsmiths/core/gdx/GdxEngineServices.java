@@ -20,21 +20,31 @@ import io.github.worldsmiths.core.ui.DefaultUiKit;
 import io.github.worldsmiths.core.ui.UiKit;
 
 /**
- * Factory for a GDX-backed {@link EngineServices} bag. Backends call {@link #create()} after the
- * LibGDX application is live. Games should not import this package — use the bag passed to
- * {@link io.github.worldsmiths.core.WorldsmithsGame#create(EngineServices)}.
+ * Factory for a GDX-backed {@link EngineServices} bag with a TeaVM-safe cooperative assets path.
+ * Web calls {@link #createCooperative()}. Desktop / Android / iOS use the separate JVM factory in
+ * this package so the threaded loader stack stays off the web-reachable call graph. Games should
+ * not import this package — use the bag passed to {@link
+ * io.github.worldsmiths.core.WorldsmithsGame#create(EngineServices)}.
  */
 public final class GdxEngineServices {
     private GdxEngineServices() {}
 
     /**
      * Assembles non-null Input/Clock/Graphics/Draw2D/Files/Thin3D/Audio/Ui/Textures/Log/Assets
-     * wrappers around {@code Gdx} statics. Sets Application log level to {@link
-     * Application#LOG_DEBUG} so author {@code debug} calls are visible on every backend.
+     * wrappers around {@code Gdx} statics with cooperative (≤1 open/pump) async assets. Sets
+     * Application log level to {@link Application#LOG_DEBUG} so author {@code debug} calls are
+     * visible on every backend. Used by the web listener.
      */
-    public static EngineServices create() {
+    public static EngineServices createCooperative() {
         GdxTextures textures = new GdxTextures();
-        GdxAssets assets = new GdxAssets(textures);
+        return bag(textures, new GdxAssets(textures));
+    }
+
+    /**
+     * Shared bag wiring for cooperative and JVM factories. Package-visible so the JVM-only factory
+     * can assemble an identical bag with a different assets backend.
+     */
+    static EngineServices bag(GdxTextures textures, GdxPumpableAssets assets) {
         return new Bag(
                 new GdxInput(),
                 new GdxClock(),
@@ -52,9 +62,16 @@ public final class GdxEngineServices {
     }
 
     /**
-     * Advances in-flight async loads for a bag from {@link #create()}, or a {@link FakeAssets} when
-     * tests inject {@link FakeEngineServices}. No-op for unknown bags. Call once per frame before
-     * {@code game.update}.
+     * Package-visible headless seam: cooperative assets instance (no Application / GL).
+     */
+    static Assets newCooperativeAssetsForTest(GdxTextures textures) {
+        return new GdxAssets(textures);
+    }
+
+    /**
+     * Advances in-flight async loads for a bag from {@link #createCooperative()} or the JVM
+     * factory, or a {@link FakeAssets} when tests inject {@link FakeEngineServices}. No-op for
+     * unknown bags. Call once per frame before {@code game.update}.
      */
     public static void pumpAssets(EngineServices services) {
         if (services instanceof Bag) {
@@ -73,9 +90,9 @@ public final class GdxEngineServices {
 
     /**
      * Sets {@link Application#LOG_DEBUG} on {@code appLogging} and returns a {@link GdxLog} over
-     * its sink. Package-visible headless seam: {@link #create()} calls this before bag assembly;
-     * unit tests inject a recording {@link AppLogging} without a live Application / GL (full {@link
-     * #create()} still needs GL for Draw2D).
+     * its sink. Package-visible headless seam: factories call this before bag assembly; unit tests
+     * inject a recording {@link AppLogging} without a live Application / GL (full bag create still
+     * needs GL for Draw2D).
      */
     static GdxLog createLog(AppLogging appLogging) {
         appLogging.setLogLevel(Application.LOG_DEBUG);
@@ -118,8 +135,8 @@ public final class GdxEngineServices {
 
     /**
      * Narrow Application logging seam: {@link #setLogLevel(int)} plus a {@link GdxLog.Sink}.
-     * Production {@link #create()} wraps {@code Gdx.app}; unit tests inject a recording stub via
-     * {@link #createLog(AppLogging)}.
+     * Production factories wrap {@code Gdx.app}; unit tests inject a recording stub via {@link
+     * #createLog(AppLogging)}.
      */
     interface AppLogging {
         void setLogLevel(int logLevel);
@@ -128,13 +145,13 @@ public final class GdxEngineServices {
     }
 
     /**
-     * Package-visible unwrap of the GDX texture cache from a bag created by {@link #create()}. Used
-     * by retained-scene draw so backends share the same preload/resolve cache as games.
+     * Package-visible unwrap of the GDX texture cache from a bag created by a GDX factory. Used by
+     * retained-scene draw so backends share the same preload/resolve cache as games.
      */
     static GdxTextures requireGdxTextures(EngineServices services) {
         if (!(services instanceof Bag)) {
             throw new IllegalArgumentException(
-                    "EngineServices must be created by GdxEngineServices.create()");
+                    "EngineServices must be created by a GdxEngineServices factory");
         }
         return ((Bag) services).gdxTextures;
     }
@@ -144,7 +161,7 @@ public final class GdxEngineServices {
      * Application / GL context. Only {@link EngineServices#textures()}, {@link
      * EngineServices#assets()}, and dispose/pump helpers are valid.
      */
-    static EngineServices bagForAssetsTest(GdxTextures textures, GdxAssets assets) {
+    static EngineServices bagForAssetsTest(GdxTextures textures, GdxPumpableAssets assets) {
         return new Bag(
                 null,
                 null,
@@ -163,7 +180,7 @@ public final class GdxEngineServices {
 
     /**
      * Disposes in-flight async loads then the engine-owned texture cache when {@code services} was
-     * assembled by {@link #create()}. No-op for Fake / injected bags. Call from backend listener
+     * assembled by a GDX factory. No-op for Fake / injected bags. Call from backend listener
      * teardown after the scene renderer shuts down.
      */
     public static void disposeTextures(EngineServices services) {
@@ -183,7 +200,7 @@ public final class GdxEngineServices {
         private final Audio audio;
         private final Ui ui;
         private final GdxTextures gdxTextures;
-        private final GdxAssets gdxAssets;
+        private final GdxPumpableAssets gdxAssets;
         private final Log log;
         private final UiKit uiKit;
         private final Extensions extensions;
@@ -198,7 +215,7 @@ public final class GdxEngineServices {
                 Audio audio,
                 Ui ui,
                 GdxTextures gdxTextures,
-                GdxAssets gdxAssets,
+                GdxPumpableAssets gdxAssets,
                 Log log,
                 UiKit uiKit,
                 Extensions extensions) {

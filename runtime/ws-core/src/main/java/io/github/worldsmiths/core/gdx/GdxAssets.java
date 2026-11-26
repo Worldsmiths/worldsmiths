@@ -1,7 +1,6 @@
 package io.github.worldsmiths.core.gdx;
 
 import io.github.worldsmiths.core.AssetKind;
-import io.github.worldsmiths.core.Assets;
 import io.github.worldsmiths.core.LoadHandle;
 import io.github.worldsmiths.core.LoadState;
 import java.util.ArrayList;
@@ -10,12 +9,13 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * GDX-backed {@link Assets} with a cooperative per-frame pump. TEXTURE loads open via the shared
- * {@link GdxTextures} opener on {@link #pump()} (≤1 open per pump), then merge into the same texture
- * cache. No {@code Thread} / {@code AsyncExecutor} — safe for TeaVM/web. Not part of the
- * author-facing API — backends assemble this via {@link GdxEngineServices}.
+ * Cooperative GDX-backed assets for TeaVM/web (and headless tests that inject a {@link
+ * GdxTextures.TextureOpener}). TEXTURE loads open via the shared {@link GdxTextures} opener on
+ * {@link #pump()} (≤1 open per pump), then merge into the same texture cache. No {@code Thread} or
+ * threaded loader stack — safe for the web-reachable call graph. Not part of the author-facing API
+ * — backends assemble this via {@link GdxEngineServices#createCooperative()}.
  */
-final class GdxAssets implements Assets {
+final class GdxAssets implements GdxPumpableAssets {
     private final GdxTextures textures;
     private final Map<String, GdxLoadHandle> handlesByKey = new HashMap<String, GdxLoadHandle>();
     private final List<GdxLoadHandle> inFlight = new ArrayList<GdxLoadHandle>();
@@ -60,7 +60,8 @@ final class GdxAssets implements Assets {
      * Advances at most one in-flight TEXTURE open this frame, merges into {@link GdxTextures} on
      * success, and fires terminal listeners. Called once per frame before {@code game.update}.
      */
-    void pump() {
+    @Override
+    public void pump() {
         if (disposed) {
             return;
         }
@@ -90,7 +91,8 @@ final class GdxAssets implements Assets {
     }
 
     /** Tears down in-flight loads safely. Idempotent. */
-    void dispose() {
+    @Override
+    public void dispose() {
         if (disposed) {
             return;
         }
@@ -133,68 +135,5 @@ final class GdxAssets implements Assets {
 
     private static String handleKey(AssetKind kind, String path) {
         return kind + "\0" + path;
-    }
-
-    private static final class GdxLoadHandle implements LoadHandle {
-        private final String path;
-        private final AssetKind kind;
-        private LoadState state;
-        private float progress;
-        private String failureMessage;
-        private final List<Runnable> terminalListeners = new ArrayList<Runnable>();
-        private boolean terminalFired;
-
-        GdxLoadHandle(String path, AssetKind kind) {
-            this.path = path;
-            this.kind = kind;
-        }
-
-        @Override
-        public String path() {
-            return path;
-        }
-
-        @Override
-        public AssetKind kind() {
-            return kind;
-        }
-
-        @Override
-        public LoadState state() {
-            return state;
-        }
-
-        @Override
-        public float progress() {
-            return progress;
-        }
-
-        @Override
-        public String failureMessage() {
-            return failureMessage;
-        }
-
-        @Override
-        public void onTerminal(Runnable listener) {
-            if (listener == null) {
-                return;
-            }
-            if (terminalFired) {
-                listener.run();
-                return;
-            }
-            terminalListeners.add(listener);
-        }
-
-        void fireTerminal() {
-            if (terminalFired) {
-                return;
-            }
-            terminalFired = true;
-            for (Runnable listener : terminalListeners) {
-                listener.run();
-            }
-            terminalListeners.clear();
-        }
     }
 }

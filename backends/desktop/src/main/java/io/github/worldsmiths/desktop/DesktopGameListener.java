@@ -7,6 +7,7 @@ import io.github.worldsmiths.core.EngineServices;
 import io.github.worldsmiths.core.Scene;
 import io.github.worldsmiths.core.WorldsmithsGame;
 import io.github.worldsmiths.core.gdx.GdxEngineServices;
+import io.github.worldsmiths.core.gdx.GdxJvmEngineServices;
 import io.github.worldsmiths.core.gdx.GdxRetainedSceneDraw;
 
 /**
@@ -60,7 +61,9 @@ public final class DesktopGameListener implements ApplicationListener {
         scene = game.createScene();
         // Backends assemble the portable bag after Application start (GDX live).
         services =
-                engineServicesOverride != null ? engineServicesOverride : GdxEngineServices.create();
+                engineServicesOverride != null
+                        ? engineServicesOverride
+                        : GdxJvmEngineServices.create();
         game.create(services);
     }
 

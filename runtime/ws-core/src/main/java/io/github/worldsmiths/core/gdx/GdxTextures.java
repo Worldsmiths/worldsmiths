@@ -19,6 +19,8 @@ import java.util.Set;
 final class GdxTextures implements Textures {
     private final Map<String, LoadedTexture> cache = new HashMap<String, LoadedTexture>();
     private final Set<String> asyncInFlight = new HashSet<String>();
+    /** Paths whose GPU lifetime is owned by AssetManager / external queue — skip in {@link #dispose()}. */
+    private final Set<String> externallyOwned = new HashSet<String>();
     private final TextureOpener opener;
 
     GdxTextures() {
@@ -109,7 +111,7 @@ final class GdxTextures implements Textures {
 
     /**
      * Merges an async-loaded texture into the sync cache (no second open). Clears the in-flight
-     * mark for {@code internalPath}.
+     * mark for {@code internalPath}. Engine owns dispose of {@code loaded}.
      */
     void putFromAsync(String internalPath, LoadedTexture loaded) {
         if (loaded == null) {
@@ -122,14 +124,41 @@ final class GdxTextures implements Textures {
     }
 
     /**
-     * Disposes every cached managed texture and clears the cache. Idempotent — safe at listener /
-     * bag teardown. Engine-owned; authors do not call this.
+     * Merges an AssetManager-owned texture into the sync cache without taking GPU dispose
+     * ownership. {@link #dispose()} will not call {@link LoadedTexture#dispose()} for this key —
+     * callers must {@link #evictWithoutDispose(String)} before the AssetManager tears down.
+     */
+    void putFromAsyncManagedExternally(String internalPath, LoadedTexture loaded) {
+        if (loaded == null) {
+            return;
+        }
+        if (!cache.containsKey(internalPath)) {
+            cache.put(internalPath, loaded);
+            externallyOwned.add(internalPath);
+        }
+        asyncInFlight.remove(internalPath);
+    }
+
+    /** Removes a cache entry without disposing the underlying GPU resource. */
+    void evictWithoutDispose(String internalPath) {
+        cache.remove(internalPath);
+        externallyOwned.remove(internalPath);
+        asyncInFlight.remove(internalPath);
+    }
+
+    /**
+     * Disposes every engine-owned cached texture and clears the cache. Externally (AssetManager)
+     * owned entries are removed without a second dispose. Idempotent — safe at listener / bag
+     * teardown. Engine-owned; authors do not call this.
      */
     void dispose() {
-        for (LoadedTexture loaded : cache.values()) {
-            loaded.dispose();
+        for (Map.Entry<String, LoadedTexture> entry : cache.entrySet()) {
+            if (!externallyOwned.contains(entry.getKey())) {
+                entry.getValue().dispose();
+            }
         }
         cache.clear();
+        externallyOwned.clear();
         asyncInFlight.clear();
     }
 

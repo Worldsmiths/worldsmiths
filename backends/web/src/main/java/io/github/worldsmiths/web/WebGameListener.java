@@ -60,7 +60,9 @@ public final class WebGameListener implements ApplicationListener {
         scene = game.createScene();
         // Backends assemble the portable bag after Application start (GDX live).
         services =
-                engineServicesOverride != null ? engineServicesOverride : GdxEngineServices.create();
+                engineServicesOverride != null
+                        ? engineServicesOverride
+                        : GdxEngineServices.createCooperative();
         game.create(services);
     }
 
