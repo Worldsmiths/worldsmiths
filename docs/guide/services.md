@@ -18,6 +18,7 @@ Package: `io.github.worldsmiths.core`.
 | `thin3d()` | [`Thin3D`](thin3d.md) | Camera, lights, primitive meshes, batch |
 | `audio()` | [`Audio`](audio.md) | One-shot sound load / play / stop / dispose |
 | `ui()` | [`Ui`](ui.md) | Bitmap font load / draw / dispose |
+| `textures()` | [`Textures`](textures.md) | Sync preload / resolve; engine-owned cache |
 | `uiKit()` | [`UiKit`](uikit.md) | Session widgets — layout, hit, focus, draw |
 | `extensions()` | `EngineServices.Extensions` | Empty stub; unused in D9 |
 

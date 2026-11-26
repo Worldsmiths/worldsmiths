@@ -63,7 +63,28 @@ final class GdxTextures implements Textures {
      * @throws EngineException if the path is missing or cannot be loaded
      */
     Texture require(String internalPath) {
-        return ensureCached(internalPath).gdxTexture();
+        return requireLoaded(internalPath).gdxTexture();
+    }
+
+    /**
+     * Returns the cached {@link LoadedTexture} for {@code internalPath}, loading on miss. Package-
+     * visible so tests can assert cache identity without a live GL {@link Texture}.
+     *
+     * @throws EngineException if the path is missing or cannot be loaded
+     */
+    LoadedTexture requireLoaded(String internalPath) {
+        return ensureCached(internalPath);
+    }
+
+    /**
+     * Disposes every cached managed texture and clears the cache. Idempotent — safe at listener /
+     * bag teardown. Engine-owned; authors do not call this.
+     */
+    void dispose() {
+        for (LoadedTexture loaded : cache.values()) {
+            loaded.dispose();
+        }
+        cache.clear();
     }
 
     private LoadedTexture ensureCached(String internalPath) {

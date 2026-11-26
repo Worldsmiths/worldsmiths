@@ -1,12 +1,15 @@
 package io.github.worldsmiths.core.gdx;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.badlogic.gdx.graphics.Texture;
 import io.github.worldsmiths.core.EngineException;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.Test;
@@ -110,6 +113,48 @@ class GdxTexturesTest {
                         });
 
         textures.preload("hero.png");
-        assertEquals(null, textures.require("hero.png"));
+        // Same LoadedTexture instance preload put in the cache (not a null==null vacuous pass).
+        assertSame(stub, textures.requireLoaded("hero.png"));
+        assertSame(stub.gdxTexture(), textures.require("hero.png"));
+    }
+
+    @Test
+    void disposeDisposesCachedTexturesAndClearsCache() {
+        final List<String> disposed = new ArrayList<String>();
+        final AtomicInteger opens = new AtomicInteger();
+        GdxTextures textures =
+                new GdxTextures(
+                        new GdxTextures.TextureOpener() {
+                            @Override
+                            public GdxTextures.LoadedTexture open(String path) {
+                                opens.incrementAndGet();
+                                final String key = path;
+                                return new GdxTextures.LoadedTexture() {
+                                    @Override
+                                    public Texture gdxTexture() {
+                                        return null;
+                                    }
+
+                                    @Override
+                                    public void dispose() {
+                                        disposed.add(key);
+                                    }
+                                };
+                            }
+                        });
+
+        textures.preload("hero.png");
+        textures.preload("tile.png");
+        assertEquals(2, opens.get());
+
+        textures.dispose();
+        textures.dispose(); // idempotent — second call must not dispose again
+
+        assertEquals(2, disposed.size());
+        assertTrue(disposed.contains("hero.png"));
+        assertTrue(disposed.contains("tile.png"));
+
+        textures.preload("hero.png");
+        assertEquals(3, opens.get());
     }
 }

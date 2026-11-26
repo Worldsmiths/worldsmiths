@@ -23,6 +23,7 @@ public final class AndroidGameListener implements ApplicationListener {
     private final WorldsmithsGame game;
     /** Non-null only when tests inject a headless bag; production leaves this null. */
     private final EngineServices engineServicesOverride;
+    private EngineServices services;
     private Scene scene;
     private SceneShapeRenderer sceneRenderer;
 
@@ -56,7 +57,7 @@ public final class AndroidGameListener implements ApplicationListener {
     public void create() {
         scene = game.createScene();
         // Backends assemble the portable bag after Application start (GDX live).
-        EngineServices services =
+        services =
                 engineServicesOverride != null ? engineServicesOverride : GdxEngineServices.create();
         game.create(services);
     }
@@ -114,6 +115,7 @@ public final class AndroidGameListener implements ApplicationListener {
         if (sceneRenderer != null) {
             sceneRenderer.dispose();
         }
+        GdxEngineServices.disposeTextures(services);
     }
 
     private static void clearScreen() {
