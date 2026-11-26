@@ -60,7 +60,7 @@ Paths use forward slashes and match how assets are packaged (typically under the
 
 On `TEXTURE` `COMPLETE`, the backend merges into the same engine-owned texture cache that [`textures()`](textures.md) uses. After complete, `textures().resolve(path)` is a cache hit — no second FileHandle open/decode.
 
-While a key is in-flight (async request not yet terminal), retained scene draw **skips** that sprite — it does **not** fall back to a sync FileHandle→Texture hitch for that key.
+While a key is in-flight (async request not yet terminal), retained scene draw **skips** that sprite — it does **not** fall back to a sync FileHandle→Texture hitch for that key. Sync `textures().preload` / `resolve` for that same key also fail-closed with `EngineException` (message notes async load in flight) — backends reject a sync open that would dual-load.
 
 ## Fail vs sync throw
 
