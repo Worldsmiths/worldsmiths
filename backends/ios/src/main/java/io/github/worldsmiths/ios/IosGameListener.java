@@ -119,6 +119,7 @@ public final class IosGameListener implements ApplicationListener {
         if (sceneRenderer != null) {
             sceneRenderer.dispose();
         }
+        GdxEngineServices.disposeTextures(services);
     }
 
     private static void clearScreen() {

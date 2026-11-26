@@ -52,6 +52,17 @@ public final class GdxEngineServices {
         return ((Bag) services).gdxTextures;
     }
 
+    /**
+     * Disposes the engine-owned texture cache when {@code services} was assembled by {@link
+     * #create()}. No-op for Fake / injected bags. Call from backend listener teardown after the
+     * scene renderer shuts down.
+     */
+    public static void disposeTextures(EngineServices services) {
+        if (services instanceof Bag) {
+            ((Bag) services).gdxTextures.dispose();
+        }
+    }
+
     private static final class Bag implements EngineServices {
         private final Input input;
         private final Clock clock;

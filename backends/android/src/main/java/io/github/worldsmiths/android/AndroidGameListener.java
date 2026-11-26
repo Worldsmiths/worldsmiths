@@ -119,6 +119,7 @@ public final class AndroidGameListener implements ApplicationListener {
         if (sceneRenderer != null) {
             sceneRenderer.dispose();
         }
+        GdxEngineServices.disposeTextures(services);
     }
 
     private static void clearScreen() {
