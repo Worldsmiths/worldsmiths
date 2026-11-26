@@ -2,6 +2,7 @@ package io.github.worldsmiths.core.gdx;
 
 import com.badlogic.gdx.Application;
 import com.badlogic.gdx.Gdx;
+import io.github.worldsmiths.core.Assets;
 import io.github.worldsmiths.core.Audio;
 import io.github.worldsmiths.core.Clock;
 import io.github.worldsmiths.core.Draw2D;
@@ -218,6 +219,12 @@ public final class GdxEngineServices {
         @Override
         public Log log() {
             return log;
+        }
+
+        @Override
+        public Assets assets() {
+            // T1 temporary stub until T2 wires GdxAssets.
+            throw new UnsupportedOperationException("GdxAssets not wired yet (T2)");
         }
 
         @Override

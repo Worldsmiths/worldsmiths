@@ -46,6 +46,12 @@ public interface EngineServices {
      */
     Log log();
 
+    /**
+     * Async packaged-asset load facade ({@link Assets#request}). Fake bags wire a recording {@link
+     * FakeAssets}; the GDX bag wires a platform-backed impl when assembled.
+     */
+    Assets assets();
+
     /** Unused in D9 — empty stub for a future plugin/ECS escape hatch. */
     Extensions extensions();
 

@@ -2,7 +2,7 @@ package io.github.worldsmiths.core;
 
 /**
  * Sync texture load/cache from packaged <strong>internal</strong> paths. No LibGDX types in the
- * contract. Async / AssetManager loading is out of scope.
+ * contract. Async loading is available via {@link EngineServices#assets()} ({@link Assets}).
  *
  * <p>Missing or unloadable paths throw {@link EngineException} (unchecked). {@link #preload} and
  * {@link #resolve} are idempotent — repeated calls for the same key hit the engine-owned cache.
