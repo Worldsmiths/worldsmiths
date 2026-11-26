@@ -34,6 +34,9 @@ public interface EngineServices {
     /** Bitmap font load/draw from packaged internal paths. */
     Ui ui();
 
+    /** Sync texture load/cache from packaged internal paths. */
+    Textures textures();
+
     /** Session widget toolkit (layout, hit, focus, draw). */
     UiKit uiKit();
 
