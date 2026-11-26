@@ -38,6 +38,8 @@ public final class SpritesGame implements WorldsmithsGame {
         adoptLoadedScene(loaded);
         preloadDistinctTextureKeys(services, scene);
         services.graphics().setTitle("Sprites");
+        services.log().info("Sprites scene loaded (" + scene.nodes.size() + " nodes)");
+        services.log().warn("Sprites demo: textured draw is backend-owned; no per-frame updates");
     }
 
     @Override

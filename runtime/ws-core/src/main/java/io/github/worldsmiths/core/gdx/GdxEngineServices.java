@@ -1,5 +1,7 @@
 package io.github.worldsmiths.core.gdx;
 
+import com.badlogic.gdx.Application;
+import com.badlogic.gdx.Gdx;
 import io.github.worldsmiths.core.Audio;
 import io.github.worldsmiths.core.Clock;
 import io.github.worldsmiths.core.Draw2D;
@@ -7,6 +9,7 @@ import io.github.worldsmiths.core.EngineServices;
 import io.github.worldsmiths.core.Files;
 import io.github.worldsmiths.core.Graphics;
 import io.github.worldsmiths.core.Input;
+import io.github.worldsmiths.core.Log;
 import io.github.worldsmiths.core.Textures;
 import io.github.worldsmiths.core.Ui;
 import io.github.worldsmiths.core.thin3d.Thin3D;
@@ -22,8 +25,9 @@ public final class GdxEngineServices {
     private GdxEngineServices() {}
 
     /**
-     * Assembles non-null Input/Clock/Graphics/Draw2D/Files/Thin3D/Audio/Ui/Textures wrappers around
-     * {@code Gdx} statics.
+     * Assembles non-null Input/Clock/Graphics/Draw2D/Files/Thin3D/Audio/Ui/Textures/Log wrappers
+     * around {@code Gdx} statics. Sets Application log level to {@link Application#LOG_DEBUG} so
+     * author {@code debug} calls are visible on every backend.
      */
     public static EngineServices create() {
         return new Bag(
@@ -36,8 +40,65 @@ public final class GdxEngineServices {
                 new GdxAudio(),
                 new GdxUi(),
                 new GdxTextures(),
+                createLog(gdxAppLogging()),
                 new DefaultUiKit(),
                 new EngineServices.Extensions());
+    }
+
+    /**
+     * Sets {@link Application#LOG_DEBUG} on {@code appLogging} and returns a {@link GdxLog} over
+     * its sink. Package-visible headless seam: {@link #create()} calls this before bag assembly;
+     * unit tests inject a recording {@link AppLogging} without a live Application / GL (full {@link
+     * #create()} still needs GL for Draw2D).
+     */
+    static GdxLog createLog(AppLogging appLogging) {
+        appLogging.setLogLevel(Application.LOG_DEBUG);
+        return new GdxLog(appLogging.sink());
+    }
+
+    private static AppLogging gdxAppLogging() {
+        return new AppLogging() {
+            @Override
+            public void setLogLevel(int logLevel) {
+                Gdx.app.setLogLevel(logLevel);
+            }
+
+            @Override
+            public GdxLog.Sink sink() {
+                return new GdxLog.Sink() {
+                    @Override
+                    public void debug(String tag, String message) {
+                        Gdx.app.debug(tag, message);
+                    }
+
+                    @Override
+                    public void log(String tag, String message) {
+                        Gdx.app.log(tag, message);
+                    }
+
+                    @Override
+                    public void error(String tag, String message) {
+                        Gdx.app.error(tag, message);
+                    }
+
+                    @Override
+                    public void error(String tag, String message, Throwable exception) {
+                        Gdx.app.error(tag, message, exception);
+                    }
+                };
+            }
+        };
+    }
+
+    /**
+     * Narrow Application logging seam: {@link #setLogLevel(int)} plus a {@link GdxLog.Sink}.
+     * Production {@link #create()} wraps {@code Gdx.app}; unit tests inject a recording stub via
+     * {@link #createLog(AppLogging)}.
+     */
+    interface AppLogging {
+        void setLogLevel(int logLevel);
+
+        GdxLog.Sink sink();
     }
 
     /**
@@ -73,6 +134,7 @@ public final class GdxEngineServices {
         private final Audio audio;
         private final Ui ui;
         private final GdxTextures gdxTextures;
+        private final Log log;
         private final UiKit uiKit;
         private final Extensions extensions;
 
@@ -86,6 +148,7 @@ public final class GdxEngineServices {
                 Audio audio,
                 Ui ui,
                 GdxTextures gdxTextures,
+                Log log,
                 UiKit uiKit,
                 Extensions extensions) {
             this.input = input;
@@ -97,6 +160,7 @@ public final class GdxEngineServices {
             this.audio = audio;
             this.ui = ui;
             this.gdxTextures = gdxTextures;
+            this.log = log;
             this.uiKit = uiKit;
             this.extensions = extensions;
         }
@@ -149,6 +213,11 @@ public final class GdxEngineServices {
         @Override
         public UiKit uiKit() {
             return uiKit;
+        }
+
+        @Override
+        public Log log() {
+            return log;
         }
 
         @Override

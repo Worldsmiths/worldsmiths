@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import io.github.worldsmiths.core.FakeEngineServices;
+import io.github.worldsmiths.core.FakeLog;
 import io.github.worldsmiths.core.FakeTextures;
 import io.github.worldsmiths.core.RectDraw;
 import io.github.worldsmiths.core.Scene;
@@ -63,6 +64,26 @@ class SpritesGameTest {
         Sprite plain = retained.nodes.get(2).get(Sprite.class);
         assertNotNull(plain);
         assertTrue(plain.texture == null || plain.texture.isEmpty());
+    }
+
+    @Test
+    void createEmitsAtLeastTwoDistinctLogLevelsViaServicesLog() {
+        FakeEngineServices services = new FakeEngineServices();
+        services.files().putInternal("scenes/demo.json", DEMO_SCENE_JSON);
+        services.textures().putTexture("hero.png");
+        services.textures().putTexture("coin.png");
+
+        SpritesGame game = new SpritesGame();
+        game.createScene();
+        game.create(services);
+
+        Set<FakeLog.Command.Level> levels = new HashSet<FakeLog.Command.Level>();
+        for (FakeLog.Command cmd : services.log().commands()) {
+            levels.add(cmd.level);
+        }
+        assertTrue(
+                levels.size() >= 2,
+                "expected ≥2 distinct log levels via services.log(), got " + levels);
     }
 
     @Test
