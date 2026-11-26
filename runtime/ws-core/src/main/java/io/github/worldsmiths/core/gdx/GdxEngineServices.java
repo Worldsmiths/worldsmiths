@@ -5,6 +5,7 @@ import com.badlogic.gdx.Gdx;
 import io.github.worldsmiths.core.Assets;
 import io.github.worldsmiths.core.Audio;
 import io.github.worldsmiths.core.Clock;
+import io.github.worldsmiths.core.DefaultScenes;
 import io.github.worldsmiths.core.Draw2D;
 import io.github.worldsmiths.core.EngineServices;
 import io.github.worldsmiths.core.FakeAssets;
@@ -13,6 +14,7 @@ import io.github.worldsmiths.core.Files;
 import io.github.worldsmiths.core.Graphics;
 import io.github.worldsmiths.core.Input;
 import io.github.worldsmiths.core.Log;
+import io.github.worldsmiths.core.Scenes;
 import io.github.worldsmiths.core.Textures;
 import io.github.worldsmiths.core.Ui;
 import io.github.worldsmiths.core.thin3d.Thin3D;
@@ -30,7 +32,7 @@ public final class GdxEngineServices {
     private GdxEngineServices() {}
 
     /**
-     * Assembles non-null Input/Clock/Graphics/Draw2D/Files/Thin3D/Audio/Ui/Textures/Log/Assets
+     * Assembles non-null Input/Clock/Graphics/Draw2D/Files/Thin3D/Audio/Ui/Textures/Log/Assets/Scenes
      * wrappers around {@code Gdx} statics with cooperative (≤1 open/pump) async assets. Sets
      * Application log level to {@link Application#LOG_DEBUG} so author {@code debug} calls are
      * visible on every backend. Used by the web listener.
@@ -45,12 +47,13 @@ public final class GdxEngineServices {
      * can assemble an identical bag with a different assets backend.
      */
     static EngineServices bag(GdxTextures textures, GdxPumpableAssets assets) {
+        GdxFiles files = new GdxFiles();
         return new Bag(
                 new GdxInput(),
                 new GdxClock(),
                 new GdxGraphics(),
                 new GdxDraw2D(),
-                new GdxFiles(),
+                files,
                 new GdxThin3D(),
                 new GdxAudio(),
                 new GdxUi(),
@@ -58,6 +61,7 @@ public final class GdxEngineServices {
                 assets,
                 createLog(gdxAppLogging()),
                 new DefaultUiKit(),
+                new DefaultScenes(files, textures),
                 new EngineServices.Extensions());
     }
 
@@ -175,6 +179,7 @@ public final class GdxEngineServices {
                 assets,
                 null,
                 null,
+                null,
                 new EngineServices.Extensions());
     }
 
@@ -203,6 +208,7 @@ public final class GdxEngineServices {
         private final GdxPumpableAssets gdxAssets;
         private final Log log;
         private final UiKit uiKit;
+        private final Scenes scenes;
         private final Extensions extensions;
 
         Bag(
@@ -218,6 +224,7 @@ public final class GdxEngineServices {
                 GdxPumpableAssets gdxAssets,
                 Log log,
                 UiKit uiKit,
+                Scenes scenes,
                 Extensions extensions) {
             this.input = input;
             this.clock = clock;
@@ -231,6 +238,7 @@ public final class GdxEngineServices {
             this.gdxAssets = gdxAssets;
             this.log = log;
             this.uiKit = uiKit;
+            this.scenes = scenes;
             this.extensions = extensions;
         }
 
@@ -292,6 +300,11 @@ public final class GdxEngineServices {
         @Override
         public Assets assets() {
             return gdxAssets;
+        }
+
+        @Override
+        public Scenes scenes() {
+            return scenes;
         }
 
         @Override

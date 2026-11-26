@@ -27,6 +27,7 @@ class EngineServicesTest {
         assertNotNull(services.uiKit());
         assertNotNull(services.log());
         assertNotNull(services.assets());
+        assertNotNull(services.scenes());
         assertNotNull(services.extensions());
         assertSame(services.input(), services.input());
         assertSame(services.clock(), services.clock());
@@ -40,7 +41,9 @@ class EngineServicesTest {
         assertSame(services.uiKit(), services.uiKit());
         assertSame(services.log(), services.log());
         assertSame(services.assets(), services.assets());
+        assertSame(services.scenes(), services.scenes());
         assertTrue(services.assets() instanceof FakeAssets);
+        assertTrue(services.scenes() instanceof FakeScenes);
     }
 
     @Test

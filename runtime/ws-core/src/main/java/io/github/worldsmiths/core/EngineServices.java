@@ -5,8 +5,8 @@ import io.github.worldsmiths.core.ui.UiKit;
 
 /**
  * Services bag passed to {@link WorldsmithsGame#create(EngineServices)}. Fixed getters cover the D9
- * floor systems plus jam audio/ui; {@link #extensions()} is an unused stub reserved for plugins/ECS
- * later.
+ * floor systems plus jam audio/ui, async {@link #assets()}, and replace-only {@link #scenes()};
+ * {@link #extensions()} is an unused stub reserved for plugins/ECS later.
  *
  * <p>Every getter returns a non-null instance once {@code create} runs. Tests supply
  * {@link FakeEngineServices}; backends assemble GDX-backed impls.
@@ -51,6 +51,13 @@ public interface EngineServices {
      * FakeAssets}; the GDX bag wires a platform-backed impl when assembled.
      */
     Assets assets();
+
+    /**
+     * Replace-only scene flow ({@link Scenes#load} / {@link Scenes#switchTo} / {@link
+     * Scenes#unload} / {@link Scenes#current}). Fake bags wire a recording {@link FakeScenes}; the
+     * GDX bag wires a platform-backed impl when assembled.
+     */
+    Scenes scenes();
 
     /** Unused in D9 — empty stub for a future plugin/ECS escape hatch. */
     Extensions extensions();
