@@ -1,9 +1,9 @@
 package io.github.worldsmiths.web;
 
 /**
- * One filled-rect draw mapped from a core {@link io.github.worldsmiths.core.RectDraw} for
- * ShapeRenderer / recording. Package-visible so unit tests can assert adapter output without
- * starting TeaVM.
+ * One filled-rect or textured-quad draw mapped from a core {@link
+ * io.github.worldsmiths.core.RectDraw} for ShapeRenderer / SpriteBatch / recording. Package-visible
+ * so unit tests can assert adapter output without starting TeaVM.
  */
 final class ShapeDrawCommand {
 
@@ -15,9 +15,19 @@ final class ShapeDrawCommand {
     final float g;
     final float b;
     final float a;
+    /** Non-blank texture key, or null for a colored rect. */
+    final String textureKey;
 
     ShapeDrawCommand(
-            float x, float y, float width, float height, float r, float g, float b, float a) {
+            float x,
+            float y,
+            float width,
+            float height,
+            float r,
+            float g,
+            float b,
+            float a,
+            String textureKey) {
         this.x = x;
         this.y = y;
         this.width = width;
@@ -26,5 +36,6 @@ final class ShapeDrawCommand {
         this.g = g;
         this.b = b;
         this.a = a;
+        this.textureKey = textureKey;
     }
 }

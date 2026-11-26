@@ -23,6 +23,7 @@ class EngineServicesTest {
         assertNotNull(services.thin3d());
         assertNotNull(services.audio());
         assertNotNull(services.ui());
+        assertNotNull(services.textures());
         assertNotNull(services.uiKit());
         assertNotNull(services.extensions());
         assertSame(services.input(), services.input());
@@ -33,6 +34,7 @@ class EngineServicesTest {
         assertSame(services.thin3d(), services.thin3d());
         assertSame(services.audio(), services.audio());
         assertSame(services.ui(), services.ui());
+        assertSame(services.textures(), services.textures());
         assertSame(services.uiKit(), services.uiKit());
     }
 

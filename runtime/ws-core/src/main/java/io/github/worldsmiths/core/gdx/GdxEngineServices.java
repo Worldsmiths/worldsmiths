@@ -7,6 +7,7 @@ import io.github.worldsmiths.core.EngineServices;
 import io.github.worldsmiths.core.Files;
 import io.github.worldsmiths.core.Graphics;
 import io.github.worldsmiths.core.Input;
+import io.github.worldsmiths.core.Textures;
 import io.github.worldsmiths.core.Ui;
 import io.github.worldsmiths.core.thin3d.Thin3D;
 import io.github.worldsmiths.core.ui.DefaultUiKit;
@@ -21,8 +22,8 @@ public final class GdxEngineServices {
     private GdxEngineServices() {}
 
     /**
-     * Assembles non-null Input/Clock/Graphics/Draw2D/Files/Thin3D/Audio/Ui wrappers around {@code
-     * Gdx} statics.
+     * Assembles non-null Input/Clock/Graphics/Draw2D/Files/Thin3D/Audio/Ui/Textures wrappers around
+     * {@code Gdx} statics.
      */
     public static EngineServices create() {
         return new Bag(
@@ -34,8 +35,32 @@ public final class GdxEngineServices {
                 new GdxThin3D(),
                 new GdxAudio(),
                 new GdxUi(),
+                new GdxTextures(),
                 new DefaultUiKit(),
                 new EngineServices.Extensions());
+    }
+
+    /**
+     * Package-visible unwrap of the GDX texture cache from a bag created by {@link #create()}. Used
+     * by retained-scene draw so backends share the same preload/resolve cache as games.
+     */
+    static GdxTextures requireGdxTextures(EngineServices services) {
+        if (!(services instanceof Bag)) {
+            throw new IllegalArgumentException(
+                    "EngineServices must be created by GdxEngineServices.create()");
+        }
+        return ((Bag) services).gdxTextures;
+    }
+
+    /**
+     * Disposes the engine-owned texture cache when {@code services} was assembled by {@link
+     * #create()}. No-op for Fake / injected bags. Call from backend listener teardown after the
+     * scene renderer shuts down.
+     */
+    public static void disposeTextures(EngineServices services) {
+        if (services instanceof Bag) {
+            ((Bag) services).gdxTextures.dispose();
+        }
     }
 
     private static final class Bag implements EngineServices {
@@ -47,6 +72,7 @@ public final class GdxEngineServices {
         private final Thin3D thin3d;
         private final Audio audio;
         private final Ui ui;
+        private final GdxTextures gdxTextures;
         private final UiKit uiKit;
         private final Extensions extensions;
 
@@ -59,6 +85,7 @@ public final class GdxEngineServices {
                 Thin3D thin3d,
                 Audio audio,
                 Ui ui,
+                GdxTextures gdxTextures,
                 UiKit uiKit,
                 Extensions extensions) {
             this.input = input;
@@ -69,6 +96,7 @@ public final class GdxEngineServices {
             this.thin3d = thin3d;
             this.audio = audio;
             this.ui = ui;
+            this.gdxTextures = gdxTextures;
             this.uiKit = uiKit;
             this.extensions = extensions;
         }
@@ -111,6 +139,11 @@ public final class GdxEngineServices {
         @Override
         public Ui ui() {
             return ui;
+        }
+
+        @Override
+        public Textures textures() {
+            return gdxTextures;
         }
 
         @Override

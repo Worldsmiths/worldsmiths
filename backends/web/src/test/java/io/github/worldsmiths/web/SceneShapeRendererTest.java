@@ -71,8 +71,8 @@ class SceneShapeRendererTest {
     }
 
     @Test
-    void renderMapsCoreWalkRectsIntoLastDrawCommands() {
-        Sprite sprite = new Sprite("ignored.png");
+    void renderMapsTexturedWalkCommandIncludingTextureKey() {
+        Sprite sprite = new Sprite("hero.png");
         sprite.r = 0.2f;
         sprite.g = 0.4f;
         sprite.b = 0.6f;
@@ -84,7 +84,9 @@ class SceneShapeRendererTest {
 
         List<RectDraw> expected = SceneWalk.collectDrawCommands(scene);
         List<ShapeDrawCommand> actual = renderer.lastDrawCommands();
-        assertEquals(expected.size(), actual.size());
+        assertEquals(1, actual.size());
+        assertEquals("hero.png", expected.get(0).textureKey);
+        assertEquals("hero.png", actual.get(0).textureKey);
         assertEquals(expected.get(0).x, actual.get(0).x, 0.001f);
         assertEquals(expected.get(0).y, actual.get(0).y, 0.001f);
         assertEquals(expected.get(0).width, actual.get(0).width, 0.001f);
@@ -93,6 +95,27 @@ class SceneShapeRendererTest {
         assertEquals(expected.get(0).g, actual.get(0).g, 0.001f);
         assertEquals(expected.get(0).b, actual.get(0).b, 0.001f);
         assertEquals(expected.get(0).a, actual.get(0).a, 0.001f);
+    }
+
+    @Test
+    void renderMapsNullTextureWalkCommandAsRgbaRect() {
+        Sprite sprite = new Sprite(null);
+        sprite.r = 0.1f;
+        sprite.g = 0.3f;
+        sprite.b = 0.5f;
+        sprite.a = 1f;
+        Scene scene = new Scene("test").add(new Node("plain").add(new Transform2D(1f, 2f)).add(sprite));
+
+        SceneShapeRenderer renderer = SceneShapeRenderer.recordingOnly();
+        renderer.render(scene);
+
+        List<ShapeDrawCommand> actual = renderer.lastDrawCommands();
+        assertEquals(1, actual.size());
+        assertNull(actual.get(0).textureKey);
+        assertEquals(0.1f, actual.get(0).r, 0.001f);
+        assertEquals(0.3f, actual.get(0).g, 0.001f);
+        assertEquals(0.5f, actual.get(0).b, 0.001f);
+        assertEquals(1f, actual.get(0).a, 0.001f);
     }
 
     @Test

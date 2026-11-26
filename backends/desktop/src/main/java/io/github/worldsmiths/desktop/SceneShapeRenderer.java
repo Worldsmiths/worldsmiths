@@ -1,27 +1,27 @@
 package io.github.worldsmiths.desktop;
 
 import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.Matrix4;
 import io.github.worldsmiths.core.RectDraw;
 import io.github.worldsmiths.core.Scene;
 import io.github.worldsmiths.core.SceneWalk;
+import io.github.worldsmiths.core.gdx.GdxRetainedSceneDraw;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.IntSupplier;
 
 /**
- * Thin ShapeRenderer adapter: walks a retained {@link Scene} via {@link SceneWalk} and draws each
- * rect as a filled shape. Owns a libGDX {@link ShapeRenderer}; dispose when the listener shuts
- * down.
+ * Thin adapter: walks a retained {@link Scene} via {@link SceneWalk} and draws via shared {@link
+ * GdxRetainedSceneDraw} (filled rects and textured quads). Owns the drawer when constructed for GL;
+ * dispose when the listener shuts down.
  */
 public final class SceneShapeRenderer {
 
     /** Pixel size of one scene cell; aliases {@link SceneWalk#CELL_SIZE}. */
     public static final float CELL_SIZE = SceneWalk.CELL_SIZE;
 
-    private final ShapeRenderer shapes;
+    private final GdxRetainedSceneDraw drawer;
     private final IntSupplier screenWidth;
     private final IntSupplier screenHeight;
     private List<ShapeDrawCommand> lastDrawCommands = Collections.emptyList();
@@ -30,9 +30,13 @@ public final class SceneShapeRenderer {
     private float lastProjectionHeight = -1f;
     private boolean disposed;
 
-    public SceneShapeRenderer() {
+    /**
+     * Production renderer using the shared retained-scene drawer (textures cache + ShapeRenderer /
+     * SpriteBatch).
+     */
+    public SceneShapeRenderer(GdxRetainedSceneDraw drawer) {
         this(
-                new ShapeRenderer(),
+                drawer,
                 new IntSupplier() {
                     @Override
                     public int getAsInt() {
@@ -52,13 +56,8 @@ public final class SceneShapeRenderer {
      * Package-visible test seam used by {@link DesktopGameListenerTest}.
      */
     static SceneShapeRenderer recordingOnly() {
-        return new SceneShapeRenderer(null);
-    }
-
-    /** Package-visible for tests that inject a fake or already-constructed renderer. */
-    SceneShapeRenderer(ShapeRenderer shapes) {
-        this(
-                shapes,
+        return new SceneShapeRenderer(
+                null,
                 new IntSupplier() {
                     @Override
                     public int getAsInt() {
@@ -75,10 +74,11 @@ public final class SceneShapeRenderer {
 
     /**
      * Package-visible for tests that inject screen size without {@link Gdx#graphics}.
-     * Recording-only callers pass {@code shapes == null} so suppliers are never read on render.
+     * Recording-only callers pass {@code drawer == null} so suppliers are never read on render.
      */
-    SceneShapeRenderer(ShapeRenderer shapes, IntSupplier screenWidth, IntSupplier screenHeight) {
-        this.shapes = shapes;
+    SceneShapeRenderer(
+            GdxRetainedSceneDraw drawer, IntSupplier screenWidth, IntSupplier screenHeight) {
+        this.drawer = drawer;
         this.screenWidth = screenWidth;
         this.screenHeight = screenHeight;
     }
@@ -100,7 +100,8 @@ public final class SceneShapeRenderer {
                             rect.r,
                             rect.g,
                             rect.b,
-                            rect.a));
+                            rect.a,
+                            rect.textureKey));
         }
         return draws;
     }
@@ -114,8 +115,8 @@ public final class SceneShapeRenderer {
     }
 
     /**
-     * Records and returns the screen ortho used before ShapeRenderer draws. Package-visible test
-     * seam; the GL path calls this then {@link ShapeRenderer#setProjectionMatrix(Matrix4)}.
+     * Records and returns the screen ortho used before draws. Package-visible test seam; the GL
+     * path calls this then passes the matrix to {@link GdxRetainedSceneDraw#draw}.
      */
     Matrix4 prepareScreenProjection(float width, float height) {
         lastProjectionWidth = width;
@@ -124,20 +125,18 @@ public final class SceneShapeRenderer {
         return lastProjectionMatrix;
     }
 
-    /** Draws all visible sprites in {@code scene} as filled rects (or records them when headless). */
+    /**
+     * Draws all visible sprites in {@code scene} (colored rects and/or textured quads), or records
+     * them when headless.
+     */
     public void render(Scene scene) {
+        List<RectDraw> rects = SceneWalk.collectDrawCommands(scene);
         lastDrawCommands = collectDrawCommands(scene);
-        if (shapes == null || lastDrawCommands.isEmpty()) {
+        if (drawer == null || rects.isEmpty()) {
             return;
         }
-        shapes.setProjectionMatrix(
-                prepareScreenProjection(screenWidth.getAsInt(), screenHeight.getAsInt()));
-        shapes.begin(ShapeRenderer.ShapeType.Filled);
-        for (ShapeDrawCommand draw : lastDrawCommands) {
-            shapes.setColor(draw.r, draw.g, draw.b, draw.a);
-            shapes.rect(draw.x, draw.y, draw.width, draw.height);
-        }
-        shapes.end();
+        drawer.draw(
+                rects, prepareScreenProjection(screenWidth.getAsInt(), screenHeight.getAsInt()));
     }
 
     /** Commands from the most recent {@link #render(Scene)}. Package-visible for unit tests. */
@@ -170,8 +169,8 @@ public final class SceneShapeRenderer {
             return;
         }
         disposed = true;
-        if (shapes != null) {
-            shapes.dispose();
+        if (drawer != null) {
+            drawer.dispose();
         }
     }
 }

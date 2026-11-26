@@ -3,10 +3,12 @@ package io.github.worldsmiths.core;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.badlogic.gdx.utils.SerializationException;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 
 class SceneCodecTest {
@@ -69,6 +71,52 @@ class SceneCodecTest {
     void writesSchemaVersionOne() {
         String text = SceneCodec.create(ComponentRegistries.builtins()).toJson(buildDemoScene());
         assertTrue(text.contains("\"schemaVersion\":1"), text);
+        assertEquals(1, SceneCodec.SCHEMA_VERSION);
+    }
+
+    @Test
+    void roundTripWalkSeesSameTextureKeysAndCellScaledLayout() {
+        Transform2D tx = new Transform2D(3f, 5f);
+        Sprite textured = new Sprite("hero.png");
+        textured.r = 0.2f;
+        textured.g = 0.4f;
+        textured.b = 0.6f;
+        textured.a = 0.8f;
+
+        Sprite plain = new Sprite(null);
+        plain.r = 1f;
+        plain.g = 0f;
+        plain.b = 0f;
+        plain.a = 1f;
+
+        Scene original =
+                new Scene("WalkCouple")
+                        .add(new Node("hero").add(tx).add(textured))
+                        .add(new Node("plain").add(new Transform2D(1f, 0f)).add(plain));
+
+        SceneCodec codec = SceneCodec.create(ComponentRegistries.builtins());
+        String text = codec.toJson(original);
+        assertTrue(text.contains("\"schemaVersion\":1"), text);
+        Scene copy = codec.fromJson(text);
+
+        List<RectDraw> draws = SceneWalk.collectDrawCommands(copy);
+        assertEquals(2, draws.size());
+
+        RectDraw heroDraw = draws.get(0);
+        assertEquals("hero.png", heroDraw.textureKey);
+        assertEquals(3f * SceneWalk.CELL_SIZE, heroDraw.x, 0.001f);
+        assertEquals(5f * SceneWalk.CELL_SIZE, heroDraw.y, 0.001f);
+        assertEquals(SceneWalk.CELL_SIZE, heroDraw.width, 0.001f);
+        assertEquals(SceneWalk.CELL_SIZE, heroDraw.height, 0.001f);
+        assertEquals(0.2f, heroDraw.r, 0.001f);
+        assertEquals(0.4f, heroDraw.g, 0.001f);
+        assertEquals(0.6f, heroDraw.b, 0.001f);
+        assertEquals(0.8f, heroDraw.a, 0.001f);
+
+        RectDraw plainDraw = draws.get(1);
+        assertNull(plainDraw.textureKey);
+        assertEquals(1f * SceneWalk.CELL_SIZE, plainDraw.x, 0.001f);
+        assertEquals(1f, plainDraw.r, 0.001f);
     }
 
     @Test
