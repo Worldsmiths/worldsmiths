@@ -24,7 +24,7 @@ Loads use packaged **internal** asset paths only (same ceiling as [Files](files.
 | `failureMessage()` | Detail when `FAILED`; otherwise null/empty |
 | `onTerminal(Runnable)` | Optional once-listener for `COMPLETE` or `FAILED` |
 
-`onTerminal` runs on the game-thread pump path (after the frame pump, before `game.update`). Poll `state()` / `progress()` if you prefer not to register a listener.
+`onTerminal` for loads that enqueue (`QUEUED` / `LOADING`) fires on the game-thread pump path (after the frame pump, before `game.update`). Immediate terminals (null/blank path, MESH/MUSIC stub, already-cached COMPLETE) become terminal during `request` on the calling thread — registering `onTerminal` afterward may run the listener on that same calling thread, not only after pump. Poll `state()` / `progress()` if you prefer not to register a listener.
 
 Re-requesting the same `(kind, path)` is idempotent: shares an in-flight handle or returns `COMPLETE` if already cached.
 
