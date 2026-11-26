@@ -29,6 +29,8 @@ public void create(EngineServices services) {
 
 - **Warn shares the GDX info channel.** On the GDX-backed impl, `warn` becomes an info-channel call whose message starts with `WARN: `. There is no distinct OS warn channel in this slice.
 - **Untagged → sink tag `WS`.** On the GDX-backed impl, untagged calls use default sink tag `"WS"`. `FakeLog` records a `null` author tag for untagged overloads so tests can tell them apart from an explicit tag.
+- **Null/blank tagged tag → `WS` on GDX.** A tagged overload with a null or blank (trim-empty) tag still reaches the GDX sink as `"WS"`; `FakeLog` may record the null author tag as passed. Prefer the untagged overload instead of a null tag.
+- **`error` overload null ambiguity.** `error(String, String)` vs `error(String, Throwable)` is ambiguous when the second arg is null — cast to `String` or `Throwable` to pick an overload; prefer the three-arg form when both tag and cause are present.
 - **Best-effort null message.** A null message is treated as `""`; implementations must not throw from the emit path for a null message.
 - **Standing rule:** do not use `System.out` or `Gdx.app` for game/engine logging — go through `services.log()`.
 
