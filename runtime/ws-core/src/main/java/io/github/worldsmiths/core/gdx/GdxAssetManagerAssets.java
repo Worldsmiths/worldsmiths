@@ -48,7 +48,11 @@ final class GdxAssetManagerAssets implements GdxPumpableAssets {
         String key = handleKey(kind, path);
         GdxLoadHandle existing = handlesByKey.get(key);
         if (existing != null) {
-            return existing;
+            if (existing.state == LoadState.FAILED) {
+                handlesByKey.remove(key);
+            } else {
+                return existing;
+            }
         }
         GdxLoadHandle handle = new GdxLoadHandle(path, kind);
         handlesByKey.put(key, handle);

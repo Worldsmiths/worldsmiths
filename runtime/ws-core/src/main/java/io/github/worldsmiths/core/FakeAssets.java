@@ -62,7 +62,11 @@ public final class FakeAssets implements Assets {
         String key = handleKey(kind, path);
         FakeLoadHandle existing = handlesByKey.get(key);
         if (existing != null) {
-            return existing;
+            if (existing.state == LoadState.FAILED) {
+                handlesByKey.remove(key);
+            } else {
+                return existing;
+            }
         }
         FakeLoadHandle handle = new FakeLoadHandle(path, kind);
         commands.add(Command.request(path, kind));
@@ -80,6 +84,9 @@ public final class FakeAssets implements Assets {
         float[] script = scripts.get(path);
         if (script != null) {
             handle.scriptSteps = script;
+        }
+        if (textures != null && kind == AssetKind.TEXTURE) {
+            textures.beginAsyncLoad(path);
         }
         inFlight.add(handle);
         return handle;
@@ -136,6 +143,9 @@ public final class FakeAssets implements Assets {
         handle.state = LoadState.FAILED;
         handle.progress = 0f;
         handle.failureMessage = message;
+        if (textures != null && handle.kind == AssetKind.TEXTURE) {
+            textures.endAsyncLoad(handle.path);
+        }
         commands.add(Command.fail(handle.path, handle.kind, message));
         inFlight.remove(handle);
         handle.fireTerminal();

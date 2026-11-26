@@ -3,8 +3,10 @@ package io.github.worldsmiths.core;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.Test;
@@ -208,6 +210,26 @@ class FakeAssetsTest {
     }
 
     @Test
+    void reRequestAfterFailedStartsFreshLoadThatCanCompleteIndependently() {
+        FakeAssets assets = new FakeAssets();
+
+        LoadHandle first = assets.request("textures/retry.png", AssetKind.TEXTURE);
+        assets.pump();
+        assertEquals(LoadState.FAILED, first.state());
+
+        assets.putTexture("textures/retry.png");
+        LoadHandle second = assets.request("textures/retry.png", AssetKind.TEXTURE);
+
+        assertNotSame(first, second);
+        assertEquals(LoadState.QUEUED, second.state());
+        assertEquals(LoadState.FAILED, first.state());
+
+        assets.pump();
+        assertEquals(LoadState.COMPLETE, second.state());
+        assertEquals(LoadState.FAILED, first.state());
+    }
+
+    @Test
     void nullPathReachesFailedDeterministically() {
         FakeAssets assets = new FakeAssets();
 
@@ -257,6 +279,30 @@ class FakeAssetsTest {
         assertEquals(1, creates);
         assertEquals(FakeTextures.Command.Kind.CREATE, textures.commands().get(0).kind);
         assertEquals("textures/heavy.png", textures.commands().get(0).path);
+        assertEquals(FakeTextures.Command.Kind.RESOLVE, textures.commands().get(1).kind);
+    }
+
+    @Test
+    void syncPreloadWhileAsyncTextureInFlightThrowsThenResolveWorksAfterComplete() {
+        FakeEngineServices services = new FakeEngineServices();
+        FakeAssets assets = services.assets();
+        FakeTextures textures = services.textures();
+        assets.putTexture("textures/heavy.png");
+
+        LoadHandle handle = assets.request("textures/heavy.png", AssetKind.TEXTURE);
+        assertEquals(LoadState.QUEUED, handle.state());
+
+        EngineException thrown =
+                assertThrows(EngineException.class, () -> textures.preload("textures/heavy.png"));
+        assertTrue(thrown.getMessage().toLowerCase().contains("in flight"));
+        assertTrue(thrown.getMessage().contains("textures/heavy.png"));
+        assertTrue(textures.commands().isEmpty());
+
+        assets.pump();
+        assertEquals(LoadState.COMPLETE, handle.state());
+
+        textures.resolve("textures/heavy.png");
+        assertEquals(FakeTextures.Command.Kind.CREATE, textures.commands().get(0).kind);
         assertEquals(FakeTextures.Command.Kind.RESOLVE, textures.commands().get(1).kind);
     }
 }

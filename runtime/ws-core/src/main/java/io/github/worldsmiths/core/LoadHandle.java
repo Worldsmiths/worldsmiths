@@ -24,7 +24,9 @@ public interface LoadHandle {
 
     /**
      * Registers a listener that runs once when the handle reaches {@link LoadState#COMPLETE} or
-     * {@link LoadState#FAILED}. Fires on the game-thread pump path (after pump, before update).
+     * {@link LoadState#FAILED}. Enqueued loads fire on the game-thread pump path (after pump,
+     * before update). Immediate terminals (blank path, unsupported kind, already-cached TEXTURE)
+     * may run during or after {@link Assets#request} on the calling thread.
      */
     void onTerminal(Runnable listener);
 }

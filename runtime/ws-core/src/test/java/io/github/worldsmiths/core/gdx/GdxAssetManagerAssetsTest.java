@@ -3,6 +3,7 @@ package io.github.worldsmiths.core.gdx;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -111,6 +112,28 @@ class GdxAssetManagerAssetsTest {
         assets.pump();
         LoadHandle third = assets.request("textures/heavy.png", AssetKind.TEXTURE);
         assertSame(first, third);
+    }
+
+    @Test
+    void reRequestAfterFailedStartsFreshLoadThatCanCompleteIndependently() {
+        RecordingQueue queue = new RecordingQueue();
+        GdxAssetManagerAssets assets = new GdxAssetManagerAssets(emptyTextures(), queue);
+
+        LoadHandle first = assets.request("textures/retry.png", AssetKind.TEXTURE);
+        assets.pump();
+        assertEquals(LoadState.FAILED, first.state());
+
+        queue.catalog.put("textures/retry.png", stubLoaded());
+        LoadHandle second = assets.request("textures/retry.png", AssetKind.TEXTURE);
+
+        assertNotSame(first, second);
+        assertEquals(LoadState.QUEUED, second.state());
+        assertEquals(LoadState.FAILED, first.state());
+
+        assets.pump();
+        assertEquals(LoadState.COMPLETE, second.state());
+        assertEquals(LoadState.FAILED, first.state());
+        assertEquals(2, queue.updateCalls.get());
     }
 
     @Test
