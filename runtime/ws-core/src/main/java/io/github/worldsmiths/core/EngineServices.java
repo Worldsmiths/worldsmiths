@@ -40,6 +40,12 @@ public interface EngineServices {
     /** Session widget toolkit (layout, hit, focus, draw). */
     UiKit uiKit();
 
+    /**
+     * Logging facade ({@code debug}/{@code info}/{@code warn}/{@code error}). Fake bags always wire
+     * a recording {@link FakeLog}; the GDX bag wires a platform-backed impl when assembled.
+     */
+    Log log();
+
     /** Unused in D9 — empty stub for a future plugin/ECS escape hatch. */
     Extensions extensions();
 

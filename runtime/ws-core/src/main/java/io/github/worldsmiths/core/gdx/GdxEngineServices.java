@@ -7,6 +7,7 @@ import io.github.worldsmiths.core.EngineServices;
 import io.github.worldsmiths.core.Files;
 import io.github.worldsmiths.core.Graphics;
 import io.github.worldsmiths.core.Input;
+import io.github.worldsmiths.core.Log;
 import io.github.worldsmiths.core.Textures;
 import io.github.worldsmiths.core.Ui;
 import io.github.worldsmiths.core.thin3d.Thin3D;
@@ -149,6 +150,15 @@ public final class GdxEngineServices {
         @Override
         public UiKit uiKit() {
             return uiKit;
+        }
+
+        /**
+         * Compile stub until GdxLog is wired (engine-logging T2). Not for authors — Fake bags
+         * supply a real recording {@link Log}.
+         */
+        @Override
+        public Log log() {
+            throw new UnsupportedOperationException("GdxLog not wired yet");
         }
 
         @Override
