@@ -51,7 +51,7 @@ final class GdxLog implements Log {
 
     @Override
     public void debug(String tag, String message) {
-        sink.debug(tag, normalize(message));
+        sink.debug(normalizeTag(tag), normalize(message));
     }
 
     @Override
@@ -61,7 +61,7 @@ final class GdxLog implements Log {
 
     @Override
     public void info(String tag, String message) {
-        sink.log(tag, normalize(message));
+        sink.log(normalizeTag(tag), normalize(message));
     }
 
     @Override
@@ -71,7 +71,7 @@ final class GdxLog implements Log {
 
     @Override
     public void warn(String tag, String message) {
-        sink.log(tag, "WARN: " + normalize(message));
+        sink.log(normalizeTag(tag), "WARN: " + normalize(message));
     }
 
     @Override
@@ -81,7 +81,7 @@ final class GdxLog implements Log {
 
     @Override
     public void error(String tag, String message) {
-        sink.error(tag, normalize(message));
+        sink.error(normalizeTag(tag), normalize(message));
     }
 
     @Override
@@ -91,11 +91,19 @@ final class GdxLog implements Log {
 
     @Override
     public void error(String tag, String message, Throwable cause) {
-        sink.error(tag, normalize(message), cause);
+        sink.error(normalizeTag(tag), normalize(message), cause);
     }
 
     private static String normalize(String message) {
         return message == null ? "" : message;
+    }
+
+    /** Null or blank (trim-empty) author tags become the default sink tag {@code "WS"}. */
+    private static String normalizeTag(String tag) {
+        if (tag == null || tag.trim().isEmpty()) {
+            return DEFAULT_TAG;
+        }
+        return tag;
     }
 
     /**

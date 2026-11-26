@@ -53,6 +53,44 @@ class GdxLogTest {
     }
 
     @Test
+    void nullAuthorTagNormalizesToWsOnSink() {
+        RecordingSink sink = new RecordingSink();
+        GdxLog log = new GdxLog(sink);
+
+        log.debug(null, "tick");
+        log.info(null, "booting");
+        log.warn(null, "missing");
+        log.error((String) null, "failed");
+        log.error(null, "failed", new RuntimeException("x"));
+
+        assertEquals(5, sink.calls.size());
+        assertEquals("WS", sink.calls.get(0).tag);
+        assertEquals("WS", sink.calls.get(1).tag);
+        assertEquals("WS", sink.calls.get(2).tag);
+        assertEquals("WS", sink.calls.get(3).tag);
+        assertEquals("WS", sink.calls.get(4).tag);
+    }
+
+    @Test
+    void blankAuthorTagNormalizesToWsOnSink() {
+        RecordingSink sink = new RecordingSink();
+        GdxLog log = new GdxLog(sink);
+
+        log.debug("", "tick");
+        log.info("   ", "booting");
+        log.warn("\t", "missing");
+        log.error(" ", "failed");
+        log.error("", "failed", new RuntimeException("x"));
+
+        assertEquals(5, sink.calls.size());
+        assertEquals("WS", sink.calls.get(0).tag);
+        assertEquals("WS", sink.calls.get(1).tag);
+        assertEquals("WS", sink.calls.get(2).tag);
+        assertEquals("WS", sink.calls.get(3).tag);
+        assertEquals("WS", sink.calls.get(4).tag);
+    }
+
+    @Test
     void warnMapsToInfoChannelWithWarnPrefix() {
         RecordingSink sink = new RecordingSink();
         GdxLog log = new GdxLog(sink);
