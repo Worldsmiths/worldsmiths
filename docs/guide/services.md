@@ -19,6 +19,7 @@ Package: `io.github.worldsmiths.core`.
 | `audio()` | [`Audio`](audio.md) | One-shot sound load / play / stop / dispose |
 | `ui()` | [`Ui`](ui.md) | Bitmap font load / draw / dispose |
 | `textures()` | [`Textures`](textures.md) | Sync preload / resolve; engine-owned cache |
+| `log()` | [`Log`](log.md) | Portable debug / info / warn / error |
 | `uiKit()` | [`UiKit`](uikit.md) | Session widgets — layout, hit, focus, draw |
 | `extensions()` | `EngineServices.Extensions` | Empty stub; unused in D9 |
 
