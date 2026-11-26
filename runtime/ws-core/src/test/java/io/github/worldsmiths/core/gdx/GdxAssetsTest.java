@@ -152,6 +152,27 @@ class GdxAssetsTest {
     }
 
     @Test
+    void requestAfterDisposeReturnsFailedWithoutTouchingOpener() {
+        AtomicInteger opens = new AtomicInteger();
+        Map<String, GdxTextures.LoadedTexture> catalog =
+                new HashMap<String, GdxTextures.LoadedTexture>();
+        catalog.put("textures/late.png", stubLoaded());
+        GdxTextures textures = texturesWithCatalog(opens, catalog);
+        GdxAssets assets = new GdxAssets(textures);
+
+        assets.dispose();
+
+        LoadHandle handle = assets.request("textures/late.png", AssetKind.TEXTURE);
+
+        assertEquals(LoadState.FAILED, handle.state());
+        assertNotNull(handle.failureMessage());
+        assertTrue(handle.failureMessage().toLowerCase().contains("disposed"));
+        assertFalse(textures.isAsyncInFlight("textures/late.png"));
+        assertEquals(0, opens.get());
+        assertNull(textures.getIfPresent("textures/late.png"));
+    }
+
+    @Test
     void bagAssetsReturnsNonNullAndPumpAssetsAdvancesLoad() {
         AtomicInteger opens = new AtomicInteger();
         Map<String, GdxTextures.LoadedTexture> catalog =

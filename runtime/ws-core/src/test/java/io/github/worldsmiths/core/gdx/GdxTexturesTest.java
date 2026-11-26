@@ -119,6 +119,42 @@ class GdxTexturesTest {
     }
 
     @Test
+    void syncPreloadWhileAsyncInFlightThrowsWithoutOpening() {
+        AtomicInteger opens = new AtomicInteger();
+        final GdxTextures.LoadedTexture stub =
+                new GdxTextures.LoadedTexture() {
+                    @Override
+                    public Texture gdxTexture() {
+                        return null;
+                    }
+
+                    @Override
+                    public void dispose() {}
+                };
+        GdxTextures textures =
+                new GdxTextures(
+                        new GdxTextures.TextureOpener() {
+                            @Override
+                            public GdxTextures.LoadedTexture open(String path) {
+                                opens.incrementAndGet();
+                                return stub;
+                            }
+                        });
+
+        textures.beginAsyncLoad("hero.png");
+
+        EngineException thrown =
+                assertThrows(EngineException.class, () -> textures.preload("hero.png"));
+        assertTrue(thrown.getMessage().toLowerCase().contains("async"));
+        assertTrue(thrown.getMessage().contains("hero.png"));
+        assertEquals(0, opens.get());
+
+        thrown = assertThrows(EngineException.class, () -> textures.resolve("hero.png"));
+        assertTrue(thrown.getMessage().toLowerCase().contains("async"));
+        assertEquals(0, opens.get());
+    }
+
+    @Test
     void disposeDisposesCachedTexturesAndClearsCache() {
         final List<String> disposed = new ArrayList<String>();
         final AtomicInteger opens = new AtomicInteger();

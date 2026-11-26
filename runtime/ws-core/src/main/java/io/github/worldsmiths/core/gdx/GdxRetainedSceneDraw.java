@@ -23,7 +23,7 @@ public final class GdxRetainedSceneDraw {
 
     /**
      * Production drawer bound to the {@link GdxTextures} cache inside a bag from {@link
-     * GdxEngineServices#create()}.
+     * GdxEngineServices#createCooperative()} or {@link GdxJvmEngineServices#create()}.
      */
     public static GdxRetainedSceneDraw fromEngineServices(EngineServices services) {
         return new GdxRetainedSceneDraw(GdxEngineServices.requireGdxTextures(services));

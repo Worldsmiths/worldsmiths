@@ -52,6 +52,10 @@ final class GdxAssetManagerAssets implements GdxPumpableAssets {
         }
         GdxLoadHandle handle = new GdxLoadHandle(path, kind);
         handlesByKey.put(key, handle);
+        if (disposed) {
+            failImmediate(handle, "Assets disposed; cannot request: " + path);
+            return handle;
+        }
         if (path == null || path.trim().isEmpty()) {
             failImmediate(handle, "Asset path is null or blank");
             return handle;

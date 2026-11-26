@@ -13,8 +13,9 @@ import java.util.Set;
 /**
  * GDX-backed {@link Textures} with a sync FileHandle-managed texture cache keyed by internal path.
  * Async {@link GdxAssets} merges completes into the same cache and marks in-flight keys so retained
- * draw can skip without a sync open. Not part of the author-facing API — backends assemble this via
- * {@link GdxEngineServices}.
+ * draw can skip without a sync open. Sync {@link #preload}/{@link #resolve} refuse paths still in
+ * flight (not yet cached). Not part of the author-facing API — backends assemble this via {@link
+ * GdxEngineServices#createCooperative()} or {@link GdxJvmEngineServices#create()}.
  */
 final class GdxTextures implements Textures {
     private final Map<String, LoadedTexture> cache = new HashMap<String, LoadedTexture>();
@@ -171,6 +172,10 @@ final class GdxTextures implements Textures {
         LoadedTexture existing = cache.get(internalPath);
         if (existing != null) {
             return existing;
+        }
+        if (asyncInFlight.contains(internalPath)) {
+            throw new EngineException(
+                    "Async load in flight for path; cannot sync-open: " + internalPath);
         }
         LoadedTexture loaded;
         try {

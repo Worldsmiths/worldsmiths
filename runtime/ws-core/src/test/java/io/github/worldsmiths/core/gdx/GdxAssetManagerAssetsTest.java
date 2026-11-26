@@ -114,6 +114,26 @@ class GdxAssetManagerAssetsTest {
     }
 
     @Test
+    void requestAfterDisposeReturnsFailedWithoutTouchingQueue() {
+        RecordingQueue queue = new RecordingQueue();
+        queue.catalog.put("textures/late.png", stubLoaded());
+        GdxTextures textures = emptyTextures();
+        GdxAssetManagerAssets assets = new GdxAssetManagerAssets(textures, queue);
+
+        assets.dispose();
+
+        LoadHandle handle = assets.request("textures/late.png", AssetKind.TEXTURE);
+
+        assertEquals(LoadState.FAILED, handle.state());
+        assertNotNull(handle.failureMessage());
+        assertTrue(handle.failureMessage().toLowerCase().contains("disposed"));
+        assertTrue(queue.loadedPaths.isEmpty());
+        assertFalse(textures.isAsyncInFlight("textures/late.png"));
+        assertNull(textures.getIfPresent("textures/late.png"));
+        assertEquals(1, queue.disposeCalls.get());
+    }
+
+    @Test
     void disposeFailsInFlightAndDisposesQueueWithoutDoubleTextureDispose() {
         RecordingQueue queue = new RecordingQueue();
         final AtomicInteger textureDisposes = new AtomicInteger();
