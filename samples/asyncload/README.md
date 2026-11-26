@@ -60,9 +60,10 @@ Open the URL Gradle prints (usually `http://localhost:8080`). Smoke: canvas load
 
 ```bash
 ./gradlew -p samples/asyncload :android:assembleDebug
+./gradlew -p samples/asyncload :android:installDebug
 ```
 
-APK output: `.worldsmiths/gen/android/build/outputs/apk/debug/`. Requires Android SDK. Packaging should include `textures/heavy.png` from `assetsDir`.
+There is no `:android:run` task — launch from the device/emulator launcher (or `adb`) after install. APK output: `.worldsmiths/gen/android/build/outputs/apk/debug/`. Requires Android SDK. Packaging should include `textures/heavy.png` from `assetsDir`.
 
 ## Build / compile (no window)
 
