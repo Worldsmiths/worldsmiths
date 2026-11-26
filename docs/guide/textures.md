@@ -1,12 +1,14 @@
 # Textures
 
-Sync texture load/cache from packaged **internal** paths through `EngineServices.textures()`. Package: `io.github.worldsmiths.core`. No LibGDX types in the contract. Async / AssetManager loading is out of scope.
+Sync texture load/cache from packaged **internal** paths through `EngineServices.textures()`. Package: `io.github.worldsmiths.core`. No LibGDX types in the contract.
+
+For non-blocking packaged loads, use [`assets().request`](assets.md) — completes merge into this same cache.
 
 Loads use packaged **internal** asset paths only (same ceiling as [Files](files.md)).
 
 ## Ownership / dispose
 
-The engine owns the texture cache for the listener / bag lifetime. Authors call `preload` / `resolve` to warm or ensure a key is cached; they do **not** dispose individual GPU textures. Backends dispose the cache when the listener shuts down.
+The engine owns the texture cache for the listener / bag lifetime. Authors call `preload` / `resolve` to warm or ensure a key is cached; they do **not** dispose individual GPU textures. Backends dispose the cache (and tear down in-flight async loads) when the listener shuts down.
 
 ## API
 
@@ -27,11 +29,13 @@ public void create(EngineServices services) {
 }
 ```
 
-Paths use forward slashes and match how assets are packaged for the sample (typically under the game `assets/` tree). Retained scene draw uses the same cache by `Sprite.texture` key.
+Paths use forward slashes and match how assets are packaged for the sample (typically under the game `assets/` tree). Retained scene draw uses the same cache by `Sprite.texture` key. After an async [`assets()`](assets.md) TEXTURE reaches `COMPLETE`, `resolve` for that path is a cache hit (no second open/decode). While that key is still in-flight, retained draw skips the sprite — it does not sync-load as a hitch fallback.
 
 ## Honesty limits
 
-- **Sync only.** No AssetManager / async load API in this slice.
+- **Sync miss still throws.** `preload` / `resolve` throw `EngineException` on miss; async miss is observe-`FAILED` via [`assets()`](assets.md), not a throw on `request`.
+- **Single cache with async.** Async TEXTURE completes merge here; do not expect a second GPU copy for the same path.
+- **In-flight skip.** Retained draw skips async in-flight keys — no sync FileHandle→Texture for that key mid-load.
 - **Internal paths only.** Same packaging rules as Files — classpath / assetsDir; no external disk paths through this facade.
 - **Engine-owned cache.** Do not expect an author-facing dispose for retained sprite textures; lifecycle follows the backend listener.
 

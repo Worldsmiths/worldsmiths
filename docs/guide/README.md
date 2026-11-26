@@ -17,6 +17,7 @@ How-to pages for engine facades. ADRs under [`../adr/`](../adr/) record decision
 | [Audio](audio.md) | Jam facade (relay) |
 | [Ui](ui.md) | Jam facade (relay) |
 | [Textures](textures.md) | Sync texture cache (textured sprites) |
+| [Assets](assets.md) | Async packaged load (TEXTURE; MESH/MUSIC stubs) |
 | [Log](log.md) | Portable debug / info / warn / error |
 | [UiKit](uikit.md) | Engine UI slice (hybrid leaves) |
 
