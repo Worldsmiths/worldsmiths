@@ -7,10 +7,12 @@ import io.github.worldsmiths.core.EngineServices;
 import io.github.worldsmiths.core.Scene;
 import io.github.worldsmiths.core.WorldsmithsGame;
 import io.github.worldsmiths.core.gdx.GdxEngineServices;
+import io.github.worldsmiths.core.gdx.GdxRetainedSceneDraw;
 
 /**
  * LibGDX {@link ApplicationListener} that drives a {@link WorldsmithsGame}, clears the framebuffer
- * each frame, and draws visible scene sprites as filled rects via {@link SceneShapeRenderer}.
+ * each frame, and draws visible scene sprites via {@link SceneShapeRenderer} (colored rects and
+ * textured quads).
  */
 public final class WebGameListener implements ApplicationListener {
 
@@ -23,6 +25,7 @@ public final class WebGameListener implements ApplicationListener {
     private final WorldsmithsGame game;
     /** Non-null only when tests inject a headless bag; production leaves this null. */
     private final EngineServices engineServicesOverride;
+    private EngineServices services;
     private Scene scene;
     private SceneShapeRenderer sceneRenderer;
 
@@ -32,7 +35,7 @@ public final class WebGameListener implements ApplicationListener {
 
     /**
      * Package-visible constructor so unit tests can inject a recording {@link SceneShapeRenderer}
-     * without constructing a real libGDX {@code ShapeRenderer} (no display).
+     * without constructing a real libGDX drawer (no TeaVM / GL).
      */
     WebGameListener(WorldsmithsGame game, SceneShapeRenderer sceneRenderer) {
         this(game, sceneRenderer, null);
@@ -40,7 +43,7 @@ public final class WebGameListener implements ApplicationListener {
 
     /**
      * Package-visible test seam: inject {@link EngineServices} so headless tests can call
-     * {@link #create()} without assembling a GDX-backed bag (no display).
+     * {@link #create()} without assembling a GDX-backed bag (no TeaVM / GL).
      */
     WebGameListener(
             WorldsmithsGame game, SceneShapeRenderer sceneRenderer, EngineServices engineServices) {
@@ -56,7 +59,7 @@ public final class WebGameListener implements ApplicationListener {
     public void create() {
         scene = game.createScene();
         // Backends assemble the portable bag after Application start (GDX live).
-        EngineServices services =
+        services =
                 engineServicesOverride != null ? engineServicesOverride : GdxEngineServices.create();
         game.create(services);
     }
@@ -82,7 +85,8 @@ public final class WebGameListener implements ApplicationListener {
 
     /**
      * Forwards one update/render tick to the game, then draws the retained scene. Package-visible
-     * so unit tests can exercise the lifecycle without starting TeaVM or requiring a display.
+     * so unit tests can exercise the lifecycle without starting TeaVM.
+     * Runs after {@code game.render()} so author {@code Draw2D} batches are expected to be ended.
      */
     void updateAndRender(float delta) {
         game.update(delta);
@@ -94,7 +98,8 @@ public final class WebGameListener implements ApplicationListener {
 
     private void ensureSceneRenderer() {
         if (sceneRenderer == null) {
-            sceneRenderer = new SceneShapeRenderer();
+            sceneRenderer =
+                    new SceneShapeRenderer(GdxRetainedSceneDraw.fromEngineServices(services));
         }
     }
 
@@ -114,6 +119,7 @@ public final class WebGameListener implements ApplicationListener {
         if (sceneRenderer != null) {
             sceneRenderer.dispose();
         }
+        GdxEngineServices.disposeTextures(services);
     }
 
     private static void clearScreen() {
