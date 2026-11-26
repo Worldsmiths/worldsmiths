@@ -71,6 +71,7 @@ class AndroidGameListenerTest {
         assertSame(fake, game.services);
         List<ShapeDrawCommand> draws = recorder.lastDrawCommands();
         assertEquals(1, draws.size());
+        assertEquals("head.png", draws.get(0).textureKey);
         assertEquals(1f * SceneWalk.CELL_SIZE, draws.get(0).x, 0.001f);
         assertEquals(2f * SceneWalk.CELL_SIZE, draws.get(0).y, 0.001f);
         assertEquals(0.1f, draws.get(0).r, 0.001f);

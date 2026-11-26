@@ -40,6 +40,18 @@ public final class GdxEngineServices {
                 new EngineServices.Extensions());
     }
 
+    /**
+     * Package-visible unwrap of the GDX texture cache from a bag created by {@link #create()}. Used
+     * by retained-scene draw so backends share the same preload/resolve cache as games.
+     */
+    static GdxTextures requireGdxTextures(EngineServices services) {
+        if (!(services instanceof Bag)) {
+            throw new IllegalArgumentException(
+                    "EngineServices must be created by GdxEngineServices.create()");
+        }
+        return ((Bag) services).gdxTextures;
+    }
+
     private static final class Bag implements EngineServices {
         private final Input input;
         private final Clock clock;
@@ -49,7 +61,7 @@ public final class GdxEngineServices {
         private final Thin3D thin3d;
         private final Audio audio;
         private final Ui ui;
-        private final Textures textures;
+        private final GdxTextures gdxTextures;
         private final UiKit uiKit;
         private final Extensions extensions;
 
@@ -62,7 +74,7 @@ public final class GdxEngineServices {
                 Thin3D thin3d,
                 Audio audio,
                 Ui ui,
-                Textures textures,
+                GdxTextures gdxTextures,
                 UiKit uiKit,
                 Extensions extensions) {
             this.input = input;
@@ -73,7 +85,7 @@ public final class GdxEngineServices {
             this.thin3d = thin3d;
             this.audio = audio;
             this.ui = ui;
-            this.textures = textures;
+            this.gdxTextures = gdxTextures;
             this.uiKit = uiKit;
             this.extensions = extensions;
         }
@@ -120,7 +132,7 @@ public final class GdxEngineServices {
 
         @Override
         public Textures textures() {
-            return textures;
+            return gdxTextures;
         }
 
         @Override
