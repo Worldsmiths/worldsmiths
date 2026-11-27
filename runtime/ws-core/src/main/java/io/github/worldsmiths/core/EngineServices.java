@@ -18,7 +18,8 @@ public interface EngineServices {
     /**
      * Named digital action map ({@link Actions#bind} / {@link Actions#isDown} / {@link
      * Actions#justPressed}). Fake bags wire {@link FakeActions}; the GDX bag wires a {@link
-     * DefaultActions} over a shared {@link DeviceState} (device sync in a later task).
+     * DefaultActions} over a shared {@link DeviceState}. Each frame the GDX bag syncs devices into
+     * that port and ticks {@link Actions} edges (via {@code GdxEngineServices.pumpAssets}).
      */
     Actions actions();
 
