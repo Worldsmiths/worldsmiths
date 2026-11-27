@@ -10,7 +10,8 @@ import io.github.worldsmiths.core.PadButton;
 import org.junit.jupiter.api.Test;
 
 /**
- * AC9 / V9: EmptyGamepadSource (iOS soft-absent / no pad) — bind succeeds; poll stays false.
+ * AC9 / V9: EmptyGamepadSource (iOS soft-absent closeout; no Controllers forceLink / no HW AC) —
+ * bind succeeds; poll stays false.
  */
 class EmptyGamepadSourceTest {
 

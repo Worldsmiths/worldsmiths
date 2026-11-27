@@ -169,4 +169,51 @@ class ActionsTest {
         assertTrue(actions.isDown("left"));
         assertTrue(services.input().isKeyDown(Key.LEFT));
     }
+
+    @Test
+    void loadFromFakeFilesAppliesBindingsViaDevicePath() {
+        FakeEngineServices services = new FakeEngineServices();
+        FakeActions actions = services.actions();
+        FakeFiles files = services.files();
+        files.putInternal(
+                "input/bindings.txt",
+                "# packaged bindings\n"
+                        + "move_up key W\n"
+                        + "move_up pad DPAD_UP\n"
+                        + "click pointer PRIMARY\n");
+
+        actions.load(files, "input/bindings.txt");
+
+        actions.setKeyDown(Key.W, true);
+        actions.tick();
+        assertTrue(actions.isDown("move_up"));
+
+        actions.setKeyDown(Key.W, false);
+        actions.tick();
+        assertFalse(actions.isDown("move_up"));
+
+        actions.setPadButtonDown(PadButton.DPAD_UP, true);
+        actions.tick();
+        assertTrue(actions.isDown("move_up"));
+
+        actions.setPadButtonDown(PadButton.DPAD_UP, false);
+        actions.setPointerButtonDown(PointerButton.PRIMARY, true);
+        actions.tick();
+        assertTrue(actions.isDown("click"));
+    }
+
+    @Test
+    void loadMissingPathThrowsAndLeavesExistingBindingsIntact() {
+        FakeEngineServices services = new FakeEngineServices();
+        FakeActions actions = services.actions();
+        actions.bind("keep", Controls.key(Key.K));
+
+        assertThrows(
+                EngineException.class,
+                () -> actions.load(services.files(), "input/missing.txt"));
+
+        actions.setKeyDown(Key.K, true);
+        actions.tick();
+        assertTrue(actions.isDown("keep"));
+    }
 }

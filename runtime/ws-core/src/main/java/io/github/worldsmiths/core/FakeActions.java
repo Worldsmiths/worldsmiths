@@ -25,6 +25,11 @@ public final class FakeActions implements Actions {
     }
 
     @Override
+    public void load(Files files, String path) {
+        delegate.load(files, path);
+    }
+
+    @Override
     public boolean isDown(String action) {
         return delegate.isDown(action);
     }

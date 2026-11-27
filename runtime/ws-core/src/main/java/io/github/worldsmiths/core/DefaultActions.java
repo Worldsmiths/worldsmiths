@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -56,6 +57,63 @@ public final class DefaultActions implements Actions {
             }
         }
         bindings.put(action, new ArrayList<Control>(Arrays.asList(controls)));
+    }
+
+    @Override
+    public void load(Files files, String path) {
+        if (files == null) {
+            throw new EngineException("Files must not be null");
+        }
+        if (path == null || path.trim().isEmpty()) {
+            throw new EngineException("Path must not be null or blank");
+        }
+        String text = files.readString(path);
+        Map<String, List<Control>> loaded = parseBindingTable(text);
+        for (Map.Entry<String, List<Control>> entry : loaded.entrySet()) {
+            List<Control> controls = entry.getValue();
+            bind(entry.getKey(), controls.toArray(new Control[controls.size()]));
+        }
+    }
+
+    /** Line table: {@code action kind TOKEN}; blank/# ignored. ~40 LOC; keep tiny (HLD Q2). */
+    private static Map<String, List<Control>> parseBindingTable(String text) {
+        Map<String, List<Control>> loaded = new LinkedHashMap<String, List<Control>>();
+        String[] lines = text.split("\n", -1);
+        for (int i = 0; i < lines.length; i++) {
+            String line = lines[i].trim();
+            if (line.isEmpty() || line.charAt(0) == '#') {
+                continue;
+            }
+            String[] parts = line.split("\\s+");
+            if (parts.length != 3) {
+                throw new EngineException("Bad binding line: " + line);
+            }
+            Control control = parseControl(parts[1], parts[2], line);
+            List<Control> list = loaded.get(parts[0]);
+            if (list == null) {
+                list = new ArrayList<Control>();
+                loaded.put(parts[0], list);
+            }
+            list.add(control);
+        }
+        return loaded;
+    }
+
+    private static Control parseControl(String kind, String token, String line) {
+        try {
+            if ("key".equals(kind)) {
+                return Controls.key(Key.valueOf(token));
+            }
+            if ("pad".equals(kind)) {
+                return Controls.gamepadButton(PadButton.valueOf(token));
+            }
+            if ("pointer".equals(kind)) {
+                return Controls.pointerButton(PointerButton.valueOf(token));
+            }
+        } catch (IllegalArgumentException e) {
+            throw new EngineException("Unknown control token in: " + line);
+        }
+        throw new EngineException("Unknown control kind in: " + line);
     }
 
     @Override
