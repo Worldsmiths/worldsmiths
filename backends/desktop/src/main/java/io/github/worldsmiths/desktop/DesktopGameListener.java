@@ -27,7 +27,6 @@ public final class DesktopGameListener implements ApplicationListener {
     /** Non-null only when tests inject a headless bag; production leaves this null. */
     private final EngineServices engineServicesOverride;
     private EngineServices services;
-    private Scene scene;
     private SceneShapeRenderer sceneRenderer;
 
     public DesktopGameListener(WorldsmithsGame game) {
@@ -58,20 +57,12 @@ public final class DesktopGameListener implements ApplicationListener {
 
     @Override
     public void create() {
-        scene = game.createScene();
         // Backends assemble the portable bag after Application start (GDX live).
         services =
                 engineServicesOverride != null
                         ? engineServicesOverride
                         : GdxJvmEngineServices.create();
         game.create(services);
-    }
-
-    /**
-     * Scene retained from {@link WorldsmithsGame#createScene()}. Package-visible for unit tests.
-     */
-    Scene retainedScene() {
-        return scene;
     }
 
     @Override
@@ -87,16 +78,19 @@ public final class DesktopGameListener implements ApplicationListener {
     }
 
     /**
-     * Forwards one update/render tick to the game, then draws the retained scene. Package-visible
-     * so unit tests can exercise the lifecycle without starting LWJGL or requiring a display.
-     * Runs after {@code game.render()} so author {@code Draw2D} batches are expected to be ended.
+     * Forwards one update/render tick to the game, then draws {@code scenes().current()}.
+     * Package-visible so unit tests can exercise the lifecycle without starting LWJGL or requiring
+     * a display. Runs after {@code game.render()} so author {@code Draw2D} batches are expected to
+     * be ended. Null current yields an empty draw (no NPE).
      */
     void updateAndRender(float delta) {
         GdxEngineServices.pumpAssets(services);
         game.update(delta);
         game.render();
-        if (sceneRenderer != null && scene != null) {
-            sceneRenderer.render(scene);
+        Scene current = services == null ? null : services.scenes().current();
+        if (sceneRenderer != null) {
+            // Null current (e.g. after unload) records an empty draw — no NPE, no stale sprites.
+            sceneRenderer.render(current);
         }
     }
 

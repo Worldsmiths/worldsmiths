@@ -5,7 +5,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.github.xpenatan.gdx.teavm.backends.web.WebApplicationConfiguration;
-import io.github.worldsmiths.core.Scene;
 import io.github.worldsmiths.core.WorldsmithsGame;
 import org.junit.jupiter.api.Test;
 
@@ -54,11 +53,6 @@ class WebBackendTest {
     }
 
     private static final class StubGame implements WorldsmithsGame {
-        @Override
-        public Scene createScene() {
-            return new Scene("stub");
-        }
-
         @Override
         public void create(io.github.worldsmiths.core.EngineServices services) {}
 

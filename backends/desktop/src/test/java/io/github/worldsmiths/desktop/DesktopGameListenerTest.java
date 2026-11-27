@@ -1,6 +1,7 @@
 package io.github.worldsmiths.desktop;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -26,16 +27,16 @@ import org.junit.jupiter.api.Test;
 class DesktopGameListenerTest {
 
     @Test
-    void createPassesNonNullEngineServicesAfterCreateScene() {
+    void createPassesNonNullEngineServicesWithoutCreateScene() {
         RecordingGame game = new RecordingGame();
         FakeEngineServices fake = new FakeEngineServices();
         DesktopGameListener listener = new DesktopGameListener(game, null, fake);
 
         listener.create();
 
-        assertEquals(Arrays.asList("createScene", "create"), game.calls);
-        assertSame(game.scene, listener.retainedScene());
+        assertEquals(Arrays.asList("create"), game.calls);
         assertSame(fake, game.services);
+        assertSame(game.sceneA, fake.scenes().current());
         assertNotNull(game.services.input());
         assertNotNull(game.services.clock());
         assertNotNull(game.services.graphics());
@@ -61,20 +62,13 @@ class DesktopGameListenerTest {
         final LoadHandle[] observed = new LoadHandle[1];
         WorldsmithsGame game =
                 new WorldsmithsGame() {
-                    private final Scene scene = new Scene("async");
-                    private EngineServices services;
-
-                    @Override
-                    public Scene createScene() {
-                        return scene;
-                    }
-
                     @Override
                     public void create(EngineServices services) {
-                        this.services = services;
                         ((FakeAssets) services.assets()).putTexture("textures/heavy.png");
                         observed[0] =
                                 services.assets().request("textures/heavy.png", AssetKind.TEXTURE);
+                        Scene scene = new Scene("async");
+                        services.scenes().switchTo(scene);
                     }
 
                     @Override
@@ -96,14 +90,14 @@ class DesktopGameListenerTest {
     }
 
     @Test
-    void updateAndRenderDrawsRetainedSceneAfterGameRender() {
+    void updateAndRenderDrawsCurrentSceneAfterGameRender() {
         RecordingGame game = new RecordingGame();
         Sprite sprite = new Sprite("head.png");
         sprite.r = 0.1f;
         sprite.g = 0.2f;
         sprite.b = 0.3f;
         sprite.a = 1f;
-        game.scene.add(new Node("head").add(new Transform2D(1f, 2f)).add(sprite));
+        game.sceneA.add(new Node("head").add(new Transform2D(1f, 2f)).add(sprite));
 
         SceneShapeRenderer recorder = SceneShapeRenderer.recordingOnly();
         FakeEngineServices fake = new FakeEngineServices();
@@ -112,8 +106,7 @@ class DesktopGameListenerTest {
 
         listener.updateAndRender(0.016f);
 
-        assertEquals(
-                Arrays.asList("createScene", "create", "update:0.016", "render"), game.calls);
+        assertEquals(Arrays.asList("create", "update:0.016", "render"), game.calls);
         assertSame(fake, game.services);
         List<ShapeDrawCommand> draws = recorder.lastDrawCommands();
         assertEquals(1, draws.size());
@@ -121,6 +114,57 @@ class DesktopGameListenerTest {
         assertEquals(1f * SceneWalk.CELL_SIZE, draws.get(0).x, 0.001f);
         assertEquals(2f * SceneWalk.CELL_SIZE, draws.get(0).y, 0.001f);
         assertEquals(0.1f, draws.get(0).r, 0.001f);
+    }
+
+    @Test
+    void afterSceneHopDrawIncludesOnlyCurrentMarkers() {
+        RecordingGame game = new RecordingGame();
+        game.sceneA.add(
+                new Node("a").add(new Transform2D(0f, 0f)).add(new Sprite("marker-a.png")));
+        game.sceneB.add(
+                new Node("b").add(new Transform2D(1f, 0f)).add(new Sprite("marker-b.png")));
+
+        SceneShapeRenderer recorder = SceneShapeRenderer.recordingOnly();
+        FakeEngineServices fake = new FakeEngineServices();
+        DesktopGameListener listener = new DesktopGameListener(game, recorder, fake);
+        listener.create();
+
+        listener.updateAndRender(0.016f);
+        assertEquals(1, recorder.lastDrawCommands().size());
+        assertEquals("marker-a.png", recorder.lastDrawCommands().get(0).textureKey);
+
+        game.hopToB();
+
+        listener.updateAndRender(0.016f);
+
+        List<ShapeDrawCommand> draws = recorder.lastDrawCommands();
+        assertEquals(1, draws.size());
+        assertEquals("marker-b.png", draws.get(0).textureKey);
+        assertFalse(
+                draws.stream().anyMatch(d -> "marker-a.png".equals(d.textureKey)),
+                "draw must not include previous scene markers");
+    }
+
+    @Test
+    void afterUnloadUpdateAndRenderYieldsNoSpriteCommands() {
+        RecordingGame game = new RecordingGame();
+        game.sceneA.add(
+                new Node("a").add(new Transform2D(0f, 0f)).add(new Sprite("marker-a.png")));
+
+        SceneShapeRenderer recorder = SceneShapeRenderer.recordingOnly();
+        FakeEngineServices fake = new FakeEngineServices();
+        DesktopGameListener listener = new DesktopGameListener(game, recorder, fake);
+        listener.create();
+
+        listener.updateAndRender(0.016f);
+        assertEquals(1, recorder.lastDrawCommands().size());
+        assertEquals("marker-a.png", recorder.lastDrawCommands().get(0).textureKey);
+
+        game.unload();
+
+        listener.updateAndRender(0.016f);
+
+        assertTrue(recorder.lastDrawCommands().isEmpty(), "unload must clear retained sprite draws");
     }
 
     @Test
@@ -144,19 +188,23 @@ class DesktopGameListenerTest {
 
     private static final class RecordingGame implements WorldsmithsGame {
         final List<String> calls = new ArrayList<String>();
-        final Scene scene = new Scene("recording");
+        final Scene sceneA = new Scene("scene-a");
+        final Scene sceneB = new Scene("scene-b");
         EngineServices services;
-
-        @Override
-        public Scene createScene() {
-            calls.add("createScene");
-            return scene;
-        }
 
         @Override
         public void create(EngineServices services) {
             this.services = services;
+            services.scenes().switchTo(sceneA);
             calls.add("create");
+        }
+
+        void hopToB() {
+            services.scenes().switchTo(sceneB);
+        }
+
+        void unload() {
+            services.scenes().unload();
         }
 
         @Override
