@@ -1,13 +1,16 @@
 package io.github.worldsmiths.samples.snake;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import io.github.worldsmiths.core.Controls;
 import io.github.worldsmiths.core.FakeDraw2D;
 import io.github.worldsmiths.core.FakeEngineServices;
 import io.github.worldsmiths.core.Key;
 import io.github.worldsmiths.core.Node;
+import io.github.worldsmiths.core.PadButton;
 import io.github.worldsmiths.core.Scene;
 import io.github.worldsmiths.core.SceneWalk;
 import io.github.worldsmiths.core.Sprite;
@@ -74,8 +77,112 @@ class SnakeGameProjectionTest {
         SnakeController controller = new SnakeController(5, 5, 20, 15);
         SnakeGame game = new SnakeGame(controller);
         game.create(services);
+        // Shared DeviceState: key Fake drives the bound move_up Control.
         services.input().setKeyDown(Key.UP, true);
 
+        game.update(SnakeController.STEP_SECONDS);
+
+        assertEquals(5, controller.x());
+        assertEquals(6, controller.y());
+    }
+
+    @Test
+    void updateTurnsUpWhenFakePadAloneThroughBindings() {
+        FakeEngineServices services = new FakeEngineServices();
+        SnakeController controller = new SnakeController(5, 5, 20, 15);
+        SnakeGame game = new SnakeGame(controller);
+        game.create(services);
+        // Keys clear; only pad — dual-device path, not setActionActive.
+        assertFalse(services.input().isKeyDown(Key.UP));
+        assertFalse(services.input().isKeyDown(Key.W));
+        services.actions().setPadButtonDown(PadButton.DPAD_UP, true);
+
+        game.update(SnakeController.STEP_SECONDS);
+
+        assertEquals(5, controller.x());
+        assertEquals(6, controller.y());
+    }
+
+    @Test
+    void remapMoveUpSilencesOldKeyAndFiresNewKey() {
+        FakeEngineServices services = new FakeEngineServices();
+        SnakeController controller = new SnakeController(5, 5, 20, 15);
+        SnakeGame game = new SnakeGame(controller);
+        game.create(services);
+        // Replace-all via real bind — not setActionActive.
+        services.actions().bind("move_up", Controls.key(Key.I));
+
+        services.input().setKeyDown(Key.UP, true);
+        game.update(SnakeController.STEP_SECONDS);
+        assertEquals(6, controller.x(), "old UP binding must be silent after remap");
+        assertEquals(5, controller.y());
+
+        services.input().setKeyDown(Key.UP, false);
+        services.input().setKeyDown(Key.I, true);
+        game.update(SnakeController.STEP_SECONDS);
+        assertEquals(6, controller.x());
+        assertEquals(6, controller.y(), "new I binding must fire move_up");
+    }
+
+    @Test
+    void restartViaFakeKeyThroughRestartAction() {
+        FakeEngineServices services = new FakeEngineServices();
+        // Food off the rightward path so we die at the wall without filling the grid.
+        // Extra pair for placeFood on restart.
+        SnakeController controller = new SnakeController(0, 0, 3, 2, scriptedCoords(2, 1, 1, 0));
+        SnakeGame game = new SnakeGame(controller);
+        game.create(services);
+        game.update(SnakeController.STEP_SECONDS);
+        game.update(SnakeController.STEP_SECONDS);
+        game.update(SnakeController.STEP_SECONDS);
+        assertFalse(controller.alive());
+
+        services.input().setKeyDown(Key.R, true);
+        // Fake bag does not auto-tick; sample justPressed edges before update (GDX pump owns this).
+        services.actions().tick();
+        game.update(0f);
+
+        assertTrue(controller.alive());
+        assertEquals(0, controller.x());
+        assertEquals(0, controller.y());
+    }
+
+    @Test
+    void restartViaFakePadStartThroughRestartAction() {
+        FakeEngineServices services = new FakeEngineServices();
+        SnakeController controller = new SnakeController(0, 0, 3, 2, scriptedCoords(2, 1, 1, 0));
+        SnakeGame game = new SnakeGame(controller);
+        game.create(services);
+        game.update(SnakeController.STEP_SECONDS);
+        game.update(SnakeController.STEP_SECONDS);
+        game.update(SnakeController.STEP_SECONDS);
+        assertFalse(controller.alive());
+
+        services.actions().setPadButtonDown(PadButton.START, true);
+        services.actions().tick();
+        game.update(0f);
+
+        assertTrue(controller.alive());
+        assertEquals(0, controller.x());
+        assertEquals(0, controller.y());
+    }
+
+    @Test
+    void swipeUpViaRawInputStillTurns() {
+        FakeEngineServices services = new FakeEngineServices();
+        SnakeController controller = new SnakeController(5, 5, 20, 15);
+        SnakeGame game = new SnakeGame(controller);
+        game.create(services);
+
+        services.input().setJustTouched(true);
+        services.input().setTouched(true);
+        services.input().setPointer(100, 250);
+        game.update(0f);
+
+        services.input().setJustTouched(false);
+        services.input().setTouched(false);
+        // Screen Y grows downward; finger moves up → smaller Y (past swipe threshold).
+        services.input().setPointer(105, 150);
         game.update(SnakeController.STEP_SECONDS);
 
         assertEquals(5, controller.x());

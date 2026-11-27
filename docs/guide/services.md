@@ -11,6 +11,7 @@ Package: `io.github.worldsmiths.core`.
 | Getter | Type | Role |
 | --- | --- | --- |
 | `input()` | [`Input`](input.md) | Poll keys (`Key` enum) + primary pointer |
+| `actions()` | [`Actions`](input.md#actions-api) | Named digital binds / poll / remap (key, pad, pointer button) |
 | `clock()` | [`Clock`](clock.md) | Frame `delta()` + `total()` |
 | `graphics()` | [`Graphics`](graphics.md) | Size + best-effort `setTitle` |
 | `draw2d()` | [`Draw2D`](draw2d.md) | Immediate-mode lines/rects + ortho |
