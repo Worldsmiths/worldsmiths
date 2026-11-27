@@ -9,11 +9,12 @@ Desktop, browser (TeaVM / gdx-teavm), Android, and iOS (RoboVM) share the same `
 
 ## Controls
 
-Named actions (`move_*` / `restart`) bound in `create` to keyboard + gamepad defaults; swipe gestures still use raw `input()` getX/Y / touch.
+Named actions (`move_*` / `restart`) bound in `create` to keyboard + gamepad defaults; swipe gestures still use raw `input()` getX/Y / touch. Restart is `justPressed` (edge), not held.
 
-- **Move (keyboard / gamepad):** arrows or WASD, or D-pad (ignored while dead)
+- **Move (keyboard):** arrows or WASD (ignored while dead)
+- **Move (gamepad):** D-pad on desktop / web / Android when a Controllers pad is present; **iOS soft-absent** (pad binds never fire). Web pads may show up only after the first press.
 - **Move (Android / iOS / touch):** swipe left / right / up / down
-- **Restart after death:** `R` or Space / Start (pad); tap or swipe (touch)
+- **Restart after death:** `R` or Space; Start on pad where Controllers is live; tap or swipe (touch)
 
 ## Requirements
 

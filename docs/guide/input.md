@@ -22,7 +22,8 @@ Raw `input()` stays available forever for pointer coords and author-owned gestur
 | `bind(action, Control…)` | Replace-all bindings for the name |
 | `isDown(action)` | Any bound control currently held (soft-false if unknown) |
 | `justPressed(action)` | Transitioned up→down on the most recent `tick()` |
-| `tick()` | Advance one frame of justPressed edges |
+| `tick()` | Advance one frame of justPressed edges (harness / bag only — see below) |
+| `load(Files, path)` | Replace-listed-only bindings from a packaged table |
 
 Controls are built with `Controls.key(Key)`, `Controls.gamepadButton(PadButton)`, and `Controls.pointerButton(PointerButton)`. Multi-bind is OR; a later `bind` for the same name drops the previous list (remap).
 
@@ -39,6 +40,7 @@ public void create(EngineServices services) {
 
 public void update(float delta) {
   Actions a = services.actions();
+  // restart is edge-triggered: justPressed, not isDown (held R while dying does not auto-restart)
   if (a.justPressed("restart") && dead) { restart(); }
   else if (a.isDown("move_left")) { turn(LEFT); }
   // gestures still use raw pointer:
@@ -50,7 +52,33 @@ public void update(float delta) {
 
 Remap is replace-bind again: `a.bind("move_up", Controls.key(Key.I))` — old UP/W/pad silent; I fires.
 
-Call `actions().tick()` once per frame before `justPressed` polls. GDX bags tick in the frame pump; Fake tests must call `tick()` themselves after setting device state.
+### `tick()` ownership
+
+- **GDX bags** sync devices and call `actions().tick()` once per frame inside `GdxEngineServices.pumpAssets` (before `game.update`).
+- **Fake tests** must call `actions().tick()` themselves after setting device state and before asserting `justPressed`.
+- **Games must not call `tick()`** — a second tick in `update` clears the bag's `justPressed` edges for that frame.
+
+### Packaged `load`
+
+`actions().load(files, path)` reads a UTF-8 packaged internal file. Line format: `action kind TOKEN` where `kind` is `key`, `pad`, or `pointer`, and `TOKEN` is a `Key` / `PadButton` / `PointerButton` enum name. Blank lines and `#` comments are ignored. Multiple lines for the same action OR together; **only listed actions are replaced** — names omitted from the file stay as-is. Missing path (or null/blank args / malformed lines) throws `EngineException` before mutating the map.
+
+```text
+# example bindings.txt
+move_up key W
+move_up pad DPAD_UP
+restart key R
+```
+
+## Controllers / platforms
+
+| Platform | Gamepad |
+| --- | --- |
+| Desktop | Controllers wired — digital buttons via `PadButton` |
+| Web (TeaVM) | Controllers wired; pads may appear only after the **first press** (browser discovery) |
+| Android | Controllers wired |
+| iOS | Soft-absent — `EmptyGamepadSource` (bind OK; every pad poll false). No hardware pad AC in ticket 04 |
+
+Missing or soft-absent pads never throw on bind; polls stay false until a pad is present (Fake) or Controllers reports one (GDX).
 
 ## Tests (Fake device path)
 
@@ -66,5 +94,5 @@ game.create(services);
 services.input().setKeyDown(Key.UP, true);           // key alone through bindings
 services.actions().setPadButtonDown(PadButton.DPAD_UP, true); // pad alone
 services.actions().bind("move_up", Controls.key(Key.I));      // remap
-services.actions().tick(); // required for justPressed on Fake
+services.actions().tick(); // required for justPressed on Fake (do not also tick from game code)
 ```
