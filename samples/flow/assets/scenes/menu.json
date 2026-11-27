@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "name": "Menu",
+  "nodes": [
+    {
+      "name": "title",
+      "components": [
+        {
+          "type": "Transform2D",
+          "x": 0.0,
+          "y": 0.0,
+          "rotation": 0.0,
+          "scaleX": 1.0,
+          "scaleY": 1.0
+        },
+        {
+          "type": "Sprite",
+          "r": 0.2,
+          "g": 0.2,
+          "b": 0.5,
+          "a": 1.0,
+          "layer": 0,
+          "visible": true
+        }
+      ],
+      "children": []
+    }
+  ]
+}
