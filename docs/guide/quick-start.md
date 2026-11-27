@@ -1,9 +1,9 @@
 # Quick start
 
-Minimal lifecycle with portable services. Snake and rollball are GDX-free (input / graphics / Draw2D / Thin3D via the bag).
+Minimal lifecycle with portable services. Snake and rollball are GDX-free (input / graphics / Draw2D / Thin3D via the bag). Multi-scene hops: see [Scene flow](scene-flow.md) and the [`samples/flow`](../../samples/flow/) demo.
 
 1. Implement `WorldsmithsGame` with a no-arg constructor (launchers keep `new Game()`).
-2. In `create(EngineServices)`, load or `switchTo` the first scene via `services.scenes()`.
+2. In `create(EngineServices)`, establish the first scene via `services.scenes().load(...)` or `switchTo(...)` — there is no `createScene`.
 3. Receive portable services in `create(EngineServices)` — store the bag; use `input()` / `clock()` / `graphics()` / `draw2d()` / `files()` / `thin3d()` / `audio()` / `ui()` / `textures()` / `assets()` / `log()` / `scenes()`.
 4. Prefer engine facades over `com.badlogic.gdx` in game sources.
 
@@ -14,13 +14,14 @@ public final class MyGame implements WorldsmithsGame {
   @Override
   public void create(EngineServices services) {
     this.services = services;
-    services.scenes().switchTo(new Scene());
+    services.scenes().load("scenes/menu.json"); // or switchTo(new Scene())
     services.graphics().setTitle("My game"); // best-effort; Android may ignore
   }
 
   @Override
   public void update(float delta) {
     if (services.input().isKeyDown(Key.LEFT)) { /* … */ }
+    // Later: services.scenes().load("scenes/room_b.json");
   }
 
   @Override
@@ -40,4 +41,4 @@ public final class MyGame implements WorldsmithsGame {
 }
 ```
 
-Headless tests: pass `new FakeEngineServices()` into `create`. See [Services](services.md), [Input](input.md), [Clock](clock.md), [Graphics](graphics.md), [Draw2D](draw2d.md), [Files](files.md), [Thin3D](thin3d.md), [Audio](audio.md), [Ui](ui.md), [Textures](textures.md), [Assets](assets.md), [Log](log.md).
+Headless tests: pass `new FakeEngineServices()` into `create`. See [Services](services.md), [Scene flow](scene-flow.md), [Input](input.md), [Clock](clock.md), [Graphics](graphics.md), [Draw2D](draw2d.md), [Files](files.md), [Thin3D](thin3d.md), [Audio](audio.md), [Ui](ui.md), [Textures](textures.md), [Assets](assets.md), [Log](log.md).

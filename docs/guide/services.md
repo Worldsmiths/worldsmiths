@@ -1,6 +1,6 @@
 # Services overview
 
-Games receive a non-null `EngineServices` bag from the backend via `WorldsmithsGame.create(EngineServices)`. The first scene is established inside `create` via `services.scenes()` (`load` or `switchTo`).
+Games receive a non-null `EngineServices` bag from the backend via `WorldsmithsGame.create(EngineServices)`. The first scene is established inside `create` via `services.scenes()` (`load` or `switchTo`) — there is no `createScene`. See [Scene flow](scene-flow.md).
 
 Launchers stay `new Game()` — backends assemble the bag (GDX-backed impls). Headless tests pass `FakeEngineServices`.
 
@@ -22,7 +22,7 @@ Package: `io.github.worldsmiths.core`.
 | `assets()` | [`Assets`](assets.md) | Async request → handle; merges TEXTURE into textures cache |
 | `log()` | [`Log`](log.md) | Portable debug / info / warn / error |
 | `uiKit()` | [`UiKit`](uikit.md) | Session widgets — layout, hit, focus, draw |
-| `scenes()` | `Scenes` | Replace-only scene flow (`load` / `switchTo` / `unload` / `current`) |
+| `scenes()` | [`Scenes`](scene-flow.md) | Replace-only scene flow (`load` / `switchTo` / `unload` / `current`) |
 | `extensions()` | `EngineServices.Extensions` | Empty stub; unused in D9 |
 
 ## Honesty limits
@@ -30,6 +30,7 @@ Package: `io.github.worldsmiths.core`.
 - `graphics().setTitle(...)` is best-effort; Android may ignore it.
 - Files on web = internal packaged only (see [Files](files.md)).
 - Async assets: hybrid backends (AssetManager on desktop/Android/iOS; cooperative on web) — see [Assets](assets.md).
+- Scene flow is replace-only (no additive stack, fades, async-gated switch, or per-scene texture eviction) — see [Scene flow](scene-flow.md).
 
 ## Tests
 
