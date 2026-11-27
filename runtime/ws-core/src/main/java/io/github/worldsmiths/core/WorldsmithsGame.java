@@ -4,22 +4,15 @@ package io.github.worldsmiths.core;
  * Public contract for a Worldsmiths {@code gameClass}. Game modules implement this interface;
  * backends drive the lifecycle without exposing platform types to game code.
  *
- * <p>Games build a root {@link Scene} via {@link #createScene()}; the backend retains that scene
- * and later draws from it. Games then receive {@link #create(EngineServices)} / {@link #update(float)} /
- * {@link #render()} for setup and per-frame logic.
+ * <p>Games receive {@link #create(EngineServices)} / {@link #update(float)} / {@link #render()} for
+ * setup and per-frame logic. The first scene is established inside {@link #create(EngineServices)}
+ * via {@link EngineServices#scenes()} ({@code load} or {@code switchTo}).
  */
 public interface WorldsmithsGame {
 
     /**
-     * Builds the root scene tree for this game. Called once by the backend before
-     * {@link #create(EngineServices)}.
-     *
-     * @return the scene the engine should retain (never {@code null})
-     */
-    Scene createScene();
-
-    /**
-     * Called once when the application is ready, after {@link #createScene()}.
+     * Called once when the application is ready. Games load or switch to their first scene through
+     * {@code services.scenes()} during this call.
      *
      * @param services non-null engine services bag (backends assemble real impls; tests pass
      *     {@link FakeEngineServices})
@@ -33,7 +26,7 @@ public interface WorldsmithsGame {
      */
     void update(float delta);
 
-    /** Called each frame to draw game-owned content (engine draws the retained scene separately). */
+    /** Called each frame to draw game-owned content (engine draws {@code scenes().current()} separately). */
     void render();
 
     /**

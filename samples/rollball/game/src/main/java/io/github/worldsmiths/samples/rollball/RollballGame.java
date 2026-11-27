@@ -60,7 +60,11 @@ public final class RollballGame implements WorldsmithsGame {
     }
 
     @Override
-    public Scene createScene() {
+    public void create(EngineServices services) {
+        if (services == null) {
+            throw new NullPointerException("services");
+        }
+        this.services = services;
         scene = new Scene("rollball");
         ballTransform =
                 new Transform3D(controller.ballX(), controller.ballY(), controller.ballZ());
@@ -77,15 +81,8 @@ public final class RollballGame implements WorldsmithsGame {
             scene.add(new Node("pickup-" + i).add(tx));
         }
         syncScene();
-        return scene;
-    }
+        services.scenes().switchTo(scene);
 
-    @Override
-    public void create(EngineServices services) {
-        if (services == null) {
-            throw new NullPointerException("services");
-        }
-        this.services = services;
         Thin3D thin3d = services.thin3d();
         ModelBuilder builder = thin3d.createModelBuilder();
         float ballDiam = RollballController.BALL_RADIUS * 2f;

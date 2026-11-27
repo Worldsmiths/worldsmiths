@@ -1,10 +1,11 @@
 package io.github.worldsmiths.core;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.lang.reflect.Method;
 import org.junit.jupiter.api.Test;
 
 class WorldsmithsGameTest {
@@ -36,22 +37,16 @@ class WorldsmithsGameTest {
     }
 
     @Test
-    void createSceneReturnsASceneInstance() {
-        WorldsmithsGame game = new StubGame();
-
-        Scene scene = game.createScene();
-
-        assertNotNull(scene);
-        assertTrue(scene.nodes.isEmpty());
+    void hasNoCreateSceneMethod() {
+        for (Method method : WorldsmithsGame.class.getDeclaredMethods()) {
+            assertFalse(
+                    "createScene".equals(method.getName()),
+                    "WorldsmithsGame must not declare createScene");
+        }
     }
 
     private static final class StubGame implements WorldsmithsGame {
         EngineServices receivedServices;
-
-        @Override
-        public Scene createScene() {
-            return new Scene();
-        }
 
         @Override
         public void create(EngineServices services) {

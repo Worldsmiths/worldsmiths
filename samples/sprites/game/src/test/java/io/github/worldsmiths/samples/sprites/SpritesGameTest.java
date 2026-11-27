@@ -41,15 +41,13 @@ class SpritesGameTest {
 
     @Test
     void createLoadsSceneViaFilesAndSceneCodecWithTextureKeys() {
-        FakeEngineServices services = new FakeEngineServices();
-        services.files().putInternal("scenes/demo.json", DEMO_SCENE_JSON);
-        services.textures().putTexture("hero.png");
-        services.textures().putTexture("coin.png");
+        FakeEngineServices services = seededServices();
 
         SpritesGame game = new SpritesGame();
-        Scene retained = game.createScene();
         game.create(services);
 
+        Scene retained = services.scenes().current();
+        assertNotNull(retained);
         assertEquals("Sprites", retained.name);
         assertEquals(3, retained.nodes.size());
 
@@ -68,14 +66,12 @@ class SpritesGameTest {
 
     @Test
     void createEmitsAtLeastTwoDistinctLogLevelsViaServicesLog() {
-        FakeEngineServices services = new FakeEngineServices();
-        services.files().putInternal("scenes/demo.json", DEMO_SCENE_JSON);
-        services.textures().putTexture("hero.png");
-        services.textures().putTexture("coin.png");
+        FakeEngineServices services = seededServices();
 
         SpritesGame game = new SpritesGame();
-        game.createScene();
         game.create(services);
+
+        assertNotNull(services.scenes().current());
 
         Set<FakeLog.Command.Level> levels = new HashSet<FakeLog.Command.Level>();
         for (FakeLog.Command cmd : services.log().commands()) {
@@ -88,14 +84,13 @@ class SpritesGameTest {
 
     @Test
     void createPreloadsDistinctTextureKeysAndWalkDrawsThem() {
-        FakeEngineServices services = new FakeEngineServices();
-        services.files().putInternal("scenes/demo.json", DEMO_SCENE_JSON);
-        services.textures().putTexture("hero.png");
-        services.textures().putTexture("coin.png");
+        FakeEngineServices services = seededServices();
 
         SpritesGame game = new SpritesGame();
-        Scene retained = game.createScene();
         game.create(services);
+
+        Scene retained = services.scenes().current();
+        assertNotNull(retained);
 
         FakeTextures textures = services.textures();
         Set<String> preloaded = new HashSet<String>();
@@ -118,6 +113,14 @@ class SpritesGameTest {
         assertEquals("coin.png", draws.get(1).textureKey);
         assertEquals(null, draws.get(2).textureKey);
         assertEquals(0.2f, draws.get(2).r, 0.001f);
+    }
+
+    private static FakeEngineServices seededServices() {
+        FakeEngineServices services = new FakeEngineServices();
+        services.files().putInternal("scenes/demo.json", DEMO_SCENE_JSON);
+        services.textures().putTexture("hero.png");
+        services.textures().putTexture("coin.png");
+        return services;
     }
 
     private static Set<String> setOf(String a, String b) {

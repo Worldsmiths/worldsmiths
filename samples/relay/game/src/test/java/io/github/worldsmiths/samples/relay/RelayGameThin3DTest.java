@@ -2,6 +2,7 @@ package io.github.worldsmiths.samples.relay;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import io.github.worldsmiths.core.FakeAudio;
@@ -23,9 +24,9 @@ class RelayGameThin3DTest {
     void createAndRenderRecordPrimitivesBatchAndTitleWithoutGl() {
         FakeEngineServices services = seededServices();
         RelayGame game = new RelayGame();
-        game.createScene();
         game.create(services);
 
+        assertNotNull(services.scenes().current());
         assertTrue(services.graphics().lastTitle().contains("running"));
 
         FakeThin3D thin3d = services.thin3d();
@@ -83,7 +84,6 @@ class RelayGameThin3DTest {
         FakeEngineServices services = seededServices();
         RelayController controller = new RelayController();
         RelayGame game = new RelayGame(controller);
-        game.createScene();
         game.create(services);
 
         clearCourseUnderPar(controller, game);
@@ -98,7 +98,6 @@ class RelayGameThin3DTest {
         FakeEngineServices services = seededServices();
         RelayController controller = new RelayController();
         RelayGame game = new RelayGame(controller);
-        game.createScene();
         game.create(services);
 
         FakeAudio audio = services.audio();
@@ -127,7 +126,6 @@ class RelayGameThin3DTest {
         FakeEngineServices services = seededServices();
         RelayController controller = new RelayController();
         RelayGame game = new RelayGame(controller);
-        game.createScene();
         game.create(services);
 
         FakeAudio audio = services.audio();
@@ -144,7 +142,6 @@ class RelayGameThin3DTest {
         FakeEngineServices services = seededServices();
         RelayController controller = new RelayController();
         RelayGame game = new RelayGame(controller);
-        game.createScene();
         game.create(services);
 
         clearCourseUnderPar(controller, game);
@@ -162,7 +159,6 @@ class RelayGameThin3DTest {
         FakeEngineServices services = seededServices();
         RelayController controller = new RelayController();
         RelayGame game = new RelayGame(controller);
-        game.createScene();
         game.create(services);
 
         game.update(RelayController.RUN_PAR_SECONDS);
@@ -188,7 +184,6 @@ class RelayGameThin3DTest {
         RelayController controller = new RelayController();
         float startX = controller.agentX();
         RelayGame game = new RelayGame(controller);
-        game.createScene();
         game.create(services);
         services.input().setKeyDown(Key.D, true);
 
@@ -202,7 +197,6 @@ class RelayGameThin3DTest {
         FakeEngineServices services = seededServices();
         RelayController controller = new RelayController();
         RelayGame game = new RelayGame(controller);
-        game.createScene();
         game.create(services);
 
         advanceToLeg2ViaGame(controller, game);
@@ -220,7 +214,6 @@ class RelayGameThin3DTest {
         FakeEngineServices services = seededServices();
         RelayController controller = new RelayController();
         RelayGame game = new RelayGame(controller);
-        game.createScene();
         game.create(services);
 
         FakeUi ui = services.ui();
@@ -276,7 +269,6 @@ class RelayGameThin3DTest {
     void createAndRenderRecordsUiKitLeafKindsAndSparsePaint() {
         FakeEngineServices services = seededServices();
         RelayGame game = new RelayGame();
-        game.createScene();
         game.create(services);
 
         FakeUiKit uiKit = services.uiKit();
@@ -305,7 +297,6 @@ class RelayGameThin3DTest {
         FakeEngineServices services = seededServices();
         RelayController controller = new RelayController();
         RelayGame game = new RelayGame(controller);
-        game.createScene();
         game.create(services);
 
         advanceToLeg2ViaGame(controller, game);

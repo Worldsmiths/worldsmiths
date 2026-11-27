@@ -1,6 +1,7 @@
 package io.github.worldsmiths.samples.asyncload;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import io.github.worldsmiths.core.FakeEngineServices;
@@ -22,9 +23,9 @@ class AsyncLoadGameTest {
         services.assets().putTexture(HEAVY_PATH);
 
         AsyncLoadGame game = new AsyncLoadGame();
-        game.createScene();
         game.create(services);
 
+        assertNotNull(services.scenes().current());
         assertEquals(LoadState.QUEUED, game.loadHandle().state());
 
         services.assets().pump();
