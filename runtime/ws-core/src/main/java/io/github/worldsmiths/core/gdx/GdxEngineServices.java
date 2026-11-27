@@ -55,7 +55,7 @@ public final class GdxEngineServices {
         DeviceState devices = new DeviceState();
         GdxActionDevices actionDevices = new GdxActionDevices(devices, defaultGamepadSource());
         return new Bag(
-                new GdxInput(),
+                new GdxInput(devices),
                 new DefaultActions(devices),
                 actionDevices,
                 new GdxClock(),
