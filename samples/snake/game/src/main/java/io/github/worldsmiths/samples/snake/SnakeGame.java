@@ -82,10 +82,6 @@ public final class SnakeGame implements WorldsmithsGame {
 
     @Override
     public void update(float delta) {
-        if (services != null) {
-            // Sample justPressed edges once per frame before polling (Fake path; backends may own later).
-            services.actions().tick();
-        }
         applyInput();
         controller.update(delta);
         syncScene();

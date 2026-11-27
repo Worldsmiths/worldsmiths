@@ -138,6 +138,8 @@ class SnakeGameProjectionTest {
         assertFalse(controller.alive());
 
         services.input().setKeyDown(Key.R, true);
+        // Fake bag does not auto-tick; sample justPressed edges before update (GDX pump owns this).
+        services.actions().tick();
         game.update(0f);
 
         assertTrue(controller.alive());
@@ -157,6 +159,7 @@ class SnakeGameProjectionTest {
         assertFalse(controller.alive());
 
         services.actions().setPadButtonDown(PadButton.START, true);
+        services.actions().tick();
         game.update(0f);
 
         assertTrue(controller.alive());

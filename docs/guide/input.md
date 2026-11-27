@@ -39,7 +39,6 @@ public void create(EngineServices services) {
 
 public void update(float delta) {
   Actions a = services.actions();
-  a.tick(); // once per frame before justPressed polls
   if (a.justPressed("restart") && dead) { restart(); }
   else if (a.isDown("move_left")) { turn(LEFT); }
   // gestures still use raw pointer:
@@ -50,6 +49,8 @@ public void update(float delta) {
 ```
 
 Remap is replace-bind again: `a.bind("move_up", Controls.key(Key.I))` — old UP/W/pad silent; I fires.
+
+Call `actions().tick()` once per frame before `justPressed` polls. GDX bags tick in the frame pump; Fake tests must call `tick()` themselves after setting device state.
 
 ## Tests (Fake device path)
 
@@ -65,4 +66,5 @@ game.create(services);
 services.input().setKeyDown(Key.UP, true);           // key alone through bindings
 services.actions().setPadButtonDown(PadButton.DPAD_UP, true); // pad alone
 services.actions().bind("move_up", Controls.key(Key.I));      // remap
+services.actions().tick(); // required for justPressed on Fake
 ```
