@@ -28,7 +28,6 @@ class SnakeGameProjectionTest {
         FakeEngineServices services = new FakeEngineServices();
         services.graphics().setSize(640, 480);
         SnakeGame game = new SnakeGame();
-        game.createScene();
         game.create(services);
 
         game.render();
@@ -64,8 +63,8 @@ class SnakeGameProjectionTest {
     void createPublishesScoreTitleViaGraphics() {
         FakeEngineServices services = new FakeEngineServices();
         SnakeGame game = new SnakeGame();
-        game.createScene();
         game.create(services);
+        assertNotNull(services.scenes().current());
         assertEquals("Snake — score: 0", services.graphics().lastTitle());
     }
 
@@ -74,7 +73,6 @@ class SnakeGameProjectionTest {
         FakeEngineServices services = new FakeEngineServices();
         SnakeController controller = new SnakeController(5, 5, 20, 15);
         SnakeGame game = new SnakeGame(controller);
-        game.createScene();
         game.create(services);
         services.input().setKeyDown(Key.UP, true);
 
@@ -85,11 +83,14 @@ class SnakeGameProjectionTest {
     }
 
     @Test
-    void createSceneIncludesHeadAndFoodNodesWithDistinctColors() {
+    void createIncludesHeadAndFoodNodesWithDistinctColors() {
         SnakeController controller = new SnakeController(5, 5, 20, 15, scriptedCoords(8, 3));
         SnakeGame game = new SnakeGame(controller);
+        FakeEngineServices services = new FakeEngineServices();
+        game.create(services);
 
-        Scene scene = game.createScene();
+        Scene scene = services.scenes().current();
+        assertNotNull(scene);
 
         Node head = findNode(scene, "head");
         Node food = findNode(scene, "food");
@@ -114,7 +115,9 @@ class SnakeGameProjectionTest {
     void syncSceneAddsBodySegmentNodesWhenLengthGrows() {
         SnakeController controller = new SnakeController(0, 0, 3, 1, scriptedCoords(1, 0, 2, 0));
         SnakeGame game = new SnakeGame(controller);
-        Scene scene = game.createScene();
+        FakeEngineServices services = new FakeEngineServices();
+        game.create(services);
+        Scene scene = services.scenes().current();
         assertEquals(0, countNodesNamedPrefix(scene, "body-"));
 
         controller.update(SnakeController.STEP_SECONDS);
@@ -138,7 +141,9 @@ class SnakeGameProjectionTest {
     void syncSceneRemovesBodySegmentNodesAfterRestart() {
         SnakeController controller = new SnakeController(0, 0, 3, 1, scriptedCoords(1, 0, 2, 0, 1, 0));
         SnakeGame game = new SnakeGame(controller);
-        Scene scene = game.createScene();
+        FakeEngineServices services = new FakeEngineServices();
+        game.create(services);
+        Scene scene = services.scenes().current();
         controller.update(SnakeController.STEP_SECONDS);
         game.syncScene();
         assertEquals(1, countNodesNamedPrefix(scene, "body-"));

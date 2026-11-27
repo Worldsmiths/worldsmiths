@@ -89,7 +89,11 @@ public final class RelayGame implements WorldsmithsGame {
     }
 
     @Override
-    public Scene createScene() {
+    public void create(EngineServices services) {
+        if (services == null) {
+            throw new NullPointerException("services");
+        }
+        this.services = services;
         scene = new Scene("relay");
         agentTransform =
                 new Transform3D(controller.agentX(), controller.agentY(), controller.agentZ());
@@ -107,15 +111,8 @@ public final class RelayGame implements WorldsmithsGame {
         scene.add(new Node("gate-inactive").add(inactiveGateTransform));
 
         syncScene();
-        return scene;
-    }
+        services.scenes().switchTo(scene);
 
-    @Override
-    public void create(EngineServices services) {
-        if (services == null) {
-            throw new NullPointerException("services");
-        }
-        this.services = services;
         Thin3D thin3d = services.thin3d();
         ModelBuilder builder = thin3d.createModelBuilder();
 

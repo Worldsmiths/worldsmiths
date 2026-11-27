@@ -17,16 +17,9 @@ public final class AsyncLoadGame implements WorldsmithsGame {
     static final String HEAVY_PATH = "textures/heavy.png";
     static final String LOG_TAG = "async";
 
-    private Scene scene;
     private LoadHandle loadHandle;
     private EngineServices services;
     private boolean terminalLogged;
-
-    @Override
-    public Scene createScene() {
-        scene = new Scene("asyncload");
-        return scene;
-    }
 
     @Override
     public void create(EngineServices services) {
@@ -34,6 +27,7 @@ public final class AsyncLoadGame implements WorldsmithsGame {
             throw new NullPointerException("services");
         }
         this.services = services;
+        services.scenes().switchTo(new Scene("asyncload"));
         services.graphics().setTitle("AsyncLoad");
         loadHandle = services.assets().request(HEAVY_PATH, AssetKind.TEXTURE);
         services.log().info(LOG_TAG, "loading " + HEAVY_PATH);

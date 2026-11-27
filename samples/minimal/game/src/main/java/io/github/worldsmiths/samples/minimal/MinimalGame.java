@@ -11,12 +11,9 @@ import io.github.worldsmiths.core.WorldsmithsGame;
 public final class MinimalGame implements WorldsmithsGame {
 
     @Override
-    public Scene createScene() {
-        return new Scene();
+    public void create(EngineServices services) {
+        services.scenes().switchTo(new Scene());
     }
-
-    @Override
-    public void create(EngineServices services) {}
 
     @Override
     public void update(float delta) {}

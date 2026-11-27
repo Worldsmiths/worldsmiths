@@ -3,8 +3,8 @@
 Minimal lifecycle with portable services. Snake and rollball are GDX-free (input / graphics / Draw2D / Thin3D via the bag).
 
 1. Implement `WorldsmithsGame` with a no-arg constructor (launchers keep `new Game()`).
-2. Build a `Scene` in `createScene()`.
-3. Receive portable services in `create(EngineServices)` — store the bag; use `input()` / `clock()` / `graphics()` / `draw2d()` / `files()` / `thin3d()` / `audio()` / `ui()` / `textures()` / `assets()` / `log()`.
+2. In `create(EngineServices)`, load or `switchTo` the first scene via `services.scenes()`.
+3. Receive portable services in `create(EngineServices)` — store the bag; use `input()` / `clock()` / `graphics()` / `draw2d()` / `files()` / `thin3d()` / `audio()` / `ui()` / `textures()` / `assets()` / `log()` / `scenes()`.
 4. Prefer engine facades over `com.badlogic.gdx` in game sources.
 
 ```java
@@ -12,13 +12,9 @@ public final class MyGame implements WorldsmithsGame {
   private EngineServices services;
 
   @Override
-  public Scene createScene() {
-    return new Scene();
-  }
-
-  @Override
   public void create(EngineServices services) {
     this.services = services;
+    services.scenes().switchTo(new Scene());
     services.graphics().setTitle("My game"); // best-effort; Android may ignore
   }
 

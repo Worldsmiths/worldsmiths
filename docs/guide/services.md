@@ -1,6 +1,6 @@
 # Services overview
 
-Games receive a non-null `EngineServices` bag from the backend via `WorldsmithsGame.create(EngineServices)` after `createScene()`.
+Games receive a non-null `EngineServices` bag from the backend via `WorldsmithsGame.create(EngineServices)`. The first scene is established inside `create` via `services.scenes()` (`load` or `switchTo`).
 
 Launchers stay `new Game()` — backends assemble the bag (GDX-backed impls). Headless tests pass `FakeEngineServices`.
 
@@ -22,6 +22,7 @@ Package: `io.github.worldsmiths.core`.
 | `assets()` | [`Assets`](assets.md) | Async request → handle; merges TEXTURE into textures cache |
 | `log()` | [`Log`](log.md) | Portable debug / info / warn / error |
 | `uiKit()` | [`UiKit`](uikit.md) | Session widgets — layout, hit, focus, draw |
+| `scenes()` | `Scenes` | Replace-only scene flow (`load` / `switchTo` / `unload` / `current`) |
 | `extensions()` | `EngineServices.Extensions` | Empty stub; unused in D9 |
 
 ## Honesty limits

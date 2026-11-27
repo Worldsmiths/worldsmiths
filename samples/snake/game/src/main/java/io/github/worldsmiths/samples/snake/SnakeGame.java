@@ -16,10 +16,10 @@ import java.util.List;
 
 /**
  * Fuller Snake for D3: grid drawn in {@link #render()} via engine {@link Draw2D}, head + body
- * segment + food nodes from {@link #createScene()} with {@link Transform2D} + colored {@link
- * Sprite}, discrete grid move on a step timer, turns via {@link EngineServices#input()} while
- * alive, restart via R or Space when dead, score in the window title. Touch: swipe to turn while
- * alive; tap (or swipe) to restart when dead. Retained sprites still draw through {@link
+ * segment + food nodes built in {@link #create(EngineServices)} with {@link Transform2D} + colored
+ * {@link Sprite}, discrete grid move on a step timer, turns via {@link EngineServices#input()}
+ * while alive, restart via R or Space when dead, score in the window title. Touch: swipe to turn
+ * while alive; tap (or swipe) to restart when dead. Retained sprites still draw through {@link
  * SceneWalk}.
  */
 public final class SnakeGame implements WorldsmithsGame {
@@ -60,7 +60,11 @@ public final class SnakeGame implements WorldsmithsGame {
     }
 
     @Override
-    public Scene createScene() {
+    public void create(EngineServices services) {
+        if (services == null) {
+            throw new NullPointerException("services");
+        }
+        this.services = services;
         bodyNodes.clear();
         scene = new Scene("snake");
         headTransform = new Transform2D(controller.x(), controller.y());
@@ -68,15 +72,7 @@ public final class SnakeGame implements WorldsmithsGame {
         foodTransform = new Transform2D(controller.foodX(), controller.foodY());
         scene.add(new Node("food").add(foodTransform).add(coloredSprite(FOOD_R, FOOD_G, FOOD_B)));
         syncScene();
-        return scene;
-    }
-
-    @Override
-    public void create(EngineServices services) {
-        if (services == null) {
-            throw new NullPointerException("services");
-        }
-        this.services = services;
+        services.scenes().switchTo(scene);
         publishTitle(controller.score());
     }
 

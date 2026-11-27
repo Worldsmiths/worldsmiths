@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import io.github.worldsmiths.core.FakeEngineServices;
 import io.github.worldsmiths.core.Node;
 import io.github.worldsmiths.core.Scene;
 import io.github.worldsmiths.core.Transform3D;
@@ -13,11 +14,14 @@ import org.junit.jupiter.api.Test;
 class RollballGameSyncTest {
 
     @Test
-    void createScenePlacesBallAndPickupNodesWithTransform3D() {
+    void createPlacesBallAndPickupNodesWithTransform3D() {
         RollballController controller = new RollballController();
         RollballGame game = new RollballGame(controller);
+        FakeEngineServices services = new FakeEngineServices();
+        game.create(services);
 
-        Scene scene = game.createScene();
+        Scene scene = services.scenes().current();
+        assertNotNull(scene);
 
         Node ball = findNode(scene, "ball");
         assertNotNull(ball);
@@ -43,7 +47,9 @@ class RollballGameSyncTest {
     void syncSceneWritesBallAndHidesCollectedPickups() {
         RollballController controller = new RollballController();
         RollballGame game = new RollballGame(controller);
-        Scene scene = game.createScene();
+        FakeEngineServices services = new FakeEngineServices();
+        game.create(services);
+        Scene scene = services.scenes().current();
 
         float[] first = controller.pickupPosition(0);
         controller.placeBall(first[0], RollballController.BALL_RADIUS, first[1]);
