@@ -2,10 +2,13 @@ package io.github.worldsmiths.core.gdx;
 
 import com.badlogic.gdx.Application;
 import com.badlogic.gdx.Gdx;
+import io.github.worldsmiths.core.Actions;
 import io.github.worldsmiths.core.Assets;
 import io.github.worldsmiths.core.Audio;
 import io.github.worldsmiths.core.Clock;
+import io.github.worldsmiths.core.DefaultActions;
 import io.github.worldsmiths.core.DefaultScenes;
+import io.github.worldsmiths.core.DeviceState;
 import io.github.worldsmiths.core.Draw2D;
 import io.github.worldsmiths.core.EngineServices;
 import io.github.worldsmiths.core.FakeAssets;
@@ -48,8 +51,11 @@ public final class GdxEngineServices {
      */
     static EngineServices bag(GdxTextures textures, GdxPumpableAssets assets) {
         GdxFiles files = new GdxFiles();
+        // Device sync from GDX Input/Controllers into DeviceState is a later task; bag still
+        // exposes a seeded Actions over an empty port so authors can bind/poll.
         return new Bag(
                 new GdxInput(),
+                new DefaultActions(new DeviceState()),
                 new GdxClock(),
                 new GdxGraphics(),
                 new GdxDraw2D(),
@@ -175,6 +181,7 @@ public final class GdxEngineServices {
                 null,
                 null,
                 null,
+                null,
                 textures,
                 assets,
                 null,
@@ -197,6 +204,7 @@ public final class GdxEngineServices {
 
     private static final class Bag implements EngineServices {
         private final Input input;
+        private final Actions actions;
         private final Clock clock;
         private final Graphics graphics;
         private final Draw2D draw2d;
@@ -213,6 +221,7 @@ public final class GdxEngineServices {
 
         Bag(
                 Input input,
+                Actions actions,
                 Clock clock,
                 Graphics graphics,
                 Draw2D draw2d,
@@ -227,6 +236,7 @@ public final class GdxEngineServices {
                 Scenes scenes,
                 Extensions extensions) {
             this.input = input;
+            this.actions = actions;
             this.clock = clock;
             this.graphics = graphics;
             this.draw2d = draw2d;
@@ -245,6 +255,11 @@ public final class GdxEngineServices {
         @Override
         public Input input() {
             return input;
+        }
+
+        @Override
+        public Actions actions() {
+            return actions;
         }
 
         @Override

@@ -16,6 +16,7 @@ class EngineServicesTest {
         FakeEngineServices services = new FakeEngineServices();
 
         assertNotNull(services.input());
+        assertNotNull(services.actions());
         assertNotNull(services.clock());
         assertNotNull(services.graphics());
         assertNotNull(services.draw2d());
@@ -30,6 +31,7 @@ class EngineServicesTest {
         assertNotNull(services.scenes());
         assertNotNull(services.extensions());
         assertSame(services.input(), services.input());
+        assertSame(services.actions(), services.actions());
         assertSame(services.clock(), services.clock());
         assertSame(services.graphics(), services.graphics());
         assertSame(services.draw2d(), services.draw2d());
@@ -42,6 +44,7 @@ class EngineServicesTest {
         assertSame(services.log(), services.log());
         assertSame(services.assets(), services.assets());
         assertSame(services.scenes(), services.scenes());
+        assertTrue(services.actions() instanceof FakeActions);
         assertTrue(services.assets() instanceof FakeAssets);
         assertTrue(services.scenes() instanceof FakeScenes);
     }

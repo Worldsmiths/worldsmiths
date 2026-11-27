@@ -5,12 +5,15 @@ import io.github.worldsmiths.core.ui.FakeUiKit;
 
 /**
  * Always-non-null services bag for unit tests and headless game harnesses. Exposes typed fakes so
- * tests can set key/pointer/clock/graphics/files/audio/ui/textures/log/assets/scenes state and
- * assert Draw2D / Thin3D / Audio / Ui / Textures / Log / Assets / Scenes recordings without a
+ * tests can set key/pointer/actions/clock/graphics/files/audio/ui/textures/log/assets/scenes state
+ * and assert Draw2D / Thin3D / Audio / Ui / Textures / Log / Assets / Scenes recordings without a
  * display.
  */
 public final class FakeEngineServices implements EngineServices {
-    private final FakeInput input = new FakeInput();
+    /** Shared held/edge port for {@link #input()} keys and {@link #actions()} Control polls. */
+    private final DeviceState devices = new DeviceState();
+    private final FakeInput input = new FakeInput(devices);
+    private final FakeActions actions = new FakeActions(devices);
     private final FakeClock clock = new FakeClock();
     private final FakeGraphics graphics = new FakeGraphics();
     private final FakeDraw2D draw2d = new FakeDraw2D();
@@ -30,6 +33,11 @@ public final class FakeEngineServices implements EngineServices {
     @Override
     public FakeInput input() {
         return input;
+    }
+
+    @Override
+    public FakeActions actions() {
+        return actions;
     }
 
     @Override

@@ -1,18 +1,27 @@
 package io.github.worldsmiths.core;
 
-import java.util.EnumSet;
-
 /** Mutable {@link Input} for headless tests. Starts with no keys down and pointer at origin. */
 public final class FakeInput implements Input {
-    private final EnumSet<Key> down = EnumSet.noneOf(Key.class);
+    private final DeviceState devices;
     private boolean touched;
     private boolean justTouched;
     private int x;
     private int y;
 
+    public FakeInput() {
+        this(new DeviceState());
+    }
+
+    public FakeInput(DeviceState devices) {
+        if (devices == null) {
+            throw new EngineException("DeviceState must not be null");
+        }
+        this.devices = devices;
+    }
+
     @Override
     public boolean isKeyDown(Key key) {
-        return key != null && down.contains(key);
+        return devices.isKeyDown(key);
     }
 
     @Override
@@ -36,14 +45,7 @@ public final class FakeInput implements Input {
     }
 
     public void setKeyDown(Key key, boolean isDown) {
-        if (key == null) {
-            return;
-        }
-        if (isDown) {
-            down.add(key);
-        } else {
-            down.remove(key);
-        }
+        devices.setKeyDown(key, isDown);
     }
 
     public void setTouched(boolean touched) {

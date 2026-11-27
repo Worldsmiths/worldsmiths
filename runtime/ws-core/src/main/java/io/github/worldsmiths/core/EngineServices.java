@@ -15,6 +15,13 @@ public interface EngineServices {
 
     Input input();
 
+    /**
+     * Named digital action map ({@link Actions#bind} / {@link Actions#isDown} / {@link
+     * Actions#justPressed}). Fake bags wire {@link FakeActions}; the GDX bag wires a {@link
+     * DefaultActions} over a shared {@link DeviceState} (device sync in a later task).
+     */
+    Actions actions();
+
     Clock clock();
 
     Graphics graphics();
