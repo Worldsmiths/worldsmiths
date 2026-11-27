@@ -2,7 +2,7 @@ package io.github.worldsmiths.core;
 
 /**
  * Replace-only scene flow facade from {@link EngineServices#scenes()}. Path load and {@link
- * #switchTo(Scene)} exit the previous current (if any), enter the next, and set {@link #current()}.
+ * #switchTo(Scene)} exit the previous current (if any), set {@link #current()}, then enter the next.
  * Failed path loads throw {@link EngineException} and keep the previous current.
  */
 public interface Scenes {
@@ -15,16 +15,16 @@ public interface Scenes {
 
     /**
      * Loads a packaged SceneCodec JSON path: read → decode → preload distinct Sprite texture keys →
-     * exit previous → enter new → set current.
+     * exit previous → set current → enter new.
      *
      * @param path internal packaged path (forward slashes)
-     * @throws EngineException if the file is missing or undecodable (message includes {@code path});
-     *     previous current is unchanged
+     * @throws EngineException if the file is missing, undecodable, or Sprite preload fails (message
+     *     includes {@code path}); previous current is unchanged
      */
     void load(String path);
 
     /**
-     * Replaces current with an already-built {@link Scene}: exit previous → enter new → set current.
+     * Replaces current with an already-built {@link Scene}: exit previous → set current → enter new.
      * Skips Files/Codec; does not sync-preload texture keys (path {@link #load} owns preload).
      */
     void switchTo(Scene scene);

@@ -159,6 +159,75 @@ class FakeScenesTest {
                 "LOAD + FAIL_KEEP only; no EXIT/ENTER on fail: " + commands);
     }
 
+    @Test
+    void preloadFailureAfterSuccessfulDecodeKeepsCurrentAndRecordsFailKeep() {
+        FakeEngineServices services = new FakeEngineServices();
+        services.files().putInternal("scenes/a.json", SCENE_A_JSON);
+        String texturedPath = "scenes/missing-texture.json";
+        services.files().putInternal(
+                texturedPath,
+                "{\"schemaVersion\":1,\"name\":\"NeedsTex\",\"nodes\":["
+                        + "{\"name\":\"hero\",\"components\":["
+                        + "{\"type\":\"Transform2D\",\"x\":0.0,\"y\":0.0,\"rotation\":0.0,\"scaleX\":1.0,\"scaleY\":1.0},"
+                        + "{\"type\":\"Sprite\",\"texture\":\"missing-hero.png\",\"r\":1.0,\"g\":1.0,\"b\":1.0,\"a\":1.0,\"layer\":0,\"visible\":true}"
+                        + "],\"children\":[]}"
+                        + "]}");
+        // Intentionally do not seed missing-hero.png on FakeTextures.
+        FakeScenes scenes = services.scenes();
+        scenes.setRegistry(ComponentRegistries.builtins());
+
+        scenes.load("scenes/a.json");
+        Scene sceneA = scenes.current();
+        assertEquals("A", sceneA.name);
+        int commandsBeforeFail = scenes.commands().size();
+
+        EngineException thrown =
+                assertThrows(EngineException.class, () -> scenes.load(texturedPath));
+        assertTrue(thrown.getMessage().contains(texturedPath), thrown.getMessage());
+        assertSame(sceneA, scenes.current());
+
+        List<FakeScenes.Command> commands = scenes.commands();
+        assertTrue(
+                containsFailKeep(commands, texturedPath),
+                "expected FAIL_KEEP_PREVIOUS for " + texturedPath + ": " + commands);
+        assertEquals(
+                commandsBeforeFail + 2,
+                commands.size(),
+                "LOAD + FAIL_KEEP only; no EXIT/ENTER on fail: " + commands);
+    }
+
+    @Test
+    void undecodableLoadAfterAThrowsKeepsCurrentAAndRecordsFailKeep() {
+        FakeEngineServices services = new FakeEngineServices();
+        services.files().putInternal("scenes/a.json", SCENE_A_JSON);
+        String badPath = "scenes/bad.json";
+        services.files().putInternal(
+                badPath,
+                "{\"schemaVersion\":1,\"name\":\"Bad\",\"nodes\":["
+                        + "{\"name\":\"n\",\"components\":[{\"type\":\"java.lang.Object\"}],\"children\":[]}"
+                        + "]}");
+        FakeScenes scenes = services.scenes();
+        scenes.setRegistry(ComponentRegistries.builtins());
+
+        scenes.load("scenes/a.json");
+        Scene sceneA = scenes.current();
+        assertEquals("A", sceneA.name);
+        int commandsBeforeFail = scenes.commands().size();
+
+        EngineException thrown = assertThrows(EngineException.class, () -> scenes.load(badPath));
+        assertTrue(thrown.getMessage().contains(badPath), thrown.getMessage());
+        assertSame(sceneA, scenes.current());
+
+        List<FakeScenes.Command> commands = scenes.commands();
+        assertTrue(
+                containsFailKeep(commands, badPath),
+                "expected FAIL_KEEP_PREVIOUS for " + badPath + ": " + commands);
+        assertEquals(
+                commandsBeforeFail + 2,
+                commands.size(),
+                "LOAD + FAIL_KEEP only; no EXIT/ENTER on fail: " + commands);
+    }
+
     private static boolean containsExitFor(List<FakeScenes.Command> commands, Scene scene) {
         for (FakeScenes.Command cmd : commands) {
             if (cmd.kind == FakeScenes.Command.Kind.EXIT && cmd.scene == scene) {

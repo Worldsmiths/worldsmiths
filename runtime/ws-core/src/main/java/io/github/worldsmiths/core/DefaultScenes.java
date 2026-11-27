@@ -48,7 +48,13 @@ public final class DefaultScenes implements Scenes {
     @Override
     public void load(String path) {
         Scene decoded = decodePath(path);
-        preloadDistinctSpriteKeys(decoded);
+        try {
+            preloadDistinctSpriteKeys(decoded);
+        } catch (EngineException e) {
+            throw wrapLoadFailure(path, e);
+        } catch (RuntimeException e) {
+            throw wrapLoadFailure(path, e);
+        }
         replaceCurrent(decoded);
     }
 
