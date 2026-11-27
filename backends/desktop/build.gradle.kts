@@ -19,6 +19,7 @@ dependencies {
             classifier = "natives-desktop"
         }
     }
+    api(libs.gdx.controllers.desktop)
     testImplementation(libs.junit.jupiter)
     testRuntimeOnly(libs.junit.platform.launcher)
 }

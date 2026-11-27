@@ -19,11 +19,21 @@ public final class AndroidSdkPins {
     /** libGDX version; must match catalog {@code gdx}. */
     public static final String GDX_VERSION = "1.14.2";
 
+    /**
+     * gdx-controllers pin; must match catalog {@code gdx-controllers}. Spike-resolved against
+     * {@link #GDX_VERSION} (AAR — wire on the generated {@code :android} app, not {@code
+     * backends/android}).
+     */
+    public static final String GDX_CONTROLLERS_VERSION = "2.2.4";
+
     public static final String GDX_BACKEND_ANDROID =
             "com.badlogicgames.gdx:gdx-backend-android:" + GDX_VERSION;
 
     public static final String GDX_PLATFORM =
             "com.badlogicgames.gdx:gdx-platform:" + GDX_VERSION;
+
+    public static final String GDX_CONTROLLERS_ANDROID =
+            "com.badlogicgames.gdx-controllers:gdx-controllers-android:" + GDX_CONTROLLERS_VERSION;
 
     public static final int MIN_SDK = 21;
     public static final int COMPILE_SDK = 36;

@@ -3,6 +3,10 @@ group = "io.github.worldsmiths"
 engine = "0.0.1-SNAPSHOT"
 gdx = "1.14.2"
 gdx-teavm = "1.6.2"
+# Spike 2026-11-27: gdx-controllers 2.2.4 resolves cleanly against gdx 1.14.2
+# (core + desktop + TeaVM gdx-controllers-web 1.6.2). Compatibility wiki still lists
+# through 1.13.x only; pin recorded here after resolve smoke.
+gdx-controllers = "2.2.4"
 agp = "9.0.0"
 android-min-sdk = "21"
 android-compile-sdk = "36"
@@ -18,6 +22,10 @@ gdx-backend-android = { module = "com.badlogicgames.gdx:gdx-backend-android", ve
 gdx-backend-robovm-metalangle = { module = "com.badlogicgames.gdx:gdx-backend-robovm-metalangle", version.ref = "gdx" }
 gdx-platform = { module = "com.badlogicgames.gdx:gdx-platform", version.ref = "gdx" }
 gdx-teavm-backend-web = { module = "com.github.xpenatan.gdx-teavm:backend-web", version.ref = "gdx-teavm" }
+gdx-controllers-core = { module = "com.badlogicgames.gdx-controllers:gdx-controllers-core", version.ref = "gdx-controllers" }
+gdx-controllers-desktop = { module = "com.badlogicgames.gdx-controllers:gdx-controllers-desktop", version.ref = "gdx-controllers" }
+gdx-controllers-android = { module = "com.badlogicgames.gdx-controllers:gdx-controllers-android", version.ref = "gdx-controllers" }
+gdx-controllers-web = { module = "com.github.xpenatan.gdx-teavm:gdx-controllers-web", version.ref = "gdx-teavm" }
 android-gradle-plugin = { module = "com.android.tools.build:gradle", version.ref = "agp" }
 robovm-gradle-plugin = { module = "com.mobidevelop.robovm:robovm-gradle-plugin", version.ref = "robovm" }
 junit-jupiter = { module = "org.junit.jupiter:junit-jupiter", version.ref = "junit" }

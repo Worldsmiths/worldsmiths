@@ -10,7 +10,7 @@ import java.util.Set;
 
 /**
  * Binding table + edge sampling over a shared {@link DeviceState}. Used by {@link FakeActions} and
- * the GDX bag (device sync into the port lands in a later task).
+ * the GDX bag ({@code GdxActionDevices} syncs Input/Controllers into the port each frame).
  */
 public final class DefaultActions implements Actions {
     static final String UI_FOCUS_NEXT = "ui_focus_next";

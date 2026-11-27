@@ -16,6 +16,7 @@ dependencies {
     api(project(":runtime:ws-core"))
     api(libs.gdx)
     api(libs.gdx.teavm.backend.web)
+    api(libs.gdx.controllers.web)
     testImplementation(libs.junit.jupiter)
     testRuntimeOnly(libs.junit.platform.launcher)
 }

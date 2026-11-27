@@ -121,6 +121,8 @@ public final class AndroidPlugin implements Plugin<Project> {
                         project.getDependencies().project(Collections.singletonMap("path", path))));
         project.getDependencies().add("implementation", BACKENDS_ANDROID);
         project.getDependencies().add("implementation", AndroidSdkPins.GDX_BACKEND_ANDROID);
+        // AAR Controllers backend — same pattern as gdx-backend-android (not on backends/android JVM).
+        project.getDependencies().add("implementation", AndroidSdkPins.GDX_CONTROLLERS_ANDROID);
 
         // assetsDir is filled by the generated script after apply(); AGP needs a concrete File.
         // Missing / non-directory assetsDir is a soft no-op (desktop distZip empty-tree pattern).

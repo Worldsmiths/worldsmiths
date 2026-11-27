@@ -29,6 +29,10 @@ class AndroidPinContractTest {
         assertEquals(
                 "com.badlogicgames.gdx:gdx-platform:1.14.2",
                 AndroidSdkPins.GDX_PLATFORM);
+        assertEquals("2.2.4", AndroidSdkPins.GDX_CONTROLLERS_VERSION);
+        assertEquals(
+                "com.badlogicgames.gdx-controllers:gdx-controllers-android:2.2.4",
+                AndroidSdkPins.GDX_CONTROLLERS_ANDROID);
     }
 
     @Test
@@ -49,6 +53,11 @@ class AndroidPinContractTest {
                 catalog.contains(
                         "gdx-platform = { module = \"com.badlogicgames.gdx:gdx-platform\", version.ref = \"gdx\" }"),
                 catalog);
+        assertTrue(catalog.contains("gdx-controllers = \"2.2.4\""), catalog);
+        assertTrue(
+                catalog.contains(
+                        "gdx-controllers-android = { module = \"com.badlogicgames.gdx-controllers:gdx-controllers-android\", version.ref = \"gdx-controllers\" }"),
+                catalog);
     }
 
     @Test
@@ -57,6 +66,7 @@ class AndroidPinContractTest {
                 readEngine("gradle-plugin/src/main/java/io/github/worldsmiths/gradle/AndroidPlugin.java");
         assertTrue(plugin.contains("AndroidSdkPins.GDX_BACKEND_ANDROID"), plugin);
         assertTrue(plugin.contains("AndroidSdkPins.GDX_PLATFORM"), plugin);
+        assertTrue(plugin.contains("AndroidSdkPins.GDX_CONTROLLERS_ANDROID"), plugin);
         assertFalse(
                 plugin.contains("static final String GDX_VERSION"),
                 "GDX_VERSION must live on AndroidSdkPins, not AndroidPlugin\n" + plugin);

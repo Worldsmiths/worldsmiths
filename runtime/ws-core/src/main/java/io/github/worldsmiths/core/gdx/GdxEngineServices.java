@@ -1,6 +1,7 @@
 package io.github.worldsmiths.core.gdx;
 
 import com.badlogic.gdx.Application;
+import com.badlogic.gdx.Application.ApplicationType;
 import com.badlogic.gdx.Gdx;
 import io.github.worldsmiths.core.Actions;
 import io.github.worldsmiths.core.Assets;
@@ -51,11 +52,12 @@ public final class GdxEngineServices {
      */
     static EngineServices bag(GdxTextures textures, GdxPumpableAssets assets) {
         GdxFiles files = new GdxFiles();
-        // Device sync from GDX Input/Controllers into DeviceState is a later task; bag still
-        // exposes a seeded Actions over an empty port so authors can bind/poll.
+        DeviceState devices = new DeviceState();
+        GdxActionDevices actionDevices = new GdxActionDevices(devices, defaultGamepadSource());
         return new Bag(
                 new GdxInput(),
-                new DefaultActions(new DeviceState()),
+                new DefaultActions(devices),
+                actionDevices,
                 new GdxClock(),
                 new GdxGraphics(),
                 new GdxDraw2D(),
@@ -72,6 +74,17 @@ public final class GdxEngineServices {
     }
 
     /**
+     * iOS uses {@link EmptyGamepadSource} (soft-absent; Controllers forceLink deferred to T4).
+     * Desktop / web / Android poll via {@link ControllersGamepadSource}.
+     */
+    static GamepadSource defaultGamepadSource() {
+        if (Gdx.app != null && Gdx.app.getType() == ApplicationType.iOS) {
+            return EmptyGamepadSource.INSTANCE;
+        }
+        return new ControllersGamepadSource();
+    }
+
+    /**
      * Package-visible headless seam: cooperative assets instance (no Application / GL).
      */
     static Assets newCooperativeAssetsForTest(GdxTextures textures) {
@@ -80,12 +93,19 @@ public final class GdxEngineServices {
 
     /**
      * Advances in-flight async loads for a bag from {@link #createCooperative()} or the JVM
-     * factory, or a {@link FakeAssets} when tests inject {@link FakeEngineServices}. No-op for
-     * unknown bags. Call once per frame before {@code game.update}.
+     * factory, or a {@link FakeAssets} when tests inject {@link FakeEngineServices}. Also syncs
+     * GDX devices into {@link DeviceState} and ticks {@link Actions} edges when the bag was
+     * assembled by a GDX factory. No-op for unknown bags. Call once per frame before {@code
+     * game.update}.
      */
     public static void pumpAssets(EngineServices services) {
         if (services instanceof Bag) {
-            ((Bag) services).gdxAssets.pump();
+            Bag bag = (Bag) services;
+            bag.gdxAssets.pump();
+            if (bag.actionDevices != null && bag.actions != null) {
+                bag.actionDevices.sync();
+                bag.actions.tick();
+            }
             return;
         }
         if (services instanceof FakeEngineServices) {
@@ -182,6 +202,7 @@ public final class GdxEngineServices {
                 null,
                 null,
                 null,
+                null,
                 textures,
                 assets,
                 null,
@@ -205,6 +226,7 @@ public final class GdxEngineServices {
     private static final class Bag implements EngineServices {
         private final Input input;
         private final Actions actions;
+        private final GdxActionDevices actionDevices;
         private final Clock clock;
         private final Graphics graphics;
         private final Draw2D draw2d;
@@ -222,6 +244,7 @@ public final class GdxEngineServices {
         Bag(
                 Input input,
                 Actions actions,
+                GdxActionDevices actionDevices,
                 Clock clock,
                 Graphics graphics,
                 Draw2D draw2d,
@@ -237,6 +260,7 @@ public final class GdxEngineServices {
                 Extensions extensions) {
             this.input = input;
             this.actions = actions;
+            this.actionDevices = actionDevices;
             this.clock = clock;
             this.graphics = graphics;
             this.draw2d = draw2d;
