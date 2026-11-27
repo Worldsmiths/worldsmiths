@@ -146,6 +146,28 @@ class DesktopGameListenerTest {
     }
 
     @Test
+    void afterUnloadUpdateAndRenderYieldsNoSpriteCommands() {
+        RecordingGame game = new RecordingGame();
+        game.sceneA.add(
+                new Node("a").add(new Transform2D(0f, 0f)).add(new Sprite("marker-a.png")));
+
+        SceneShapeRenderer recorder = SceneShapeRenderer.recordingOnly();
+        FakeEngineServices fake = new FakeEngineServices();
+        DesktopGameListener listener = new DesktopGameListener(game, recorder, fake);
+        listener.create();
+
+        listener.updateAndRender(0.016f);
+        assertEquals(1, recorder.lastDrawCommands().size());
+        assertEquals("marker-a.png", recorder.lastDrawCommands().get(0).textureKey);
+
+        game.unload();
+
+        listener.updateAndRender(0.016f);
+
+        assertTrue(recorder.lastDrawCommands().isEmpty(), "unload must clear retained sprite draws");
+    }
+
+    @Test
     void disposeInvokesGameDisposeThenDisposesSceneShapeRenderer() {
         RecordingGame game = new RecordingGame();
         SceneShapeRenderer recorder = SceneShapeRenderer.recordingOnly();
@@ -179,6 +201,10 @@ class DesktopGameListenerTest {
 
         void hopToB() {
             services.scenes().switchTo(sceneB);
+        }
+
+        void unload() {
+            services.scenes().unload();
         }
 
         @Override

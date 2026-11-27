@@ -88,7 +88,8 @@ public final class AndroidGameListener implements ApplicationListener {
         game.update(delta);
         game.render();
         Scene current = services == null ? null : services.scenes().current();
-        if (sceneRenderer != null && current != null) {
+        if (sceneRenderer != null) {
+            // Null current (e.g. after unload) records an empty draw — no NPE, no stale sprites.
             sceneRenderer.render(current);
         }
     }
