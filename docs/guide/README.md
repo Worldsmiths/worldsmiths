@@ -19,6 +19,7 @@ How-to pages for engine facades. ADRs under [`../adr/`](../adr/) record decision
 | [Textures](textures.md) | Sync texture cache (textured sprites) |
 | [Assets](assets.md) | Async packaged load (TEXTURE; MESH/MUSIC stubs) |
 | [Log](log.md) | Portable debug / info / warn / error |
+| [Scene flow](scene-flow.md) | Replace-only load / switchTo / unload / current |
 | [UiKit](uikit.md) | Engine UI slice (hybrid leaves) |
 
 Each facade ships its guide page in the same change-set as the API. Cursor skills / agent knowledge later consume these pages (no second source of truth).
