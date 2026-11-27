@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "name": "Gameplay",
+  "nodes": [
+    {
+      "name": "player",
+      "components": [
+        {
+          "type": "Transform2D",
+          "x": 1.0,
+          "y": 1.0,
+          "rotation": 0.0,
+          "scaleX": 1.0,
+          "scaleY": 1.0
+        },
+        {
+          "type": "Sprite",
+          "r": 0.2,
+          "g": 0.8,
+          "b": 0.2,
+          "a": 1.0,
+          "layer": 0,
+          "visible": true
+        }
+      ],
+      "children": []
+    }
+  ]
+}
