@@ -74,8 +74,9 @@ public final class GdxEngineServices {
     }
 
     /**
-     * iOS uses {@link EmptyGamepadSource} (soft-absent; Controllers forceLink deferred to T4).
-     * Desktop / web / Android poll via {@link ControllersGamepadSource}.
+     * iOS stays soft-absent via {@link EmptyGamepadSource}: no {@code gdx-controllers-ios}, no
+     * {@code IosControllerManager} forceLink, and no hardware pad AC in ticket 04. Desktop / web /
+     * Android poll via {@link ControllersGamepadSource}.
      */
     static GamepadSource defaultGamepadSource() {
         if (Gdx.app != null && Gdx.app.getType() == ApplicationType.iOS) {
