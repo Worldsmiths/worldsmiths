@@ -3,8 +3,13 @@ package io.github.worldsmiths.core;
 import java.util.EnumSet;
 
 /**
- * Shared held-bit port for keyboard, pointer buttons, and gamepad. Fake setters and (later) GDX
- * resolvers write here; {@link Actions} polls the same bits through {@link Control}s.
+ * Shared held-bit port for keyboard, pointer buttons, and gamepad. Fake setters and GDX resolvers
+ * ({@code GdxActionDevices}) write here; {@link Actions} and bag {@link Input} impls poll the same
+ * bits.
+ *
+ * <p><strong>Not an author API.</strong> Games use {@link EngineServices#input()} / {@link
+ * EngineServices#actions()} only. This type is {@code public} so the {@code core.gdx} package can
+ * share the port with the bag; do not construct or mutate it from game code.
  */
 public final class DeviceState {
     private final EnumSet<Key> keysDown = EnumSet.noneOf(Key.class);
