@@ -4,9 +4,9 @@ Multi-scene replace proof for ticket 03: stub menu → gameplay → second Scene
 `services.scenes().load(...)`. SPACE / ENTER / touch advances one hop per rising edge. Packaged
 JSON under `assets/scenes/` (menu, gameplay, room_b).
 
-Desktop, browser (TeaVM / gdx-teavm), and Android share the same `:game` sources. Backend listeners
-may still fail to compile on branches that have not merged T3 (`createScene` removal); headless
-`:game:test` under FakeEngineServices is the T4 Done gate.
+Desktop, browser (TeaVM / gdx-teavm), and Android share the same `:game` sources. Backends draw
+`scenes().current()`; sample launchers compile with the current listeners. Headless `:game:test`
+under FakeEngineServices is the T4 Done gate.
 
 ## Requirements
 
@@ -40,9 +40,6 @@ the no-GDX import gate.
 ## Manual validation (desktop + web + Android)
 
 From the monorepo root (`worldsmiths/`). On Windows use `.\gradlew.bat` instead of `./gradlew`.
-
-Requires T3 listener rebind for `:desktop:run` / `:web` / `:android` compile on createScene-removed
-trees. Until then, use `:game:test` only.
 
 ### Desktop
 
