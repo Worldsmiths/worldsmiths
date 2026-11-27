@@ -9,9 +9,11 @@ Desktop, browser (TeaVM / gdx-teavm), Android, and iOS (RoboVM) share the same `
 
 ## Controls
 
-- **Move (desktop / keyboard):** arrow keys or WASD (ignored while dead)
+Named actions (`move_*` / `restart`) bound in `create` to keyboard + gamepad defaults; swipe gestures still use raw `input()` getX/Y / touch.
+
+- **Move (keyboard / gamepad):** arrows or WASD, or D-pad (ignored while dead)
 - **Move (Android / iOS / touch):** swipe left / right / up / down
-- **Restart after death:** `R` or Space (keyboard); tap or swipe (touch)
+- **Restart after death:** `R` or Space / Start (pad); tap or swipe (touch)
 
 ## Requirements
 

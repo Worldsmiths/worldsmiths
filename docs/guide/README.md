@@ -8,7 +8,7 @@ How-to pages for engine facades. ADRs under [`../adr/`](../adr/) record decision
 | --- | --- |
 | [Quick start](quick-start.md) | Stub (fills as samples migrate) |
 | [Services overview](services.md) | P1 bag + getters |
-| [Input](input.md) | P1 |
+| [Input](input.md) | P1 + actions / remap |
 | [Clock](clock.md) | P1 |
 | [Graphics](graphics.md) | P1 |
 | [Draw2D](draw2d.md) | D9a-S2 |

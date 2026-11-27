@@ -1,11 +1,14 @@
 package io.github.worldsmiths.samples.snake;
 
+import io.github.worldsmiths.core.Actions;
+import io.github.worldsmiths.core.Controls;
 import io.github.worldsmiths.core.Draw2D;
 import io.github.worldsmiths.core.DrawMode;
 import io.github.worldsmiths.core.EngineServices;
 import io.github.worldsmiths.core.Input;
 import io.github.worldsmiths.core.Key;
 import io.github.worldsmiths.core.Node;
+import io.github.worldsmiths.core.PadButton;
 import io.github.worldsmiths.core.Scene;
 import io.github.worldsmiths.core.SceneWalk;
 import io.github.worldsmiths.core.Sprite;
@@ -17,10 +20,10 @@ import java.util.List;
 /**
  * Fuller Snake for D3: grid drawn in {@link #render()} via engine {@link Draw2D}, head + body
  * segment + food nodes built in {@link #create(EngineServices)} with {@link Transform2D} + colored
- * {@link Sprite}, discrete grid move on a step timer, turns via {@link EngineServices#input()}
- * while alive, restart via R or Space when dead, score in the window title. Touch: swipe to turn
- * while alive; tap (or swipe) to restart when dead. Retained sprites still draw through {@link
- * SceneWalk}.
+ * {@link Sprite}, discrete grid move on a step timer, turns via named {@link Actions} (key + pad
+ * defaults) while alive, restart via the {@code restart} action when dead, score in the window
+ * title. Touch: swipe to turn while alive; tap (or swipe) to restart when dead — still raw {@link
+ * EngineServices#input()} getX/Y / touch. Retained sprites still draw through {@link SceneWalk}.
  */
 public final class SnakeGame implements WorldsmithsGame {
 
@@ -65,6 +68,7 @@ public final class SnakeGame implements WorldsmithsGame {
             throw new NullPointerException("services");
         }
         this.services = services;
+        bindDefaultActions(services.actions());
         bodyNodes.clear();
         scene = new Scene("snake");
         headTransform = new Transform2D(controller.x(), controller.y());
@@ -78,6 +82,10 @@ public final class SnakeGame implements WorldsmithsGame {
 
     @Override
     public void update(float delta) {
+        if (services != null) {
+            // Sample justPressed edges once per frame before polling (Fake path; backends may own later).
+            services.actions().tick();
+        }
         applyInput();
         controller.update(delta);
         syncScene();
@@ -153,25 +161,54 @@ public final class SnakeGame implements WorldsmithsGame {
         g.end();
     }
 
+    private static void bindDefaultActions(Actions actions) {
+        actions.bind(
+                "move_up",
+                Controls.key(Key.UP),
+                Controls.key(Key.W),
+                Controls.gamepadButton(PadButton.DPAD_UP));
+        actions.bind(
+                "move_down",
+                Controls.key(Key.DOWN),
+                Controls.key(Key.S),
+                Controls.gamepadButton(PadButton.DPAD_DOWN));
+        actions.bind(
+                "move_left",
+                Controls.key(Key.LEFT),
+                Controls.key(Key.A),
+                Controls.gamepadButton(PadButton.DPAD_LEFT));
+        actions.bind(
+                "move_right",
+                Controls.key(Key.RIGHT),
+                Controls.key(Key.D),
+                Controls.gamepadButton(PadButton.DPAD_RIGHT));
+        actions.bind(
+                "restart",
+                Controls.key(Key.R),
+                Controls.key(Key.SPACE),
+                Controls.gamepadButton(PadButton.START));
+    }
+
     private void applyInput() {
         if (services == null) {
             return;
         }
         Input in = services.input();
         applyTouchInput(in);
+        Actions actions = services.actions();
         if (!controller.alive()) {
-            if (in.isKeyDown(Key.R) || in.isKeyDown(Key.SPACE)) {
+            if (actions.justPressed("restart")) {
                 restartRun();
             }
             return;
         }
-        if (in.isKeyDown(Key.LEFT) || in.isKeyDown(Key.A)) {
+        if (actions.isDown("move_left")) {
             controller.turn(-1, 0);
-        } else if (in.isKeyDown(Key.RIGHT) || in.isKeyDown(Key.D)) {
+        } else if (actions.isDown("move_right")) {
             controller.turn(1, 0);
-        } else if (in.isKeyDown(Key.UP) || in.isKeyDown(Key.W)) {
+        } else if (actions.isDown("move_up")) {
             controller.turn(0, 1);
-        } else if (in.isKeyDown(Key.DOWN) || in.isKeyDown(Key.S)) {
+        } else if (actions.isDown("move_down")) {
             controller.turn(0, -1);
         }
     }
