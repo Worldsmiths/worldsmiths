@@ -12,35 +12,43 @@ import java.util.Set;
 
 /**
  * JVM AssetManager-backed {@link io.github.worldsmiths.core.Assets}. Off-thread prepare via LibGDX
- * TextureLoader; {@link #pump()} calls {@link TextureAssetQueue#update()} once. Merges completed
- * textures into the shared {@link GdxTextures} cache. Not reachable from the web/TeaVM factory path
- * — see {@link GdxJvmEngineServices}. Not part of the author-facing API.
+ * TextureLoader and gdx-gltf SceneAsset loaders; {@link #pump()} calls queue {@code update()} once.
+ * Merges completed textures into {@link GdxTextures} and meshes into {@link GdxMeshes}. Not
+ * reachable from the web/TeaVM factory path — see {@link GdxJvmEngineServices}. Not part of the
+ * author-facing API.
  */
 final class GdxAssetManagerAssets implements GdxPumpableAssets {
     private final GdxTextures textures;
-    private final TextureAssetQueue queue;
+    private final GdxMeshes meshes;
+    private final TextureAssetQueue textureQueue;
+    private final MeshAssetQueue meshQueue;
     private final Map<String, GdxLoadHandle> handlesByKey = new HashMap<String, GdxLoadHandle>();
     private final List<GdxLoadHandle> inFlight = new ArrayList<GdxLoadHandle>();
-    private final Set<String> mergedAmPaths = new HashSet<String>();
+    private final Set<String> mergedAmTexturePaths = new HashSet<String>();
+    private final Set<String> mergedAmMeshPaths = new HashSet<String>();
     private final Map<String, String> pendingFailures = new HashMap<String, String>();
     private boolean disposed;
 
-    GdxAssetManagerAssets(GdxTextures textures, TextureAssetQueue queue) {
+    GdxAssetManagerAssets(
+            GdxTextures textures,
+            GdxMeshes meshes,
+            TextureAssetQueue textureQueue,
+            MeshAssetQueue meshQueue) {
         this.textures = textures;
-        this.queue = queue;
-        this.queue.setErrorListener(
+        this.meshes = meshes;
+        this.textureQueue = textureQueue;
+        this.meshQueue = meshQueue;
+        QueueErrorListener listener =
                 new QueueErrorListener() {
                     @Override
                     public void error(String path, Throwable throwable) {
                         String message =
-                                "Missing or unloadable texture: "
-                                        + path
-                                        + (throwable != null && throwable.getMessage() != null
-                                                ? " (" + throwable.getMessage() + ")"
-                                                : "");
+                                pendingFailureMessage(path, throwable);
                         pendingFailures.put(path, message);
                     }
-                });
+                };
+        this.textureQueue.setErrorListener(listener);
+        this.meshQueue.setErrorListener(listener);
     }
 
     @Override
@@ -64,7 +72,7 @@ final class GdxAssetManagerAssets implements GdxPumpableAssets {
             failImmediate(handle, "Asset path is null or blank");
             return handle;
         }
-        if (kind == AssetKind.MESH || kind == AssetKind.MUSIC) {
+        if (kind == AssetKind.MUSIC) {
             failImmediate(handle, "Unsupported asset kind: " + kind);
             return handle;
         }
@@ -74,45 +82,52 @@ final class GdxAssetManagerAssets implements GdxPumpableAssets {
             handle.fireTerminal();
             return handle;
         }
+        if (kind == AssetKind.MESH && meshes.getIfPresent(path) != null) {
+            handle.state = LoadState.COMPLETE;
+            handle.progress = 1f;
+            handle.fireTerminal();
+            return handle;
+        }
         handle.state = LoadState.QUEUED;
         handle.progress = 0f;
-        textures.beginAsyncLoad(path);
         inFlight.add(handle);
-        queue.load(path);
+        if (kind == AssetKind.TEXTURE) {
+            textures.beginAsyncLoad(path);
+            textureQueue.load(path);
+        } else if (kind == AssetKind.MESH) {
+            meshes.beginAsyncLoad(path);
+            meshQueue.loadMesh(path);
+        }
         return handle;
     }
 
     /**
-     * One AssetManager {@code update()} step, then merges completed TEXTURE handles into {@link
-     * GdxTextures} and applies coarse queue progress. Called once per frame before {@code
-     * game.update}.
+     * One queue {@code update()} step, then merges completed TEXTURE/MESH handles and applies coarse
+     * queue progress. Called once per frame before {@code game.update}.
      */
     @Override
     public void pump() {
         if (disposed) {
             return;
         }
-        queue.update();
-        float coarse = queue.getProgress();
+        textureQueue.update();
+        float coarse = textureQueue.getProgress();
         List<GdxLoadHandle> snapshot = new ArrayList<GdxLoadHandle>(inFlight);
         for (GdxLoadHandle handle : snapshot) {
             String failure = pendingFailures.remove(handle.path);
+            if (failure == null) {
+                failure = consumeOrphanFailureFor(handle);
+            }
             if (failure != null) {
                 failHandle(handle, failure);
                 continue;
             }
-            if (queue.isLoaded(handle.path)) {
-                GdxTextures.LoadedTexture loaded = queue.takeOwnership(handle.path);
-                if (loaded == null) {
-                    failHandle(handle, "Missing or unloadable texture: " + handle.path);
-                    continue;
-                }
-                textures.putFromAsyncManagedExternally(handle.path, loaded);
-                mergedAmPaths.add(handle.path);
-                handle.state = LoadState.COMPLETE;
-                handle.progress = 1f;
-                inFlight.remove(handle);
-                handle.fireTerminal();
+            if (handle.kind == AssetKind.TEXTURE && textureQueue.isLoaded(handle.path)) {
+                completeTexture(handle);
+                continue;
+            }
+            if (handle.kind == AssetKind.MESH && meshQueue.isMeshLoaded(handle.path)) {
+                completeMesh(handle);
                 continue;
             }
             if (handle.state == LoadState.QUEUED || handle.state == LoadState.LOADING) {
@@ -130,20 +145,68 @@ final class GdxAssetManagerAssets implements GdxPumpableAssets {
         disposed = true;
         List<GdxLoadHandle> snapshot = new ArrayList<GdxLoadHandle>(inFlight);
         for (GdxLoadHandle handle : snapshot) {
-            queue.cancel(handle.path);
-            textures.endAsyncLoad(handle.path);
+            cancelInFlight(handle);
+            if (handle.kind == AssetKind.TEXTURE) {
+                textures.endAsyncLoad(handle.path);
+            } else if (handle.kind == AssetKind.MESH) {
+                meshes.endAsyncLoad(handle.path);
+            }
             handle.state = LoadState.FAILED;
             handle.progress = 0f;
             handle.failureMessage = "Disposed while loading: " + handle.path;
             handle.fireTerminal();
         }
         inFlight.clear();
-        for (String path : mergedAmPaths) {
+        for (String path : mergedAmTexturePaths) {
             textures.evictWithoutDispose(path);
         }
-        mergedAmPaths.clear();
+        mergedAmTexturePaths.clear();
+        for (String path : mergedAmMeshPaths) {
+            meshes.evictWithoutDispose(path);
+        }
+        mergedAmMeshPaths.clear();
         pendingFailures.clear();
-        queue.dispose();
+        textureQueue.dispose();
+        if (meshQueue != textureQueue) {
+            meshQueue.dispose();
+        }
+    }
+
+    private void completeTexture(GdxLoadHandle handle) {
+        GdxTextures.LoadedTexture loaded = textureQueue.takeOwnership(handle.path);
+        if (loaded == null) {
+            failHandle(handle, missingAssetMessage("texture", handle.path));
+            return;
+        }
+        textures.putFromAsyncManagedExternally(handle.path, loaded);
+        mergedAmTexturePaths.add(handle.path);
+        terminalComplete(handle);
+    }
+
+    private void completeMesh(GdxLoadHandle handle) {
+        GdxMeshes.LoadedMesh loaded = meshQueue.takeMeshOwnership(handle.path);
+        if (loaded == null) {
+            failHandle(handle, missingAssetMessage("mesh", handle.path));
+            return;
+        }
+        meshes.putFromAsyncManagedExternally(handle.path, loaded);
+        mergedAmMeshPaths.add(handle.path);
+        terminalComplete(handle);
+    }
+
+    private void terminalComplete(GdxLoadHandle handle) {
+        handle.state = LoadState.COMPLETE;
+        handle.progress = 1f;
+        inFlight.remove(handle);
+        handle.fireTerminal();
+    }
+
+    private void cancelInFlight(GdxLoadHandle handle) {
+        if (handle.kind == AssetKind.TEXTURE) {
+            textureQueue.cancel(handle.path);
+        } else if (handle.kind == AssetKind.MESH) {
+            meshQueue.cancel(handle.path);
+        }
     }
 
     private void failImmediate(GdxLoadHandle handle, String message) {
@@ -154,8 +217,12 @@ final class GdxAssetManagerAssets implements GdxPumpableAssets {
     }
 
     private void failHandle(GdxLoadHandle handle, String message) {
-        queue.cancel(handle.path);
-        textures.endAsyncLoad(handle.path);
+        cancelInFlight(handle);
+        if (handle.kind == AssetKind.TEXTURE) {
+            textures.endAsyncLoad(handle.path);
+        } else if (handle.kind == AssetKind.MESH) {
+            meshes.endAsyncLoad(handle.path);
+        }
         handle.state = LoadState.FAILED;
         handle.progress = 0f;
         handle.failureMessage = message;
@@ -165,6 +232,43 @@ final class GdxAssetManagerAssets implements GdxPumpableAssets {
 
     private static String handleKey(AssetKind kind, String path) {
         return kind + "\0" + path;
+    }
+
+    private static String missingAssetMessage(String kind, String path) {
+        return "Missing or unloadable " + kind + ": " + path;
+    }
+
+    private static String pendingFailureMessage(String path, Throwable throwable) {
+        return missingAssetMessage("asset", path)
+                + (throwable != null && throwable.getMessage() != null
+                        ? " (" + throwable.getMessage() + ")"
+                        : "");
+    }
+
+    /**
+     * LibGDX {@code AssetManager} dependency failures are keyed by the dependency path, not the
+     * parent MESH/TEXTURE path — propagate an unmatched pending failure to a stuck in-flight load.
+     */
+    private String consumeOrphanFailureFor(GdxLoadHandle handle) {
+        if (handle.kind != AssetKind.TEXTURE && handle.kind != AssetKind.MESH) {
+            return null;
+        }
+        if (handle.kind == AssetKind.TEXTURE && textureQueue.isLoaded(handle.path)) {
+            return null;
+        }
+        if (handle.kind == AssetKind.MESH && meshQueue.isMeshLoaded(handle.path)) {
+            return null;
+        }
+        if (pendingFailures.isEmpty()) {
+            return null;
+        }
+        for (Map.Entry<String, String> entry : pendingFailures.entrySet()) {
+            if (!entry.getKey().equals(handle.path)) {
+                pendingFailures.remove(entry.getKey());
+                return entry.getValue();
+            }
+        }
+        return null;
     }
 
     /**
@@ -186,6 +290,25 @@ final class GdxAssetManagerAssets implements GdxPumpableAssets {
          * ownership as remaining with this queue until {@link #dispose()} (no double-dispose).
          */
         GdxTextures.LoadedTexture takeOwnership(String path);
+
+        void setErrorListener(QueueErrorListener listener);
+
+        void cancel(String path);
+
+        void dispose();
+    }
+
+    /** Injectable AssetManager seam for glTF MESH loads via gdx-gltf {@code SceneAsset} loaders. */
+    interface MeshAssetQueue {
+        void loadMesh(String path);
+
+        boolean update();
+
+        float getProgress();
+
+        boolean isMeshLoaded(String path);
+
+        GdxMeshes.LoadedMesh takeMeshOwnership(String path);
 
         void setErrorListener(QueueErrorListener listener);
 

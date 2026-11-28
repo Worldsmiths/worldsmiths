@@ -9,6 +9,7 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.badlogic.gdx.graphics.Texture;
+import com.badlogic.gdx.graphics.g3d.Model;
 import io.github.worldsmiths.core.AssetKind;
 import io.github.worldsmiths.core.EngineServices;
 import io.github.worldsmiths.core.LoadHandle;
@@ -69,18 +70,50 @@ class GdxAssetsTest {
     }
 
     @Test
-    void meshAndMusicRequestReachFailedWithUnsupportedKindMessage() {
-        GdxTextures textures = texturesWithCatalog(new AtomicInteger(), null);
-        GdxAssets assets = new GdxAssets(textures);
+    void meshRequestCompletesAfterPumpAndMergesIntoMeshRegistry() {
+        AtomicInteger meshOpens = new AtomicInteger();
+        final GdxMeshes.LoadedMesh stub = stubLoadedMesh();
+        Map<String, GdxMeshes.LoadedMesh> meshCatalog = new HashMap<String, GdxMeshes.LoadedMesh>();
+        meshCatalog.put("models/hero.gltf", stub);
+        GdxMeshes meshes = meshesWithCatalog(meshOpens, meshCatalog);
+        GdxAssets assets = new GdxAssets(texturesWithCatalog(new AtomicInteger(), null), meshes);
 
-        LoadHandle mesh = assets.request("models/hero.mesh", AssetKind.MESH);
+        LoadHandle mesh = assets.request("models/hero.gltf", AssetKind.MESH);
+        assertEquals(LoadState.QUEUED, mesh.state());
+        assertTrue(meshes.isAsyncInFlight("models/hero.gltf"));
+
+        assets.pump();
+
+        assertEquals(LoadState.COMPLETE, mesh.state());
+        assertSame(stub, meshes.getIfPresent("models/hero.gltf"));
+        assertEquals(1, meshOpens.get());
+    }
+
+    @Test
+    void meshMissReachesFailedAfterPumpWithoutThrowOnRequest() {
+        AtomicInteger meshOpens = new AtomicInteger();
+        GdxMeshes meshes = meshesWithCatalog(meshOpens, null);
+        GdxAssets assets = new GdxAssets(texturesWithCatalog(new AtomicInteger(), null), meshes);
+
+        LoadHandle mesh = assets.request("models/missing.gltf", AssetKind.MESH);
+        assertNotNull(mesh);
+        assertEquals(LoadState.QUEUED, mesh.state());
+
+        assets.pump();
+
         assertEquals(LoadState.FAILED, mesh.state());
-        assertTrue(mesh.failureMessage().toLowerCase().contains("unsupported"));
-        assertTrue(mesh.failureMessage().contains("MESH"));
+        assertNotNull(mesh.failureMessage());
+        assertTrue(mesh.failureMessage().contains("models/missing.gltf"));
+        assertNull(meshes.getIfPresent("models/missing.gltf"));
+        assertEquals(1, meshOpens.get());
+    }
+
+    @Test
+    void musicRequestStillUnsupportedOnCooperativePath() {
+        GdxAssets assets = new GdxAssets(texturesWithCatalog(new AtomicInteger(), null));
 
         LoadHandle music = assets.request("audio/theme.ogg", AssetKind.MUSIC);
         assertEquals(LoadState.FAILED, music.state());
-        assertTrue(music.failureMessage().toLowerCase().contains("unsupported"));
         assertTrue(music.failureMessage().contains("MUSIC"));
     }
 
@@ -238,6 +271,33 @@ class GdxAssetsTest {
                 new GdxTextures.TextureOpener() {
                     @Override
                     public GdxTextures.LoadedTexture open(String path) {
+                        opens.incrementAndGet();
+                        if (catalog == null) {
+                            return null;
+                        }
+                        return catalog.get(path);
+                    }
+                });
+    }
+
+    private static GdxMeshes.LoadedMesh stubLoadedMesh() {
+        return new GdxMeshes.LoadedMesh() {
+            @Override
+            public Model gdxModel() {
+                return null;
+            }
+
+            @Override
+            public void dispose() {}
+        };
+    }
+
+    private static GdxMeshes meshesWithCatalog(
+            final AtomicInteger opens, final Map<String, GdxMeshes.LoadedMesh> catalog) {
+        return new GdxMeshes(
+                new GdxMeshes.MeshOpener() {
+                    @Override
+                    public GdxMeshes.LoadedMesh open(String path) {
                         opens.incrementAndGet();
                         if (catalog == null) {
                             return null;

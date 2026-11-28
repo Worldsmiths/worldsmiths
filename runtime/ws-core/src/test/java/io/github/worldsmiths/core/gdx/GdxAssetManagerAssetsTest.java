@@ -9,6 +9,7 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.badlogic.gdx.graphics.Texture;
+import com.badlogic.gdx.graphics.g3d.Model;
 import io.github.worldsmiths.core.AssetKind;
 import io.github.worldsmiths.core.LoadHandle;
 import io.github.worldsmiths.core.LoadState;
@@ -30,12 +31,13 @@ class GdxAssetManagerAssetsTest {
     void missingTextureRequestDoesNotThrowAndReachesFailedWithPathAfterPump() {
         RecordingQueue queue = new RecordingQueue();
         GdxTextures textures = emptyTextures();
-        GdxAssetManagerAssets assets = new GdxAssetManagerAssets(textures, queue);
+        GdxMeshes meshes = emptyMeshes();
+        GdxAssetManagerAssets assets = new GdxAssetManagerAssets(textures, meshes, queue, queue);
 
         LoadHandle handle = assets.request("textures/missing.png", AssetKind.TEXTURE);
         assertNotNull(handle);
         assertEquals(LoadState.QUEUED, handle.state());
-        assertTrue(queue.loadedPaths.contains("textures/missing.png"));
+        assertTrue(queue.textureLoadedPaths.contains("textures/missing.png"));
 
         assets.pump();
 
@@ -47,12 +49,13 @@ class GdxAssetManagerAssetsTest {
 
     @Test
     void completeMergesIntoSameCacheSoResolveDoesNotReopen() {
-        final GdxTextures.LoadedTexture stub = stubLoaded();
+        final GdxTextures.LoadedTexture stub = stubLoadedTexture();
         RecordingQueue queue = new RecordingQueue();
-        queue.catalog.put("textures/heavy.png", stub);
+        queue.textureCatalog.put("textures/heavy.png", stub);
         AtomicInteger opens = new AtomicInteger();
         GdxTextures textures = texturesWithOpener(opens);
-        GdxAssetManagerAssets assets = new GdxAssetManagerAssets(textures, queue);
+        GdxMeshes meshes = emptyMeshes();
+        GdxAssetManagerAssets assets = new GdxAssetManagerAssets(textures, meshes, queue, queue);
 
         LoadHandle handle = assets.request("textures/heavy.png", AssetKind.TEXTURE);
         assertTrue(textures.isAsyncInFlight("textures/heavy.png"));
@@ -62,7 +65,7 @@ class GdxAssetManagerAssetsTest {
         assertEquals(1f, handle.progress(), 1e-5f);
         assertFalse(textures.isAsyncInFlight("textures/heavy.png"));
         assertEquals(0, opens.get());
-        assertTrue(queue.takeCalls.contains("textures/heavy.png"));
+        assertTrue(queue.textureTakeCalls.contains("textures/heavy.png"));
 
         textures.resolve("textures/heavy.png");
         assertSame(stub, textures.requireLoaded("textures/heavy.png"));
@@ -72,8 +75,10 @@ class GdxAssetManagerAssetsTest {
     @Test
     void pumpInvokesQueueUpdateOncePerCall() {
         RecordingQueue queue = new RecordingQueue();
-        queue.catalog.put("textures/heavy.png", stubLoaded());
-        GdxAssetManagerAssets assets = new GdxAssetManagerAssets(emptyTextures(), queue);
+        queue.textureCatalog.put("textures/heavy.png", stubLoadedTexture());
+        GdxAssetManagerAssets assets =
+                new GdxAssetManagerAssets(
+                        emptyTextures(), emptyMeshes(), queue, queue);
 
         assets.request("textures/heavy.png", AssetKind.TEXTURE);
         assets.pump();
@@ -83,31 +88,115 @@ class GdxAssetManagerAssetsTest {
     }
 
     @Test
-    void meshAndMusicRequestReachFailedWithoutEnqueue() {
+    void meshRequestEnqueuesAndCompletesAfterPump() {
         RecordingQueue queue = new RecordingQueue();
-        GdxAssetManagerAssets assets = new GdxAssetManagerAssets(emptyTextures(), queue);
+        final GdxMeshes.LoadedMesh stub = stubLoadedMesh();
+        queue.meshCatalog.put("models/hero.gltf", stub);
+        GdxMeshes meshes = emptyMeshes();
+        GdxAssetManagerAssets assets =
+                new GdxAssetManagerAssets(emptyTextures(), meshes, queue, queue);
 
-        LoadHandle mesh = assets.request("models/hero.mesh", AssetKind.MESH);
+        LoadHandle mesh = assets.request("models/hero.gltf", AssetKind.MESH);
+        assertEquals(LoadState.QUEUED, mesh.state());
+        assertTrue(queue.meshLoadedPaths.contains("models/hero.gltf"));
+        assertTrue(meshes.isAsyncInFlight("models/hero.gltf"));
+
+        assets.pump();
+
+        assertEquals(LoadState.COMPLETE, mesh.state());
+        assertSame(stub, meshes.getIfPresent("models/hero.gltf"));
+        assertFalse(meshes.isAsyncInFlight("models/hero.gltf"));
+        assertTrue(queue.meshTakeCalls.contains("models/hero.gltf"));
+    }
+
+    @Test
+    void meshInFlightFailsWhenAssetManagerReportsDependencyPathNotMeshPath() {
+        RecordingQueue queue = new RecordingQueue();
+        queue.meshCatalog.put("meshes/demo.gltf", stubLoadedMesh());
+        queue.meshDependencyErrors.put(
+                "meshes/demo.gltf", "meshes/demo_basecolor.png");
+        GdxMeshes meshes = emptyMeshes();
+        GdxAssetManagerAssets assets =
+                new GdxAssetManagerAssets(emptyTextures(), meshes, queue, queue);
+
+        LoadHandle mesh = assets.request("meshes/demo.gltf", AssetKind.MESH);
+        assertEquals(LoadState.QUEUED, mesh.state());
+
+        assets.pump();
+
         assertEquals(LoadState.FAILED, mesh.state());
-        assertTrue(mesh.failureMessage().toLowerCase().contains("unsupported"));
-        assertTrue(queue.loadedPaths.isEmpty());
+        assertNotNull(mesh.failureMessage());
+        assertTrue(
+                mesh.failureMessage().contains("meshes/demo_basecolor.png"),
+                mesh.failureMessage());
+        assertNull(meshes.getIfPresent("meshes/demo.gltf"));
+        assertFalse(meshes.isAsyncInFlight("meshes/demo.gltf"));
+    }
+
+    @Test
+    void textureInFlightFailsWhenAssetManagerReportsDifferentFailurePath() {
+        RecordingQueue queue = new RecordingQueue();
+        queue.textureCatalog.put("textures/atlas.png", stubLoadedTexture());
+        queue.textureDependencyErrors.put(
+                "textures/atlas.png", "textures/atlas_base.png");
+        GdxAssetManagerAssets assets =
+                new GdxAssetManagerAssets(emptyTextures(), emptyMeshes(), queue, queue);
+
+        LoadHandle texture = assets.request("textures/atlas.png", AssetKind.TEXTURE);
+
+        assets.pump();
+
+        assertEquals(LoadState.FAILED, texture.state());
+        assertNotNull(texture.failureMessage());
+        assertTrue(texture.failureMessage().contains("textures/atlas_base.png"));
+    }
+
+    @Test
+    void meshMissReachesFailedAfterPumpWithoutThrowOnRequest() {
+        RecordingQueue queue = new RecordingQueue();
+        GdxMeshes meshes = emptyMeshes();
+        GdxAssetManagerAssets assets =
+                new GdxAssetManagerAssets(emptyTextures(), meshes, queue, queue);
+
+        LoadHandle mesh = assets.request("models/missing.gltf", AssetKind.MESH);
+        assertNotNull(mesh);
+        assertEquals(LoadState.QUEUED, mesh.state());
+        assertTrue(queue.meshLoadedPaths.contains("models/missing.gltf"));
+
+        assets.pump();
+
+        assertEquals(LoadState.FAILED, mesh.state());
+        assertNotNull(mesh.failureMessage());
+        assertTrue(mesh.failureMessage().contains("models/missing.gltf"));
+        assertNull(meshes.getIfPresent("models/missing.gltf"));
+    }
+
+    @Test
+    void musicRequestStillUnsupportedWithoutEnqueue() {
+        RecordingQueue queue = new RecordingQueue();
+        GdxAssetManagerAssets assets =
+                new GdxAssetManagerAssets(
+                        emptyTextures(), emptyMeshes(), queue, queue);
 
         LoadHandle music = assets.request("audio/theme.ogg", AssetKind.MUSIC);
         assertEquals(LoadState.FAILED, music.state());
         assertTrue(music.failureMessage().contains("MUSIC"));
-        assertTrue(queue.loadedPaths.isEmpty());
+        assertTrue(queue.textureLoadedPaths.isEmpty());
+        assertTrue(queue.meshLoadedPaths.isEmpty());
     }
 
     @Test
     void reRequestSharesInFlightAndCompletedHandle() {
         RecordingQueue queue = new RecordingQueue();
-        queue.catalog.put("textures/heavy.png", stubLoaded());
-        GdxAssetManagerAssets assets = new GdxAssetManagerAssets(emptyTextures(), queue);
+        queue.textureCatalog.put("textures/heavy.png", stubLoadedTexture());
+        GdxAssetManagerAssets assets =
+                new GdxAssetManagerAssets(
+                        emptyTextures(), emptyMeshes(), queue, queue);
 
         LoadHandle first = assets.request("textures/heavy.png", AssetKind.TEXTURE);
         LoadHandle second = assets.request("textures/heavy.png", AssetKind.TEXTURE);
         assertSame(first, second);
-        assertEquals(1, queue.loadedPaths.size());
+        assertEquals(1, queue.textureLoadedPaths.size());
 
         assets.pump();
         LoadHandle third = assets.request("textures/heavy.png", AssetKind.TEXTURE);
@@ -117,13 +206,15 @@ class GdxAssetManagerAssetsTest {
     @Test
     void reRequestAfterFailedStartsFreshLoadThatCanCompleteIndependently() {
         RecordingQueue queue = new RecordingQueue();
-        GdxAssetManagerAssets assets = new GdxAssetManagerAssets(emptyTextures(), queue);
+        GdxAssetManagerAssets assets =
+                new GdxAssetManagerAssets(
+                        emptyTextures(), emptyMeshes(), queue, queue);
 
         LoadHandle first = assets.request("textures/retry.png", AssetKind.TEXTURE);
         assets.pump();
         assertEquals(LoadState.FAILED, first.state());
 
-        queue.catalog.put("textures/retry.png", stubLoaded());
+        queue.textureCatalog.put("textures/retry.png", stubLoadedTexture());
         LoadHandle second = assets.request("textures/retry.png", AssetKind.TEXTURE);
 
         assertNotSame(first, second);
@@ -139,9 +230,10 @@ class GdxAssetManagerAssetsTest {
     @Test
     void requestAfterDisposeReturnsFailedWithoutTouchingQueue() {
         RecordingQueue queue = new RecordingQueue();
-        queue.catalog.put("textures/late.png", stubLoaded());
+        queue.textureCatalog.put("textures/late.png", stubLoadedTexture());
         GdxTextures textures = emptyTextures();
-        GdxAssetManagerAssets assets = new GdxAssetManagerAssets(textures, queue);
+        GdxMeshes meshes = emptyMeshes();
+        GdxAssetManagerAssets assets = new GdxAssetManagerAssets(textures, meshes, queue, queue);
 
         assets.dispose();
 
@@ -150,7 +242,7 @@ class GdxAssetManagerAssetsTest {
         assertEquals(LoadState.FAILED, handle.state());
         assertNotNull(handle.failureMessage());
         assertTrue(handle.failureMessage().toLowerCase().contains("disposed"));
-        assertTrue(queue.loadedPaths.isEmpty());
+        assertTrue(queue.textureLoadedPaths.isEmpty());
         assertFalse(textures.isAsyncInFlight("textures/late.png"));
         assertNull(textures.getIfPresent("textures/late.png"));
         assertEquals(1, queue.disposeCalls.get());
@@ -172,9 +264,10 @@ class GdxAssetManagerAssetsTest {
                         textureDisposes.incrementAndGet();
                     }
                 };
-        queue.catalog.put("textures/heavy.png", owned);
+        queue.textureCatalog.put("textures/heavy.png", owned);
         GdxTextures textures = emptyTextures();
-        GdxAssetManagerAssets assets = new GdxAssetManagerAssets(textures, queue);
+        GdxMeshes meshes = emptyMeshes();
+        GdxAssetManagerAssets assets = new GdxAssetManagerAssets(textures, meshes, queue, queue);
 
         LoadHandle handle = assets.request("textures/heavy.png", AssetKind.TEXTURE);
         assets.pump();
@@ -185,9 +278,18 @@ class GdxAssetManagerAssetsTest {
         textures.dispose();
 
         assertEquals(1, queue.disposeCalls.get());
-        // Ownership stays with the queue/AM — GdxTextures must not dispose the GPU resource again.
         assertEquals(0, textureDisposes.get());
         assertNull(textures.getIfPresent("textures/heavy.png"));
+    }
+
+    private static GdxMeshes emptyMeshes() {
+        return new GdxMeshes(
+                new GdxMeshes.MeshOpener() {
+                    @Override
+                    public GdxMeshes.LoadedMesh open(String path) {
+                        return null;
+                    }
+                });
     }
 
     private static GdxTextures emptyTextures() {
@@ -205,10 +307,22 @@ class GdxAssetManagerAssetsTest {
                 });
     }
 
-    private static GdxTextures.LoadedTexture stubLoaded() {
+    private static GdxTextures.LoadedTexture stubLoadedTexture() {
         return new GdxTextures.LoadedTexture() {
             @Override
             public Texture gdxTexture() {
+                return null;
+            }
+
+            @Override
+            public void dispose() {}
+        };
+    }
+
+    private static GdxMeshes.LoadedMesh stubLoadedMesh() {
+        return new GdxMeshes.LoadedMesh() {
+            @Override
+            public Model gdxModel() {
                 return null;
             }
 
@@ -221,22 +335,39 @@ class GdxAssetManagerAssetsTest {
      * Fake AssetManager.update seam: one queued path completes or fails per {@link #update()},
      * mirroring one AM step per pump.
      */
-    private static final class RecordingQueue implements GdxAssetManagerAssets.TextureAssetQueue {
-        private final Map<String, GdxTextures.LoadedTexture> catalog =
+    private static final class RecordingQueue
+            implements GdxAssetManagerAssets.TextureAssetQueue,
+                    GdxAssetManagerAssets.MeshAssetQueue {
+        private final Map<String, GdxTextures.LoadedTexture> textureCatalog =
                 new HashMap<String, GdxTextures.LoadedTexture>();
-        private final LinkedHashMap<String, Boolean> pending = new LinkedHashMap<String, Boolean>();
-        private final Map<String, GdxTextures.LoadedTexture> loaded =
+        private final Map<String, GdxMeshes.LoadedMesh> meshCatalog =
+                new HashMap<String, GdxMeshes.LoadedMesh>();
+        /** Parent path → dependency path whose AM error should fail the parent load. */
+        final Map<String, String> meshDependencyErrors = new HashMap<String, String>();
+        final Map<String, String> textureDependencyErrors = new HashMap<String, String>();
+        private final LinkedHashMap<String, AssetKind> pending = new LinkedHashMap<String, AssetKind>();
+        private final Map<String, GdxTextures.LoadedTexture> texturesLoaded =
                 new HashMap<String, GdxTextures.LoadedTexture>();
-        private final Set<String> loadedPaths = new HashSet<String>();
-        private final Set<String> takeCalls = new HashSet<String>();
+        private final Map<String, GdxMeshes.LoadedMesh> meshesLoaded =
+                new HashMap<String, GdxMeshes.LoadedMesh>();
+        private final Set<String> textureLoadedPaths = new HashSet<String>();
+        private final Set<String> meshLoadedPaths = new HashSet<String>();
+        private final Set<String> textureTakeCalls = new HashSet<String>();
+        private final Set<String> meshTakeCalls = new HashSet<String>();
         private final AtomicInteger updateCalls = new AtomicInteger();
         private final AtomicInteger disposeCalls = new AtomicInteger();
         private GdxAssetManagerAssets.QueueErrorListener errorListener;
 
         @Override
         public void load(String path) {
-            loadedPaths.add(path);
-            pending.put(path, Boolean.TRUE);
+            textureLoadedPaths.add(path);
+            pending.put(path, AssetKind.TEXTURE);
+        }
+
+        @Override
+        public void loadMesh(String path) {
+            meshLoadedPaths.add(path);
+            pending.put(path, AssetKind.MESH);
         }
 
         @Override
@@ -246,36 +377,74 @@ class GdxAssetManagerAssetsTest {
                 return true;
             }
             String path = pending.keySet().iterator().next();
-            pending.remove(path);
-            GdxTextures.LoadedTexture tex = catalog.get(path);
-            if (tex == null) {
-                if (errorListener != null) {
-                    errorListener.error(path, new RuntimeException("missing " + path));
+            AssetKind kind = pending.remove(path);
+            if (kind == AssetKind.TEXTURE) {
+                String depFailure = textureDependencyErrors.get(path);
+                if (depFailure != null) {
+                    if (errorListener != null) {
+                        errorListener.error(
+                                depFailure, new RuntimeException("missing " + depFailure));
+                    }
+                    return pending.isEmpty();
                 }
-                return pending.isEmpty();
+                GdxTextures.LoadedTexture tex = textureCatalog.get(path);
+                if (tex == null) {
+                    if (errorListener != null) {
+                        errorListener.error(path, new RuntimeException("missing " + path));
+                    }
+                    return pending.isEmpty();
+                }
+                texturesLoaded.put(path, tex);
+            } else {
+                String depFailure = meshDependencyErrors.get(path);
+                if (depFailure != null) {
+                    if (errorListener != null) {
+                        errorListener.error(
+                                depFailure, new RuntimeException("missing " + depFailure));
+                    }
+                    return pending.isEmpty();
+                }
+                GdxMeshes.LoadedMesh mesh = meshCatalog.get(path);
+                if (mesh == null) {
+                    if (errorListener != null) {
+                        errorListener.error(path, new RuntimeException("missing " + path));
+                    }
+                    return pending.isEmpty();
+                }
+                meshesLoaded.put(path, mesh);
             }
-            loaded.put(path, tex);
             return pending.isEmpty();
         }
 
         @Override
         public float getProgress() {
-            if (loaded.isEmpty() && pending.isEmpty()) {
+            int total = texturesLoaded.size() + meshesLoaded.size() + pending.size();
+            if (total == 0) {
                 return 0f;
             }
-            int total = loaded.size() + pending.size();
-            return total == 0 ? 0f : ((float) loaded.size()) / total;
+            return ((float) texturesLoaded.size() + meshesLoaded.size()) / total;
         }
 
         @Override
         public boolean isLoaded(String path) {
-            return loaded.containsKey(path);
+            return texturesLoaded.containsKey(path);
         }
 
         @Override
         public GdxTextures.LoadedTexture takeOwnership(String path) {
-            takeCalls.add(path);
-            return loaded.remove(path);
+            textureTakeCalls.add(path);
+            return texturesLoaded.remove(path);
+        }
+
+        @Override
+        public boolean isMeshLoaded(String path) {
+            return meshesLoaded.containsKey(path);
+        }
+
+        @Override
+        public GdxMeshes.LoadedMesh takeMeshOwnership(String path) {
+            meshTakeCalls.add(path);
+            return meshesLoaded.remove(path);
         }
 
         @Override
@@ -286,14 +455,16 @@ class GdxAssetManagerAssetsTest {
         @Override
         public void cancel(String path) {
             pending.remove(path);
-            loaded.remove(path);
+            texturesLoaded.remove(path);
+            meshesLoaded.remove(path);
         }
 
         @Override
         public void dispose() {
             disposeCalls.incrementAndGet();
             pending.clear();
-            loaded.clear();
+            texturesLoaded.clear();
+            meshesLoaded.clear();
         }
     }
 }
