@@ -5,7 +5,9 @@ import io.github.worldsmiths.core.FakeAssets;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Queue;
 
 /**
@@ -21,6 +23,8 @@ public final class FakeD3 implements D3 {
     private boolean modelsDisposed;
     private int nextModelId;
     private int nextInstanceId;
+    private final Map<Integer, float[]> instanceDiffuse = new HashMap<Integer, float[]>();
+    private final Map<Integer, float[]> instanceEmissive = new HashMap<Integer, float[]>();
 
     public FakeD3() {
         this(null);
@@ -124,6 +128,19 @@ public final class FakeD3 implements D3 {
         modelsDisposed = false;
         nextModelId = 0;
         nextInstanceId = 0;
+        instanceDiffuse.clear();
+        instanceEmissive.clear();
+    }
+
+    /**
+     * Headless seam: last diffuse set on an instance ({@code null} when unset). Sibling instances do
+     * not share entries.
+     */
+    public float[] diffuseForTest(ModelInstance instance) {
+        if (!(instance instanceof FakeModelInstance)) {
+            throw new IllegalArgumentException("instance must come from this FakeD3");
+        }
+        return instanceDiffuse.get(((FakeModelInstance) instance).id);
     }
 
     private Ray nextPickRay(float screenX, float screenY) {
@@ -327,11 +344,13 @@ public final class FakeD3 implements D3 {
 
         @Override
         public void setDiffuse(float r, float g, float b, float a) {
+            instanceDiffuse.put(id, new float[] {r, g, b, a});
             commands.add(Command.setDiffuse(id, r, g, b, a));
         }
 
         @Override
         public void setEmissive(float r, float g, float b, float a) {
+            instanceEmissive.put(id, new float[] {r, g, b, a});
             commands.add(Command.setEmissive(id, r, g, b, a));
         }
     }

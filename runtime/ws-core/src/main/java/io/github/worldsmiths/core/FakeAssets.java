@@ -56,7 +56,7 @@ public final class FakeAssets implements Assets {
 
     /**
      * Whether a MESH load for {@code internalPath} has reached {@link LoadState#COMPLETE} on this
-     * bag (private registry for {@code FakeD3#createModelFromLoaded} in later tickets).
+     * bag (private registry consulted by {@code FakeD3#createModelFromLoaded} after COMPLETE).
      */
     public boolean isMeshLoaded(String internalPath) {
         return loadedMeshes.contains(internalPath);

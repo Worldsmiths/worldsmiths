@@ -2,6 +2,7 @@ package io.github.worldsmiths.core.d3;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -336,5 +337,57 @@ class D3Test {
         assertEquals(2, bindCount);
         assertTrue(sawDiffuse);
         assertTrue(sawEmissive);
+    }
+
+    @Test
+    void setDiffuseOnOneSiblingInstanceLeavesOtherUntintedForProceduralModel() {
+        FakeD3 d3 = new FakeD3();
+        Model model = d3.createModelBuilder().createBox(1f, 1f, 1f, 0.4f, 0.4f, 0.4f, 1f);
+        ModelInstance tinted = d3.createInstance(model);
+        ModelInstance sibling = d3.createInstance(model);
+
+        tinted.setDiffuse(1f, 0.1f, 0.1f, 1f);
+
+        float[] tintedDiffuse = d3.diffuseForTest(tinted);
+        assertNotNull(tintedDiffuse);
+        assertEquals(1f, tintedDiffuse[0], 1e-5f);
+        assertNull(d3.diffuseForTest(sibling));
+    }
+
+    @Test
+    void setDiffuseOnOneSiblingInstanceLeavesOtherUntintedForLoadedModel() {
+        FakeEngineServices services = new FakeEngineServices();
+        services.assets().putMesh("meshes/hero.gltf");
+        services.assets().request("meshes/hero.gltf", AssetKind.MESH);
+        services.assets().pump();
+
+        Model model = services.d3().createModelFromLoaded("meshes/hero.gltf");
+        ModelInstance tinted = services.d3().createInstance(model);
+        ModelInstance sibling = services.d3().createInstance(model);
+
+        tinted.setDiffuse(0.2f, 0.8f, 0.3f, 1f);
+
+        float[] tintedDiffuse = services.d3().diffuseForTest(tinted);
+        assertNotNull(tintedDiffuse);
+        assertEquals(0.8f, tintedDiffuse[1], 1e-5f);
+        assertNull(services.d3().diffuseForTest(sibling));
+    }
+
+    @Test
+    void disposingLoadedModelWrapperDoesNotEvictMeshRegistryOrBlockRebind() {
+        FakeEngineServices services = new FakeEngineServices();
+        String path = "meshes/hero.gltf";
+        services.assets().putMesh(path);
+        services.assets().request(path, AssetKind.MESH);
+        services.assets().pump();
+        assertTrue(services.assets().isMeshLoaded(path));
+
+        Model first = services.d3().createModelFromLoaded(path);
+        first.dispose();
+
+        assertTrue(services.assets().isMeshLoaded(path));
+        Model second = services.d3().createModelFromLoaded(path);
+        assertNotNull(second);
+        assertNotSame(first, second);
     }
 }
