@@ -115,6 +115,9 @@ final class GdxAssetManagerAssets implements GdxPumpableAssets {
         List<GdxLoadHandle> snapshot = new ArrayList<GdxLoadHandle>(inFlight);
         for (GdxLoadHandle handle : snapshot) {
             String failure = pendingFailures.remove(handle.path);
+            if (failure == null) {
+                failure = consumeOrphanFailureFor(handle);
+            }
             if (failure != null) {
                 failHandle(handle, failure);
                 continue;
@@ -240,6 +243,32 @@ final class GdxAssetManagerAssets implements GdxPumpableAssets {
                 + (throwable != null && throwable.getMessage() != null
                         ? " (" + throwable.getMessage() + ")"
                         : "");
+    }
+
+    /**
+     * LibGDX {@code AssetManager} dependency failures are keyed by the dependency path, not the
+     * parent MESH/TEXTURE path — propagate an unmatched pending failure to a stuck in-flight load.
+     */
+    private String consumeOrphanFailureFor(GdxLoadHandle handle) {
+        if (handle.kind != AssetKind.TEXTURE && handle.kind != AssetKind.MESH) {
+            return null;
+        }
+        if (handle.kind == AssetKind.TEXTURE && textureQueue.isLoaded(handle.path)) {
+            return null;
+        }
+        if (handle.kind == AssetKind.MESH && meshQueue.isMeshLoaded(handle.path)) {
+            return null;
+        }
+        if (pendingFailures.isEmpty()) {
+            return null;
+        }
+        for (Map.Entry<String, String> entry : pendingFailures.entrySet()) {
+            if (!entry.getKey().equals(handle.path)) {
+                pendingFailures.remove(entry.getKey());
+                return entry.getValue();
+            }
+        }
+        return null;
     }
 
     /**
