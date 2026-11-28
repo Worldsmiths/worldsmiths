@@ -16,11 +16,11 @@ Package: `io.github.worldsmiths.core`.
 | `graphics()` | [`Graphics`](graphics.md) | Size + best-effort `setTitle` |
 | `draw2d()` | [`Draw2D`](draw2d.md) | Immediate-mode lines/rects + ortho |
 | `files()` | [`Files`](files.md) | Sync packaged internal text/bytes |
-| `d3()` | [`D3`](d3.md) | Camera, lights, primitive meshes, batch |
+| `d3()` | [`D3`](d3.md) | Camera, lights, primitives + file mesh bind, batch, instance materials |
 | `audio()` | [`Audio`](audio.md) | One-shot sound load / play / stop / dispose |
 | `ui()` | [`Ui`](ui.md) | Bitmap font load / draw / dispose |
 | `textures()` | [`Textures`](textures.md) | Sync preload / resolve; engine-owned cache |
-| `assets()` | [`Assets`](assets.md) | Async request → handle; merges TEXTURE into textures cache |
+| `assets()` | [`Assets`](assets.md) | Async request → handle; TEXTURE merges into textures cache; MESH → private registry for D3 bind |
 | `log()` | [`Log`](log.md) | Portable debug / info / warn / error |
 | `uiKit()` | [`UiKit`](uikit.md) | Session widgets — layout, hit, focus, draw |
 | `scenes()` | [`Scenes`](scene-flow.md) | Replace-only scene flow (`load` / `switchTo` / `unload` / `current`) |
