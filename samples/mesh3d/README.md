@@ -73,9 +73,10 @@ Open the URL Gradle prints (usually `http://localhost:8080`).
 
 ```bash
 ./gradlew -p samples/mesh3d :android:assembleDebug
+./gradlew -p samples/mesh3d :android:installDebug
 ```
 
-Launch from device/emulator after install; same bind/draw/tint behaviour when MESH completes.
+There is no `:android:run` task — launch from the device/emulator launcher (or `adb`) after install. Same bind/draw/tint behaviour when MESH completes.
 
 ## Build / compile (no window)
 
