@@ -4,8 +4,9 @@ package io.github.worldsmiths.core;
  * Async packaged-asset load facade from {@link EngineServices#assets()}. No LibGDX types.
  *
  * <p>{@link #request(String, AssetKind)} never throws for a missing or unloadable path — observe
- * {@link LoadState#FAILED} on the returned {@link LoadHandle}. MUSIC remains stubbed; MESH loads
- * via GDX backends (cooperative web / JVM AssetManager) and Fake seeds in tests.
+ * {@link LoadState#FAILED} on the returned {@link LoadHandle}. TEXTURE and MESH are supported
+ * (Fake when seeded; GDX cooperative web / JVM AssetManager). MUSIC remains stub-fail with an
+ * unsupported-kind message.
  */
 public interface Assets {
 

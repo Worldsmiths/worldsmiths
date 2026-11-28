@@ -23,4 +23,10 @@ public interface ModelInstance {
             float sx,
             float sy,
             float sz);
+
+    /** Instance-local diffuse tint applied to all mesh parts (RGBA, 0–1). */
+    void setDiffuse(float r, float g, float b, float a);
+
+    /** Instance-local emissive tint applied to all mesh parts (RGBA, 0–1). */
+    void setEmissive(float r, float g, float b, float a);
 }

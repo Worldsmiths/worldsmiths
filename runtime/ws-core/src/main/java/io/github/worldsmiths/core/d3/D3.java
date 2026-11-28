@@ -30,4 +30,12 @@ public interface D3 {
 
     /** Drawable instance of a {@link Model}. */
     ModelInstance createInstance(Model model);
+
+    /**
+     * Binds an author-owned {@link Model} from a MESH path that has reached {@link
+     * io.github.worldsmiths.core.LoadState#COMPLETE}. Each successful call returns a new {@link
+     * Model} instance. Before COMPLETE, unknown paths, or blank paths throw {@link
+     * io.github.worldsmiths.core.EngineException}.
+     */
+    Model createModelFromLoaded(String path);
 }

@@ -2,13 +2,16 @@ package io.github.worldsmiths.core.d3;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import io.github.worldsmiths.core.AssetKind;
 import io.github.worldsmiths.core.EngineException;
 import io.github.worldsmiths.core.FakeEngineServices;
+import io.github.worldsmiths.core.LoadState;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
@@ -262,5 +265,129 @@ class D3Test {
         assertEquals(FakeD3.Command.Kind.MODEL_DISPOSE, commands.get(24).kind);
         assertTrue(d3.batchDisposed());
         assertTrue(d3.modelsDisposed());
+    }
+
+    @Test
+    void createModelFromLoadedBeforeMeshCompleteThrowsEngineException() {
+        FakeEngineServices services = new FakeEngineServices();
+        services.assets().putMesh("meshes/hero.gltf");
+        services.assets().request("meshes/hero.gltf", AssetKind.MESH);
+
+        EngineException thrown =
+                assertThrows(
+                        EngineException.class,
+                        () -> services.d3().createModelFromLoaded("meshes/hero.gltf"));
+        assertTrue(thrown.getMessage().toLowerCase().contains("complete"));
+    }
+
+    @Test
+    void createModelFromLoadedBlankOrUnknownPathThrowsEngineException() {
+        FakeEngineServices services = new FakeEngineServices();
+
+        assertThrows(EngineException.class, () -> services.d3().createModelFromLoaded(""));
+        assertThrows(EngineException.class, () -> services.d3().createModelFromLoaded("meshes/ghost.gltf"));
+    }
+
+    @Test
+    void createModelFromLoadedAfterCompleteReturnsNewModelEachBind() {
+        FakeEngineServices services = new FakeEngineServices();
+        services.assets().putMesh("meshes/hero.gltf");
+        services.assets().request("meshes/hero.gltf", AssetKind.MESH);
+        services.assets().pump();
+        assertEquals(LoadState.COMPLETE, services.assets().request("meshes/hero.gltf", AssetKind.MESH).state());
+
+        Model first = services.d3().createModelFromLoaded("meshes/hero.gltf");
+        Model second = services.d3().createModelFromLoaded("meshes/hero.gltf");
+        assertNotNull(first);
+        assertNotNull(second);
+        assertNotSame(first, second);
+
+        ModelInstance instance = services.d3().createInstance(first);
+        ModelBatch batch = services.d3().createModelBatch();
+        Environment environment = services.d3().createEnvironment();
+        OrthographicCamera camera = services.d3().createOrthographicCamera(10f, 10f);
+        instance.setDiffuse(1f, 0.2f, 0.2f, 1f);
+        instance.setEmissive(0.1f, 0.2f, 0.3f, 1f);
+        batch.begin(camera);
+        batch.render(instance, environment);
+        batch.end();
+
+        List<FakeD3.Command> commands = services.d3().commands();
+        boolean sawBind = false;
+        int bindCount = 0;
+        boolean sawDiffuse = false;
+        boolean sawEmissive = false;
+        for (FakeD3.Command cmd : commands) {
+            if (cmd.kind == FakeD3.Command.Kind.CREATE_MODEL_FROM_LOADED) {
+                sawBind = true;
+                bindCount++;
+                assertEquals("meshes/hero.gltf", cmd.path);
+            }
+            if (cmd.kind == FakeD3.Command.Kind.SET_DIFFUSE) {
+                sawDiffuse = true;
+                assertEquals(1f, cmd.r, 1e-5f);
+                assertEquals(0.2f, cmd.g, 1e-5f);
+            }
+            if (cmd.kind == FakeD3.Command.Kind.SET_EMISSIVE) {
+                sawEmissive = true;
+                assertEquals(0.1f, cmd.r, 1e-5f);
+            }
+        }
+        assertTrue(sawBind);
+        assertEquals(2, bindCount);
+        assertTrue(sawDiffuse);
+        assertTrue(sawEmissive);
+    }
+
+    @Test
+    void setDiffuseOnOneSiblingInstanceLeavesOtherUntintedForProceduralModel() {
+        FakeD3 d3 = new FakeD3();
+        Model model = d3.createModelBuilder().createBox(1f, 1f, 1f, 0.4f, 0.4f, 0.4f, 1f);
+        ModelInstance tinted = d3.createInstance(model);
+        ModelInstance sibling = d3.createInstance(model);
+
+        tinted.setDiffuse(1f, 0.1f, 0.1f, 1f);
+
+        float[] tintedDiffuse = d3.diffuseForTest(tinted);
+        assertNotNull(tintedDiffuse);
+        assertEquals(1f, tintedDiffuse[0], 1e-5f);
+        assertNull(d3.diffuseForTest(sibling));
+    }
+
+    @Test
+    void setDiffuseOnOneSiblingInstanceLeavesOtherUntintedForLoadedModel() {
+        FakeEngineServices services = new FakeEngineServices();
+        services.assets().putMesh("meshes/hero.gltf");
+        services.assets().request("meshes/hero.gltf", AssetKind.MESH);
+        services.assets().pump();
+
+        Model model = services.d3().createModelFromLoaded("meshes/hero.gltf");
+        ModelInstance tinted = services.d3().createInstance(model);
+        ModelInstance sibling = services.d3().createInstance(model);
+
+        tinted.setDiffuse(0.2f, 0.8f, 0.3f, 1f);
+
+        float[] tintedDiffuse = services.d3().diffuseForTest(tinted);
+        assertNotNull(tintedDiffuse);
+        assertEquals(0.8f, tintedDiffuse[1], 1e-5f);
+        assertNull(services.d3().diffuseForTest(sibling));
+    }
+
+    @Test
+    void disposingLoadedModelWrapperDoesNotEvictMeshRegistryOrBlockRebind() {
+        FakeEngineServices services = new FakeEngineServices();
+        String path = "meshes/hero.gltf";
+        services.assets().putMesh(path);
+        services.assets().request(path, AssetKind.MESH);
+        services.assets().pump();
+        assertTrue(services.assets().isMeshLoaded(path));
+
+        Model first = services.d3().createModelFromLoaded(path);
+        first.dispose();
+
+        assertTrue(services.assets().isMeshLoaded(path));
+        Model second = services.d3().createModelFromLoaded(path);
+        assertNotNull(second);
+        assertNotSame(first, second);
     }
 }
