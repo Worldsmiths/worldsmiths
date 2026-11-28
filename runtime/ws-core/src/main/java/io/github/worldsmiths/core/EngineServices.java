@@ -1,6 +1,6 @@
 package io.github.worldsmiths.core;
 
-import io.github.worldsmiths.core.thin3d.Thin3D;
+import io.github.worldsmiths.core.d3.D3;
 import io.github.worldsmiths.core.ui.UiKit;
 
 /**
@@ -34,7 +34,7 @@ public interface EngineServices {
     Files files();
 
     /** Thin 3D: camera, lights, primitive meshes, batch begin/render/end. */
-    Thin3D thin3d();
+    D3 d3();
 
     /** One-shot sound load/play from packaged internal paths. */
     Audio audio();

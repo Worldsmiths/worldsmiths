@@ -5,7 +5,7 @@ P2 showcase scaffold: ordered **two-leg** race on the ground plane — touch the
 elapsed ≥ par before the last gate → **FAIL**. Elapsed freezes on either terminal; restart retries
 from leg 1. Checkpoint overlap uses an **AABB** volume (implementer choice for P2).
 
-Uses engine `Thin3D` (camera / lights / primitive meshes / batch), `Transform3D` → ModelInstance
+Uses engine `D3` (camera / lights / primitive meshes / batch), `Transform3D` → ModelInstance
 sync, `Audio` / `Sound` for the one-shot cue at `audio/leg-complete.wav` (plays on rising **CLEAR**
 only — not on intermediate gates, not on FAIL, not on restart), and `Ui` / `Font` for the single-line
 HUD from packaged `fonts/hud.fnt` (+ page `fonts/hud.png`). HUD shows live elapsed + `N/M` (current

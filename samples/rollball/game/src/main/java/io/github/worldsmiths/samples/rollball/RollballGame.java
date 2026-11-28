@@ -7,16 +7,16 @@ import io.github.worldsmiths.core.Node;
 import io.github.worldsmiths.core.Scene;
 import io.github.worldsmiths.core.Transform3D;
 import io.github.worldsmiths.core.WorldsmithsGame;
-import io.github.worldsmiths.core.thin3d.Environment;
-import io.github.worldsmiths.core.thin3d.Model;
-import io.github.worldsmiths.core.thin3d.ModelBatch;
-import io.github.worldsmiths.core.thin3d.ModelBuilder;
-import io.github.worldsmiths.core.thin3d.ModelInstance;
-import io.github.worldsmiths.core.thin3d.PerspectiveCamera;
-import io.github.worldsmiths.core.thin3d.Thin3D;
+import io.github.worldsmiths.core.d3.Environment;
+import io.github.worldsmiths.core.d3.Model;
+import io.github.worldsmiths.core.d3.ModelBatch;
+import io.github.worldsmiths.core.d3.ModelBuilder;
+import io.github.worldsmiths.core.d3.ModelInstance;
+import io.github.worldsmiths.core.d3.PerspectiveCamera;
+import io.github.worldsmiths.core.d3.D3;
 
 /**
- * D8 roll-a-ball: sample-owned ModelBatch + follow camera via engine {@link Thin3D}; controller →
+ * D8 roll-a-ball: sample-owned ModelBatch + follow camera via engine {@link D3}; controller →
  * {@link Transform3D} → ModelInstance transform each frame. Keyboard WASD/arrows + touch drag-stick;
  * R/Space or tap to restart when terminal.
  */
@@ -83,8 +83,8 @@ public final class RollballGame implements WorldsmithsGame {
         syncScene();
         services.scenes().switchTo(scene);
 
-        Thin3D thin3d = services.thin3d();
-        ModelBuilder builder = thin3d.createModelBuilder();
+        D3 d3 = services.d3();
+        ModelBuilder builder = d3.createModelBuilder();
         float ballDiam = RollballController.BALL_RADIUS * 2f;
         ballModel =
                 builder.createSphere(
@@ -98,14 +98,14 @@ public final class RollballGame implements WorldsmithsGame {
                 builder.createBox(
                         floorSize, FLOOR_THICKNESS, floorSize, 0.35f, 0.4f, 0.38f, 1f);
 
-        ballInstance = thin3d.createInstance(ballModel);
-        floorInstance = thin3d.createInstance(floorModel);
+        ballInstance = d3.createInstance(ballModel);
+        floorInstance = d3.createInstance(floorModel);
         for (int i = 0; i < RollballController.PICKUP_COUNT; i++) {
-            pickupInstances[i] = thin3d.createInstance(pickupModel);
+            pickupInstances[i] = d3.createInstance(pickupModel);
         }
 
-        modelBatch = thin3d.createModelBatch();
-        environment = thin3d.createEnvironment();
+        modelBatch = d3.createModelBatch();
+        environment = d3.createEnvironment();
         environment.setAmbientLight(0.45f, 0.45f, 0.45f, 1f);
         environment.addDirectionalLight(0.85f, 0.85f, 0.8f, -0.6f, -1f, -0.3f);
 
@@ -117,7 +117,7 @@ public final class RollballGame implements WorldsmithsGame {
         if (h <= 0f) {
             h = 600f;
         }
-        camera = thin3d.createPerspectiveCamera(67f, w, h);
+        camera = d3.createPerspectiveCamera(67f, w, h);
         camera.setNear(0.1f);
         camera.setFar(100f);
         updateCamera();

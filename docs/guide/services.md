@@ -16,7 +16,7 @@ Package: `io.github.worldsmiths.core`.
 | `graphics()` | [`Graphics`](graphics.md) | Size + best-effort `setTitle` |
 | `draw2d()` | [`Draw2D`](draw2d.md) | Immediate-mode lines/rects + ortho |
 | `files()` | [`Files`](files.md) | Sync packaged internal text/bytes |
-| `thin3d()` | [`Thin3D`](thin3d.md) | Camera, lights, primitive meshes, batch |
+| `d3()` | [`D3`](d3.md) | Camera, lights, primitive meshes, batch |
 | `audio()` | [`Audio`](audio.md) | One-shot sound load / play / stop / dispose |
 | `ui()` | [`Ui`](ui.md) | Bitmap font load / draw / dispose |
 | `textures()` | [`Textures`](textures.md) | Sync preload / resolve; engine-owned cache |

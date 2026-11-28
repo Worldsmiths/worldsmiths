@@ -13,7 +13,7 @@ How-to pages for engine facades. ADRs under [`../adr/`](../adr/) record decision
 | [Graphics](graphics.md) | P1 |
 | [Draw2D](draw2d.md) | D9a-S2 |
 | [Files](files.md) | D9a-S3 |
-| [Thin3D](thin3d.md) | D9b |
+| [D3](d3.md) | D9b |
 | [Audio](audio.md) | Jam facade (relay) |
 | [Ui](ui.md) | Jam facade (relay) |
 | [Textures](textures.md) | Sync texture cache (textured sprites) |

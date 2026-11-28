@@ -5,7 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import com.badlogic.gdx.graphics.PerspectiveCamera;
 import com.badlogic.gdx.math.Matrix4;
 import com.badlogic.gdx.math.Vector3;
-import io.github.worldsmiths.core.thin3d.Ray;
+import io.github.worldsmiths.core.d3.Ray;
 import org.junit.jupiter.api.Test;
 
 /**

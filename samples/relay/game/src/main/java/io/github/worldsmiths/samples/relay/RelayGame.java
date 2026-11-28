@@ -9,13 +9,13 @@ import io.github.worldsmiths.core.Scene;
 import io.github.worldsmiths.core.Sound;
 import io.github.worldsmiths.core.Transform3D;
 import io.github.worldsmiths.core.WorldsmithsGame;
-import io.github.worldsmiths.core.thin3d.Environment;
-import io.github.worldsmiths.core.thin3d.Model;
-import io.github.worldsmiths.core.thin3d.ModelBatch;
-import io.github.worldsmiths.core.thin3d.ModelBuilder;
-import io.github.worldsmiths.core.thin3d.ModelInstance;
-import io.github.worldsmiths.core.thin3d.PerspectiveCamera;
-import io.github.worldsmiths.core.thin3d.Thin3D;
+import io.github.worldsmiths.core.d3.Environment;
+import io.github.worldsmiths.core.d3.Model;
+import io.github.worldsmiths.core.d3.ModelBatch;
+import io.github.worldsmiths.core.d3.ModelBuilder;
+import io.github.worldsmiths.core.d3.ModelInstance;
+import io.github.worldsmiths.core.d3.PerspectiveCamera;
+import io.github.worldsmiths.core.d3.D3;
 import io.github.worldsmiths.core.ui.Button;
 import io.github.worldsmiths.core.ui.Insets;
 import io.github.worldsmiths.core.ui.Theme;
@@ -113,8 +113,8 @@ public final class RelayGame implements WorldsmithsGame {
         syncScene();
         services.scenes().switchTo(scene);
 
-        Thin3D thin3d = services.thin3d();
-        ModelBuilder builder = thin3d.createModelBuilder();
+        D3 d3 = services.d3();
+        ModelBuilder builder = d3.createModelBuilder();
 
         float agentDiam = RelayController.AGENT_RADIUS * 2f;
         agentModel =
@@ -129,13 +129,13 @@ public final class RelayGame implements WorldsmithsGame {
                 builder.createBox(
                         GATE_MESH_SIZE, GATE_MESH_HEIGHT, GATE_MESH_SIZE, 0.9f, 0.55f, 0.15f, 0.85f);
 
-        agentInstance = thin3d.createInstance(agentModel);
-        floorInstance = thin3d.createInstance(floorModel);
-        activeGateInstance = thin3d.createInstance(gateModel);
-        inactiveGateInstance = thin3d.createInstance(gateModel);
+        agentInstance = d3.createInstance(agentModel);
+        floorInstance = d3.createInstance(floorModel);
+        activeGateInstance = d3.createInstance(gateModel);
+        inactiveGateInstance = d3.createInstance(gateModel);
 
-        modelBatch = thin3d.createModelBatch();
-        environment = thin3d.createEnvironment();
+        modelBatch = d3.createModelBatch();
+        environment = d3.createEnvironment();
         environment.setAmbientLight(0.45f, 0.45f, 0.45f, 1f);
         environment.addDirectionalLight(0.85f, 0.85f, 0.8f, -0.6f, -1f, -0.3f);
 
@@ -147,7 +147,7 @@ public final class RelayGame implements WorldsmithsGame {
         if (h <= 0f) {
             h = 600f;
         }
-        camera = thin3d.createPerspectiveCamera(67f, w, h);
+        camera = d3.createPerspectiveCamera(67f, w, h);
         camera.setNear(0.1f);
         camera.setFar(100f);
         updateCamera();

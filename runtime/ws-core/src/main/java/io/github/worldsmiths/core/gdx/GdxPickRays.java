@@ -3,8 +3,8 @@ package io.github.worldsmiths.core.gdx;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.math.Vector3;
 import io.github.worldsmiths.core.EngineException;
-import io.github.worldsmiths.core.thin3d.Ray;
-import io.github.worldsmiths.core.thin3d.Vec3;
+import io.github.worldsmiths.core.d3.Ray;
+import io.github.worldsmiths.core.d3.Vec3;
 
 /**
  * Application-free pick-ray copy from a LibGDX camera. Matches LibGDX {@code Camera.unproject} /

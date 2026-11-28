@@ -1,12 +1,12 @@
-package io.github.worldsmiths.core.thin3d;
+package io.github.worldsmiths.core.d3;
 
 /**
- * Shared Thin3D camera: pose, {@link #update}, and Input-space pick-ray. Screen coords for {@link
+ * Shared D3 camera: pose, {@link #update}, and Input-space pick-ray. Screen coords for {@link
  * #getPickRay} match {@link io.github.worldsmiths.core.Input} (origin top-left, Y down). Call {@link
  * #update} after pose changes before picking or {@link ModelBatch#begin}. No dispose.
  *
  * <p>GDX-backed pick needs a live graphics surface (pixel width/height). Missing graphics throws
- * {@link io.github.worldsmiths.core.EngineException}. {@link FakeThin3D} instead returns seeded rays
+ * {@link io.github.worldsmiths.core.EngineException}. {@link FakeD3} instead returns seeded rays
  * (or throws {@code EngineException} when the seed queue is empty).
  */
 public interface Camera {
@@ -29,7 +29,7 @@ public interface Camera {
      * fresh immutable {@link Ray}; never a reused buffer.
      *
      * @throws io.github.worldsmiths.core.EngineException when the GDX backend has no live graphics
-     *     surface, or when {@link FakeThin3D} has no seeded pick ray
+     *     surface, or when {@link FakeD3} has no seeded pick ray
      */
     Ray getPickRay(float screenX, float screenY);
 }

@@ -1,4 +1,4 @@
-package io.github.worldsmiths.core.thin3d;
+package io.github.worldsmiths.core.d3;
 
 /**
  * Drawable placement of a {@link Model}. Transform is overwritten each call (not incremental). No

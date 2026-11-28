@@ -1,22 +1,22 @@
 package io.github.worldsmiths.core.gdx;
 
-import io.github.worldsmiths.core.thin3d.Environment;
-import io.github.worldsmiths.core.thin3d.Model;
-import io.github.worldsmiths.core.thin3d.ModelBatch;
-import io.github.worldsmiths.core.thin3d.ModelBuilder;
-import io.github.worldsmiths.core.thin3d.ModelInstance;
-import io.github.worldsmiths.core.thin3d.OrthographicCamera;
-import io.github.worldsmiths.core.thin3d.PerspectiveCamera;
-import io.github.worldsmiths.core.thin3d.Thin3D;
+import io.github.worldsmiths.core.d3.Environment;
+import io.github.worldsmiths.core.d3.Model;
+import io.github.worldsmiths.core.d3.ModelBatch;
+import io.github.worldsmiths.core.d3.ModelBuilder;
+import io.github.worldsmiths.core.d3.ModelInstance;
+import io.github.worldsmiths.core.d3.OrthographicCamera;
+import io.github.worldsmiths.core.d3.PerspectiveCamera;
+import io.github.worldsmiths.core.d3.D3;
 
 /**
- * GDX-backed {@link Thin3D} factory. Not part of the author-facing API — backends assemble this via
+ * GDX-backed {@link D3} factory. Not part of the author-facing API — backends assemble this via
  * {@link GdxEngineServices}. Authors own dispose of {@link Model} / {@link ModelBatch} they create;
  * this factory itself needs no dispose.
  */
-final class GdxThin3D implements Thin3D {
+final class GdxD3 implements D3 {
 
-    GdxThin3D() {}
+    GdxD3() {}
 
     @Override
     public PerspectiveCamera createPerspectiveCamera(
@@ -50,7 +50,7 @@ final class GdxThin3D implements Thin3D {
     @Override
     public ModelInstance createInstance(Model model) {
         if (!(model instanceof GdxModel)) {
-            throw new IllegalArgumentException("model must come from Thin3D.createModelBuilder()");
+            throw new IllegalArgumentException("model must come from D3.createModelBuilder()");
         }
         return new GdxModelInstance(
                 new com.badlogic.gdx.graphics.g3d.ModelInstance(((GdxModel) model).delegate));

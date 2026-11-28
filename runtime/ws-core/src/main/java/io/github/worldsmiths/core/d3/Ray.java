@@ -1,4 +1,4 @@
-package io.github.worldsmiths.core.thin3d;
+package io.github.worldsmiths.core.d3;
 
 /** Immutable pick ray: origin + direction (not necessarily unit). No LibGDX types. */
 public final class Ray {

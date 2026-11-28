@@ -1,7 +1,7 @@
-package io.github.worldsmiths.core.thin3d;
+package io.github.worldsmiths.core.d3;
 
 /**
- * GPU mesh asset. Create instances via {@link Thin3D#createInstance(Model)}. Author-owned: call
+ * GPU mesh asset. Create instances via {@link D3#createInstance(Model)}. Author-owned: call
  * {@link #dispose()} at shutdown for every model you built.
  */
 public interface Model {

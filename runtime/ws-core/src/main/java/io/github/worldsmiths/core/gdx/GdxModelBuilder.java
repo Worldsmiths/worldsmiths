@@ -4,8 +4,8 @@ import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.VertexAttributes;
 import com.badlogic.gdx.graphics.g3d.Material;
 import com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute;
-import io.github.worldsmiths.core.thin3d.Model;
-import io.github.worldsmiths.core.thin3d.ModelBuilder;
+import io.github.worldsmiths.core.d3.Model;
+import io.github.worldsmiths.core.d3.ModelBuilder;
 
 /** GDX-backed {@link ModelBuilder}. Not part of the author-facing API. */
 final class GdxModelBuilder implements ModelBuilder {

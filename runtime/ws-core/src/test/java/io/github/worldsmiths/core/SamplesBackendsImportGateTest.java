@@ -90,8 +90,8 @@ class SamplesBackendsImportGateTest {
     @Test
     void fullCoreBanDoesNotFlagEngineImports() {
         assertFalse(
-                hasBannedLibgdxCoreImport("import io.github.worldsmiths.core.thin3d.Thin3D;"),
-                "engine Thin3D imports must remain allowed");
+                hasBannedLibgdxCoreImport("import io.github.worldsmiths.core.d3.D3;"),
+                "engine D3 imports must remain allowed");
     }
 
     @Test

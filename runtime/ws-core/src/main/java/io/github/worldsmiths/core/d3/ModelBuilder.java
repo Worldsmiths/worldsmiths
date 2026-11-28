@@ -1,4 +1,4 @@
-package io.github.worldsmiths.core.thin3d;
+package io.github.worldsmiths.core.d3;
 
 /**
  * Builds primitive meshes in code. Diffuse color is RGBA; position+normal attributes are always

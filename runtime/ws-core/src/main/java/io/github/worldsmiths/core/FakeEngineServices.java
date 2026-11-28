@@ -1,12 +1,12 @@
 package io.github.worldsmiths.core;
 
-import io.github.worldsmiths.core.thin3d.FakeThin3D;
+import io.github.worldsmiths.core.d3.FakeD3;
 import io.github.worldsmiths.core.ui.FakeUiKit;
 
 /**
  * Always-non-null services bag for unit tests and headless game harnesses. Exposes typed fakes so
  * tests can set key/pointer/actions/clock/graphics/files/audio/ui/textures/log/assets/scenes state
- * and assert Draw2D / Thin3D / Audio / Ui / Textures / Log / Assets / Scenes recordings without a
+ * and assert Draw2D / D3 / Audio / Ui / Textures / Log / Assets / Scenes recordings without a
  * display.
  */
 public final class FakeEngineServices implements EngineServices {
@@ -18,7 +18,7 @@ public final class FakeEngineServices implements EngineServices {
     private final FakeGraphics graphics = new FakeGraphics();
     private final FakeDraw2D draw2d = new FakeDraw2D();
     private final FakeFiles files = new FakeFiles();
-    private final FakeThin3D thin3d = new FakeThin3D();
+    private final FakeD3 d3 = new FakeD3();
     private final FakeAudio audio = new FakeAudio();
     private final FakeUi ui = new FakeUi();
     private final FakeTextures textures = new FakeTextures();
@@ -61,8 +61,8 @@ public final class FakeEngineServices implements EngineServices {
     }
 
     @Override
-    public FakeThin3D thin3d() {
-        return thin3d;
+    public FakeD3 d3() {
+        return d3;
     }
 
     @Override

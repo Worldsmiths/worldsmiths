@@ -1,4 +1,4 @@
-package io.github.worldsmiths.core.thin3d;
+package io.github.worldsmiths.core.d3;
 
 /**
  * Immediate-mode 3D batch. Typical frame: {@link #begin} → {@link #render}… → {@link #end}.

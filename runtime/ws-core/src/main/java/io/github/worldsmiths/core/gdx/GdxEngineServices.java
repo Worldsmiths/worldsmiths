@@ -21,7 +21,7 @@ import io.github.worldsmiths.core.Log;
 import io.github.worldsmiths.core.Scenes;
 import io.github.worldsmiths.core.Textures;
 import io.github.worldsmiths.core.Ui;
-import io.github.worldsmiths.core.thin3d.Thin3D;
+import io.github.worldsmiths.core.d3.D3;
 import io.github.worldsmiths.core.ui.DefaultUiKit;
 import io.github.worldsmiths.core.ui.UiKit;
 
@@ -36,7 +36,7 @@ public final class GdxEngineServices {
     private GdxEngineServices() {}
 
     /**
-     * Assembles non-null Input/Clock/Graphics/Draw2D/Files/Thin3D/Audio/Ui/Textures/Log/Assets/Scenes
+     * Assembles non-null Input/Clock/Graphics/Draw2D/Files/D3/Audio/Ui/Textures/Log/Assets/Scenes
      * wrappers around {@code Gdx} statics with cooperative (≤1 open/pump) async assets. Sets
      * Application log level to {@link Application#LOG_DEBUG} so author {@code debug} calls are
      * visible on every backend. Used by the web listener.
@@ -62,7 +62,7 @@ public final class GdxEngineServices {
                 new GdxGraphics(),
                 new GdxDraw2D(),
                 files,
-                new GdxThin3D(),
+                new GdxD3(),
                 new GdxAudio(),
                 new GdxUi(),
                 textures,
@@ -232,7 +232,7 @@ public final class GdxEngineServices {
         private final Graphics graphics;
         private final Draw2D draw2d;
         private final Files files;
-        private final Thin3D thin3d;
+        private final D3 d3;
         private final Audio audio;
         private final Ui ui;
         private final GdxTextures gdxTextures;
@@ -250,7 +250,7 @@ public final class GdxEngineServices {
                 Graphics graphics,
                 Draw2D draw2d,
                 Files files,
-                Thin3D thin3d,
+                D3 d3,
                 Audio audio,
                 Ui ui,
                 GdxTextures gdxTextures,
@@ -266,7 +266,7 @@ public final class GdxEngineServices {
             this.graphics = graphics;
             this.draw2d = draw2d;
             this.files = files;
-            this.thin3d = thin3d;
+            this.d3 = d3;
             this.audio = audio;
             this.ui = ui;
             this.gdxTextures = gdxTextures;
@@ -308,8 +308,8 @@ public final class GdxEngineServices {
         }
 
         @Override
-        public Thin3D thin3d() {
-            return thin3d;
+        public D3 d3() {
+            return d3;
         }
 
         @Override

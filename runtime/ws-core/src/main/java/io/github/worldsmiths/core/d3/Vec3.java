@@ -1,6 +1,6 @@
-package io.github.worldsmiths.core.thin3d;
+package io.github.worldsmiths.core.d3;
 
-/** Immutable 3-vector for Thin3D pick-ray math. No LibGDX types. */
+/** Immutable 3-vector for D3 pick-ray math. No LibGDX types. */
 public final class Vec3 {
     public final float x;
     public final float y;

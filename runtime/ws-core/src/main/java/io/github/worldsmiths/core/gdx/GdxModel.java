@@ -1,6 +1,6 @@
 package io.github.worldsmiths.core.gdx;
 
-import io.github.worldsmiths.core.thin3d.Model;
+import io.github.worldsmiths.core.d3.Model;
 
 /** GDX-backed {@link Model}. Not part of the author-facing API. */
 final class GdxModel implements Model {

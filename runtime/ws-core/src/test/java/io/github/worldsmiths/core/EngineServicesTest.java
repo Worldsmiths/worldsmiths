@@ -21,7 +21,7 @@ class EngineServicesTest {
         assertNotNull(services.graphics());
         assertNotNull(services.draw2d());
         assertNotNull(services.files());
-        assertNotNull(services.thin3d());
+        assertNotNull(services.d3());
         assertNotNull(services.audio());
         assertNotNull(services.ui());
         assertNotNull(services.textures());
@@ -36,7 +36,7 @@ class EngineServicesTest {
         assertSame(services.graphics(), services.graphics());
         assertSame(services.draw2d(), services.draw2d());
         assertSame(services.files(), services.files());
-        assertSame(services.thin3d(), services.thin3d());
+        assertSame(services.d3(), services.d3());
         assertSame(services.audio(), services.audio());
         assertSame(services.ui(), services.ui());
         assertSame(services.textures(), services.textures());

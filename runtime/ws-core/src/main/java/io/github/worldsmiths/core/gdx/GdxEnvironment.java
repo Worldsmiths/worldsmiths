@@ -2,7 +2,7 @@ package io.github.worldsmiths.core.gdx;
 
 import com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute;
 import com.badlogic.gdx.graphics.g3d.environment.DirectionalLight;
-import io.github.worldsmiths.core.thin3d.Environment;
+import io.github.worldsmiths.core.d3.Environment;
 
 /** GDX-backed {@link Environment}. Not part of the author-facing API. */
 final class GdxEnvironment implements Environment {

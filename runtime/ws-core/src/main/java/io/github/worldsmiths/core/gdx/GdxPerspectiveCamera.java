@@ -1,7 +1,7 @@
 package io.github.worldsmiths.core.gdx;
 
-import io.github.worldsmiths.core.thin3d.PerspectiveCamera;
-import io.github.worldsmiths.core.thin3d.Ray;
+import io.github.worldsmiths.core.d3.PerspectiveCamera;
+import io.github.worldsmiths.core.d3.Ray;
 
 /** GDX-backed {@link PerspectiveCamera}. Not part of the author-facing API. */
 final class GdxPerspectiveCamera implements PerspectiveCamera {

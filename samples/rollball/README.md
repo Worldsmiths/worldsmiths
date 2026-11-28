@@ -1,7 +1,7 @@
 # Rollball sample
 
 D8 3D probe: roll a ball on a pad, collect pickups, win or fall/bounds-fail, restart without
-relaunching. Uses engine `Thin3D` (camera / lights / primitive meshes / batch); scene wiring uses
+relaunching. Uses engine `D3` (camera / lights / primitive meshes / batch); scene wiring uses
 `Transform3D` → ModelInstance sync each frame. Score / WIN / FAIL appear in the window title
 (`Rollball — score: N`).
 

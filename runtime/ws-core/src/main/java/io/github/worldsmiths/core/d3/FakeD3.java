@@ -1,4 +1,4 @@
-package io.github.worldsmiths.core.thin3d;
+package io.github.worldsmiths.core.d3;
 
 import io.github.worldsmiths.core.EngineException;
 import java.util.ArrayDeque;
@@ -8,11 +8,11 @@ import java.util.List;
 import java.util.Queue;
 
 /**
- * Recording {@link Thin3D} for headless tests. Captures camera, lights, primitive builds, and batch
+ * Recording {@link D3} for headless tests. Captures camera, lights, primitive builds, and batch
  * commands without touching GL. Seed pick-ray returns via {@link #seedPickRay} before {@link
  * Camera#getPickRay}; an empty seed queue throws {@link EngineException}.
  */
-public final class FakeThin3D implements Thin3D {
+public final class FakeD3 implements D3 {
     private final List<Command> commands = new ArrayList<Command>();
     private final Queue<Ray> seededPickRays = new ArrayDeque<Ray>();
     private boolean batchDisposed;
@@ -103,7 +103,7 @@ public final class FakeThin3D implements Thin3D {
         commands.add(Command.pickRay(screenX, screenY));
         Ray seeded = seededPickRays.poll();
         if (seeded == null) {
-            throw new EngineException("No seeded pick ray; call FakeThin3D.seedPickRay before getPickRay");
+            throw new EngineException("No seeded pick ray; call FakeD3.seedPickRay before getPickRay");
         }
         return new Ray(
                 new Vec3(seeded.origin.x, seeded.origin.y, seeded.origin.z),
@@ -324,7 +324,7 @@ public final class FakeThin3D implements Thin3D {
         }
     }
 
-    /** One recorded Thin3D call. */
+    /** One recorded D3 call. */
     public static final class Command {
         public enum Kind {
             CREATE_CAMERA,

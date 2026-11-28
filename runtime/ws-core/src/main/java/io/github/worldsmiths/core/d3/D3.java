@@ -1,14 +1,14 @@
-package io.github.worldsmiths.core.thin3d;
+package io.github.worldsmiths.core.d3;
 
 /**
- * Factory for the Thin3D author surface (camera, lights/environment, primitive meshes, batch). No
- * LibGDX types in the contract. Obtain via {@link io.github.worldsmiths.core.EngineServices#thin3d()}.
+ * Factory for the D3 author surface (camera, lights/environment, primitive meshes, batch). No
+ * LibGDX types in the contract. Obtain via {@link io.github.worldsmiths.core.EngineServices#d3()}.
  *
- * <p><b>Ownership:</b> {@code Thin3D} itself is not disposable. Authors own {@link Model} and {@link
+ * <p><b>Ownership:</b> {@code D3} itself is not disposable. Authors own {@link Model} and {@link
  * ModelBatch} instances they create and must {@code dispose()} them at shutdown. {@link Camera}
  * subtypes, {@link Environment}, {@link ModelBuilder}, and {@link ModelInstance} need no dispose.
  */
-public interface Thin3D {
+public interface D3 {
 
     /** Perspective camera with the given vertical FOV (degrees) and viewport size in pixels. */
     PerspectiveCamera createPerspectiveCamera(

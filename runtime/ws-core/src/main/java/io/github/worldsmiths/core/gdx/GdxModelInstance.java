@@ -1,7 +1,7 @@
 package io.github.worldsmiths.core.gdx;
 
 import com.badlogic.gdx.math.Vector3;
-import io.github.worldsmiths.core.thin3d.ModelInstance;
+import io.github.worldsmiths.core.d3.ModelInstance;
 
 /** GDX-backed {@link ModelInstance}. Not part of the author-facing API. */
 final class GdxModelInstance implements ModelInstance {
