@@ -27,6 +27,7 @@ public final class Mesh3dGame implements WorldsmithsGame {
     private EngineServices services;
     private LoadHandle meshHandle;
     private boolean meshBound;
+    private boolean meshFailureLogged;
     private boolean warmTint = true;
     private float tintTimer;
 
@@ -78,11 +79,14 @@ public final class Mesh3dGame implements WorldsmithsGame {
         }
         LoadState state = meshHandle.state();
         if (state == LoadState.FAILED) {
-            String detail = meshHandle.failureMessage();
-            if (detail == null || detail.isEmpty()) {
-                detail = "FAILED: " + meshHandle.path();
+            if (!meshFailureLogged) {
+                meshFailureLogged = true;
+                String detail = meshHandle.failureMessage();
+                if (detail == null || detail.isEmpty()) {
+                    detail = "FAILED: " + meshHandle.path();
+                }
+                services.log().warn(LOG_TAG, detail);
             }
-            services.log().warn(LOG_TAG, detail);
             return;
         }
         if (!meshBound && state == LoadState.COMPLETE) {

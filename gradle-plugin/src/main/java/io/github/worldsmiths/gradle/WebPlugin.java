@@ -57,9 +57,10 @@ public final class WebPlugin implements Plugin<Project> {
             defaults.getHtmlTitle().set(extension.getTitle());
             defaults.getHtmlWidth().set(extension.getWidth());
             defaults.getHtmlHeight().set(extension.getHeight());
+            defaults.getPreservedClasses().addAll(GltfDataTeaVmPreservedClasses.ALL);
         });
-        teavm.js(js -> {});
-        teavm.wasm(wasm -> {});
+        teavm.js(js -> js.getPreservedClasses().addAll(GltfDataTeaVmPreservedClasses.ALL));
+        teavm.wasm(wasm -> wasm.getPreservedClasses().addAll(GltfDataTeaVmPreservedClasses.ALL));
 
         Provider<Directory> webappDir = project.getLayout().getBuildDirectory().dir("dist/js/webapp");
         project.getTasks().register(WsItchWebZip.TASK_NAME, WsItchWebZip.class, task -> {
