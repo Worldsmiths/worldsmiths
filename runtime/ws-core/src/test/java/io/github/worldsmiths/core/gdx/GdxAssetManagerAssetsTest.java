@@ -110,6 +110,48 @@ class GdxAssetManagerAssetsTest {
     }
 
     @Test
+    void meshInFlightFailsWhenAssetManagerReportsDependencyPathNotMeshPath() {
+        RecordingQueue queue = new RecordingQueue();
+        queue.meshCatalog.put("meshes/demo.gltf", stubLoadedMesh());
+        queue.meshDependencyErrors.put(
+                "meshes/demo.gltf", "meshes/demo_basecolor.png");
+        GdxMeshes meshes = emptyMeshes();
+        GdxAssetManagerAssets assets =
+                new GdxAssetManagerAssets(emptyTextures(), meshes, queue, queue);
+
+        LoadHandle mesh = assets.request("meshes/demo.gltf", AssetKind.MESH);
+        assertEquals(LoadState.QUEUED, mesh.state());
+
+        assets.pump();
+
+        assertEquals(LoadState.FAILED, mesh.state());
+        assertNotNull(mesh.failureMessage());
+        assertTrue(
+                mesh.failureMessage().contains("meshes/demo_basecolor.png"),
+                mesh.failureMessage());
+        assertNull(meshes.getIfPresent("meshes/demo.gltf"));
+        assertFalse(meshes.isAsyncInFlight("meshes/demo.gltf"));
+    }
+
+    @Test
+    void textureInFlightFailsWhenAssetManagerReportsDifferentFailurePath() {
+        RecordingQueue queue = new RecordingQueue();
+        queue.textureCatalog.put("textures/atlas.png", stubLoadedTexture());
+        queue.textureDependencyErrors.put(
+                "textures/atlas.png", "textures/atlas_base.png");
+        GdxAssetManagerAssets assets =
+                new GdxAssetManagerAssets(emptyTextures(), emptyMeshes(), queue, queue);
+
+        LoadHandle texture = assets.request("textures/atlas.png", AssetKind.TEXTURE);
+
+        assets.pump();
+
+        assertEquals(LoadState.FAILED, texture.state());
+        assertNotNull(texture.failureMessage());
+        assertTrue(texture.failureMessage().contains("textures/atlas_base.png"));
+    }
+
+    @Test
     void meshMissReachesFailedAfterPumpWithoutThrowOnRequest() {
         RecordingQueue queue = new RecordingQueue();
         GdxMeshes meshes = emptyMeshes();
@@ -300,6 +342,9 @@ class GdxAssetManagerAssetsTest {
                 new HashMap<String, GdxTextures.LoadedTexture>();
         private final Map<String, GdxMeshes.LoadedMesh> meshCatalog =
                 new HashMap<String, GdxMeshes.LoadedMesh>();
+        /** Parent path → dependency path whose AM error should fail the parent load. */
+        final Map<String, String> meshDependencyErrors = new HashMap<String, String>();
+        final Map<String, String> textureDependencyErrors = new HashMap<String, String>();
         private final LinkedHashMap<String, AssetKind> pending = new LinkedHashMap<String, AssetKind>();
         private final Map<String, GdxTextures.LoadedTexture> texturesLoaded =
                 new HashMap<String, GdxTextures.LoadedTexture>();
@@ -334,6 +379,14 @@ class GdxAssetManagerAssetsTest {
             String path = pending.keySet().iterator().next();
             AssetKind kind = pending.remove(path);
             if (kind == AssetKind.TEXTURE) {
+                String depFailure = textureDependencyErrors.get(path);
+                if (depFailure != null) {
+                    if (errorListener != null) {
+                        errorListener.error(
+                                depFailure, new RuntimeException("missing " + depFailure));
+                    }
+                    return pending.isEmpty();
+                }
                 GdxTextures.LoadedTexture tex = textureCatalog.get(path);
                 if (tex == null) {
                     if (errorListener != null) {
@@ -343,6 +396,14 @@ class GdxAssetManagerAssetsTest {
                 }
                 texturesLoaded.put(path, tex);
             } else {
+                String depFailure = meshDependencyErrors.get(path);
+                if (depFailure != null) {
+                    if (errorListener != null) {
+                        errorListener.error(
+                                depFailure, new RuntimeException("missing " + depFailure));
+                    }
+                    return pending.isEmpty();
+                }
                 GdxMeshes.LoadedMesh mesh = meshCatalog.get(path);
                 if (mesh == null) {
                     if (errorListener != null) {
