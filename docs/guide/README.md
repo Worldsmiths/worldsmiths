@@ -13,11 +13,11 @@ How-to pages for engine facades. ADRs under [`../adr/`](../adr/) record decision
 | [Graphics](graphics.md) | P1 |
 | [Draw2D](draw2d.md) | D9a-S2 |
 | [Files](files.md) | D9a-S3 |
-| [D3](d3.md) | D9b |
+| [D3](d3.md) | D9b + glTF bind / instance materials |
 | [Audio](audio.md) | Jam facade (relay) |
 | [Ui](ui.md) | Jam facade (relay) |
 | [Textures](textures.md) | Sync texture cache (textured sprites) |
-| [Assets](assets.md) | Async packaged load (TEXTURE; MESH/MUSIC stubs) |
+| [Assets](assets.md) | Async packaged load (TEXTURE + MESH glTF; MUSIC stub) |
 | [Log](log.md) | Portable debug / info / warn / error |
 | [Scene flow](scene-flow.md) | Replace-only load / switchTo / unload / current |
 | [UiKit](uikit.md) | Engine UI slice (hybrid leaves) |
