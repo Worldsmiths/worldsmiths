@@ -147,19 +147,53 @@ class FakeAssetsTest {
     }
 
     @Test
-    void meshRequestReachesFailedWithUnsupportedKindMessage() {
+    void seededMeshRequestReachesCompleteAfterPumpWithRequestThenCompleteRecords() {
+        FakeAssets assets = new FakeAssets();
+        assets.putMesh("meshes/hero.gltf");
+
+        LoadHandle handle = assets.request("meshes/hero.gltf", AssetKind.MESH);
+
+        assertNotNull(handle);
+        assertEquals(LoadState.QUEUED, handle.state());
+        assertEquals("meshes/hero.gltf", handle.path());
+        assertEquals(AssetKind.MESH, handle.kind());
+
+        assets.pump();
+
+        assertEquals(LoadState.COMPLETE, handle.state());
+        assertEquals(1f, handle.progress(), 1e-5f);
+        assertNull(handle.failureMessage());
+        assertTrue(assets.isMeshLoaded("meshes/hero.gltf"));
+
+        java.util.List<FakeAssets.Command> commands = assets.commands();
+        assertEquals(2, commands.size());
+        assertEquals(FakeAssets.Command.Kind.REQUEST, commands.get(0).kind);
+        assertEquals(AssetKind.MESH, commands.get(0).assetKind);
+        assertEquals(FakeAssets.Command.Kind.COMPLETE, commands.get(1).kind);
+        assertEquals("meshes/hero.gltf", commands.get(1).path);
+    }
+
+    @Test
+    void missingMeshRequestDoesNotThrowAndReachesFailedWithPathAfterPump() {
         FakeAssets assets = new FakeAssets();
 
-        LoadHandle handle = assets.request("models/hero.mesh", AssetKind.MESH);
+        LoadHandle handle = assets.request("meshes/missing.gltf", AssetKind.MESH);
+
+        assertNotNull(handle);
+        assertEquals(LoadState.QUEUED, handle.state());
+
+        assets.pump();
 
         assertEquals(LoadState.FAILED, handle.state());
         assertNotNull(handle.failureMessage());
-        assertTrue(handle.failureMessage().toLowerCase().contains("unsupported"));
-        assertTrue(handle.failureMessage().contains("MESH"));
+        assertTrue(handle.failureMessage().contains("meshes/missing.gltf"));
+        assertFalse(assets.isMeshLoaded("meshes/missing.gltf"));
 
         java.util.List<FakeAssets.Command> commands = assets.commands();
+        assertEquals(2, commands.size());
         assertEquals(FakeAssets.Command.Kind.REQUEST, commands.get(0).kind);
         assertEquals(FakeAssets.Command.Kind.FAIL, commands.get(1).kind);
+        assertTrue(commands.get(1).message.contains("meshes/missing.gltf"));
     }
 
     @Test

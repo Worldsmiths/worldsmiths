@@ -10,8 +10,9 @@ import java.util.Set;
 
 /**
  * Recording {@link Assets} for headless tests. Advances only on explicit {@link #pump()} / script —
- * never {@code Thread.sleep}. Seed TEXTURE paths with {@link #putTexture}; optional {@link
- * #script(String, float...)} for discrete loading steps; assert command kinds ({@code REQUEST},
+ * never {@code Thread.sleep}. Seed TEXTURE paths with {@link #putTexture}; seed MESH paths with
+ * {@link #putMesh}; optional {@link #script(String, float...)} for discrete loading steps; assert
+ * command kinds ({@code REQUEST},
  * {@code PROGRESS}, {@code COMPLETE}, {@code FAIL}, {@code LISTENER}, {@code UPDATE}).
  *
  * <p>When constructed with a {@link FakeTextures} (via {@link FakeEngineServices}), COMPLETE merges
@@ -19,6 +20,8 @@ import java.util.Set;
  */
 public final class FakeAssets implements Assets {
     private final Set<String> availableTextures = new HashSet<String>();
+    private final Set<String> availableMeshes = new HashSet<String>();
+    private final Set<String> loadedMeshes = new HashSet<String>();
     private final Map<String, float[]> scripts = new HashMap<String, float[]>();
     private final Map<String, FakeLoadHandle> handlesByKey = new HashMap<String, FakeLoadHandle>();
     private final List<Command> commands = new ArrayList<Command>();
@@ -44,6 +47,19 @@ public final class FakeAssets implements Assets {
         if (textures != null) {
             textures.putTexture(internalPath);
         }
+    }
+
+    /** Marks an internal path as a loadable MESH for later {@link #request} calls (Fake harness). */
+    public void putMesh(String internalPath) {
+        availableMeshes.add(internalPath);
+    }
+
+    /**
+     * Whether a MESH load for {@code internalPath} has reached {@link LoadState#COMPLETE} on this
+     * bag (private registry for {@code FakeD3#createModelFromLoaded} in later tickets).
+     */
+    public boolean isMeshLoaded(String internalPath) {
+        return loadedMeshes.contains(internalPath);
     }
 
     /**
@@ -75,7 +91,7 @@ public final class FakeAssets implements Assets {
             failHandleImmediate(handle, "Asset path is null or blank");
             return handle;
         }
-        if (kind == AssetKind.MESH || kind == AssetKind.MUSIC) {
+        if (kind == AssetKind.MUSIC) {
             failHandleImmediate(handle, "Unsupported asset kind: " + kind);
             return handle;
         }
@@ -114,14 +130,18 @@ public final class FakeAssets implements Assets {
                 continue;
             }
             if (handle.kind == AssetKind.TEXTURE && availableTextures.contains(handle.path)) {
-                advanceSeededTexture(handle);
+                advanceSeededLoad(handle, true);
             } else if (handle.kind == AssetKind.TEXTURE) {
                 failHandle(handle, "Missing or unloadable texture: " + handle.path);
+            } else if (handle.kind == AssetKind.MESH && availableMeshes.contains(handle.path)) {
+                advanceSeededLoad(handle, false);
+            } else if (handle.kind == AssetKind.MESH) {
+                failHandle(handle, "Missing or unloadable mesh: " + handle.path);
             }
         }
     }
 
-    private void advanceSeededTexture(FakeLoadHandle handle) {
+    private void advanceSeededLoad(FakeLoadHandle handle, boolean texture) {
         if (handle.scriptSteps != null && handle.scriptIndex < handle.scriptSteps.length) {
             float value = handle.scriptSteps[handle.scriptIndex++];
             handle.state = LoadState.LOADING;
@@ -131,8 +151,11 @@ public final class FakeAssets implements Assets {
         }
         handle.state = LoadState.COMPLETE;
         handle.progress = 1f;
-        if (textures != null && handle.kind == AssetKind.TEXTURE) {
+        if (texture && textures != null && handle.kind == AssetKind.TEXTURE) {
             textures.cacheFromAsync(handle.path);
+        }
+        if (!texture && handle.kind == AssetKind.MESH) {
+            loadedMeshes.add(handle.path);
         }
         commands.add(Command.complete(handle.path, handle.kind));
         inFlight.remove(handle);
