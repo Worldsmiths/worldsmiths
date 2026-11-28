@@ -17,6 +17,7 @@ tasks.withType<JavaCompile>().configureEach {
 
 dependencies {
     implementation(libs.gdx)
+    implementation(libs.gdx.gltf)
     implementation(libs.gdx.controllers.core)
     annotationProcessor(project(":processor"))
     testImplementation(libs.junit.jupiter)
