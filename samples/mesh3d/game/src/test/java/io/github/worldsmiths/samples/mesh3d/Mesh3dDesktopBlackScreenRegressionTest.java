@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 import com.badlogic.gdx.ApplicationListener;
+import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3Application;
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3ApplicationConfiguration;
 import io.github.worldsmiths.core.LoadState;
@@ -28,6 +29,7 @@ class Mesh3dDesktopBlackScreenRegressionTest {
         CountDownLatch finished = new CountDownLatch(1);
         AtomicInteger frames = new AtomicInteger();
         AtomicReference<String> blackScreenDetail = new AtomicReference<>();
+        final AtomicInteger finishSignals = new AtomicInteger();
 
         ApplicationListener harness =
                 new ApplicationListener() {
@@ -42,24 +44,28 @@ class Mesh3dDesktopBlackScreenRegressionTest {
                         int n = frames.incrementAndGet();
                         LoadState state = game.meshLoadHandle().state();
                         if (game.isMeshBound()) {
-                            finished.countDown();
+                            signalFinished(blackScreenDetail, finishSignals, finished, null);
                             return;
                         }
                         if (state == LoadState.FAILED) {
-                            blackScreenDetail.set(
+                            signalFinished(
+                                    blackScreenDetail,
+                                    finishSignals,
+                                    finished,
                                     "black screen / mesh not drawn: MESH load FAILED — "
                                             + game.meshLoadHandle().failureMessage());
-                            finished.countDown();
                             return;
                         }
                         if (n >= 180) {
-                            blackScreenDetail.set(
+                            signalFinished(
+                                    blackScreenDetail,
+                                    finishSignals,
+                                    finished,
                                     "black screen / mesh not drawn: no visible mesh after "
                                             + n
                                             + " frames; load state="
                                             + state
                                             + ", meshBound=false (COMPLETE→bind→draw never ready)");
-                            finished.countDown();
                         }
                     }
 
@@ -103,5 +109,22 @@ class Mesh3dDesktopBlackScreenRegressionTest {
         }
         assertTrue(game.isMeshBound(), "black screen / mesh not drawn: expected bind after COMPLETE");
         assertEquals(LoadState.COMPLETE, game.meshLoadHandle().state());
+
+        gl.join(15_000L);
+    }
+
+    private static void signalFinished(
+            AtomicReference<String> blackScreenDetail,
+            AtomicInteger finishSignals,
+            CountDownLatch finished,
+            String failureDetail) {
+        if (finishSignals.getAndIncrement() != 0) {
+            return;
+        }
+        if (failureDetail != null) {
+            blackScreenDetail.set(failureDetail);
+        }
+        finished.countDown();
+        Gdx.app.exit();
     }
 }
