@@ -18,14 +18,14 @@ public final class FakeEngineServices implements EngineServices {
     private final FakeGraphics graphics = new FakeGraphics();
     private final FakeDraw2D draw2d = new FakeDraw2D();
     private final FakeFiles files = new FakeFiles();
-    private final FakeD3 d3 = new FakeD3();
-    private final FakeAudio audio = new FakeAudio();
-    private final FakeUi ui = new FakeUi();
     private final FakeTextures textures = new FakeTextures();
-    private final FakeUiKit uiKit = new FakeUiKit();
-    private final FakeLog log = new FakeLog();
     /** Shares {@link #textures} so async TEXTURE COMPLETE merges into the sync cache (AC4). */
     private final FakeAssets assets = new FakeAssets(textures);
+    private final FakeD3 d3 = new FakeD3(assets);
+    private final FakeAudio audio = new FakeAudio();
+    private final FakeUi ui = new FakeUi();
+    private final FakeUiKit uiKit = new FakeUiKit();
+    private final FakeLog log = new FakeLog();
     /** Shares {@link #files} and {@link #textures} for path load + Sprite key preload. */
     private final FakeScenes scenes = new FakeScenes(files, textures);
     private final Extensions extensions = new Extensions();

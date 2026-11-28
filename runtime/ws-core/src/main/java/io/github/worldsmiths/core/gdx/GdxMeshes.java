@@ -35,6 +35,19 @@ final class GdxMeshes {
         return cache.get(internalPath);
     }
 
+    /** Whether async MESH for {@code internalPath} has merged into the registry and can bind. */
+    boolean isMeshLoadedForBind(String internalPath) {
+        return cache.containsKey(internalPath);
+    }
+
+    com.badlogic.gdx.graphics.g3d.Model gdxModelForBind(String internalPath) {
+        LoadedMesh loaded = cache.get(internalPath);
+        if (loaded == null) {
+            return null;
+        }
+        return loaded.gdxModel();
+    }
+
     boolean isAsyncInFlight(String internalPath) {
         return asyncInFlight.contains(internalPath);
     }

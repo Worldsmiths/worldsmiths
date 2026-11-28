@@ -10,4 +10,7 @@ interface GdxPumpableAssets extends Assets {
     void pump();
 
     void dispose();
+
+    /** Shared mesh registry for {@link GdxD3#createModelFromLoaded(String)} on this bag. */
+    GdxMeshes meshesForD3Bind();
 }

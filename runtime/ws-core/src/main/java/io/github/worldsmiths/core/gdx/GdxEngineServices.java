@@ -43,7 +43,8 @@ public final class GdxEngineServices {
      */
     public static EngineServices createCooperative() {
         GdxTextures textures = new GdxTextures();
-        return bag(textures, new GdxAssets(textures));
+        GdxMeshes meshes = new GdxMeshes();
+        return bag(textures, new GdxAssets(textures, meshes));
     }
 
     /**
@@ -51,6 +52,7 @@ public final class GdxEngineServices {
      * can assemble an identical bag with a different assets backend.
      */
     static EngineServices bag(GdxTextures textures, GdxPumpableAssets assets) {
+        GdxMeshes meshes = meshesFrom(assets);
         GdxFiles files = new GdxFiles();
         DeviceState devices = new DeviceState();
         GdxActionDevices actionDevices = new GdxActionDevices(devices, defaultGamepadSource());
@@ -62,7 +64,7 @@ public final class GdxEngineServices {
                 new GdxGraphics(),
                 new GdxDraw2D(),
                 files,
-                new GdxD3(),
+                new GdxD3(meshes),
                 new GdxAudio(),
                 new GdxUi(),
                 textures,
@@ -90,6 +92,10 @@ public final class GdxEngineServices {
      */
     static Assets newCooperativeAssetsForTest(GdxTextures textures) {
         return new GdxAssets(textures);
+    }
+
+    private static GdxMeshes meshesFrom(GdxPumpableAssets assets) {
+        return assets.meshesForD3Bind();
     }
 
     /**

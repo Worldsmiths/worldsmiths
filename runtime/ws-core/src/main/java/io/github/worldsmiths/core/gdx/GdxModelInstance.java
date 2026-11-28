@@ -1,5 +1,8 @@
 package io.github.worldsmiths.core.gdx;
 
+import com.badlogic.gdx.graphics.Color;
+import com.badlogic.gdx.graphics.g3d.Material;
+import com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute;
 import com.badlogic.gdx.math.Vector3;
 import io.github.worldsmiths.core.d3.ModelInstance;
 
@@ -39,5 +42,29 @@ final class GdxModelInstance implements ModelInstance {
         delegate.transform.rotate(Vector3.Y, eulerY);
         delegate.transform.rotate(Vector3.Z, eulerZ);
         delegate.transform.scale(sx, sy, sz);
+    }
+
+    @Override
+    public void setDiffuse(float r, float g, float b, float a) {
+        applyColorAttribute(ColorAttribute.Diffuse, r, g, b, a);
+    }
+
+    @Override
+    public void setEmissive(float r, float g, float b, float a) {
+        applyColorAttribute(ColorAttribute.Emissive, r, g, b, a);
+    }
+
+    private void applyColorAttribute(long attribute, float r, float g, float b, float a) {
+        Color color = new Color(r, g, b, a);
+        for (Material material : delegate.materials) {
+            if (material == null) {
+                continue;
+            }
+            if (attribute == ColorAttribute.Diffuse) {
+                material.set(ColorAttribute.createDiffuse(color));
+            } else if (attribute == ColorAttribute.Emissive) {
+                material.set(ColorAttribute.createEmissive(color));
+            }
+        }
     }
 }

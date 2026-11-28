@@ -1,5 +1,6 @@
 package io.github.worldsmiths.core.gdx;
 
+import io.github.worldsmiths.core.EngineException;
 import io.github.worldsmiths.core.d3.Environment;
 import io.github.worldsmiths.core.d3.Model;
 import io.github.worldsmiths.core.d3.ModelBatch;
@@ -15,8 +16,15 @@ import io.github.worldsmiths.core.d3.D3;
  * this factory itself needs no dispose.
  */
 final class GdxD3 implements D3 {
+    private final GdxMeshes meshes;
 
-    GdxD3() {}
+    GdxD3() {
+        this(new GdxMeshes());
+    }
+
+    GdxD3(GdxMeshes meshes) {
+        this.meshes = meshes;
+    }
 
     @Override
     public PerspectiveCamera createPerspectiveCamera(
@@ -50,9 +58,24 @@ final class GdxD3 implements D3 {
     @Override
     public ModelInstance createInstance(Model model) {
         if (!(model instanceof GdxModel)) {
-            throw new IllegalArgumentException("model must come from D3.createModelBuilder()");
+            throw new IllegalArgumentException("model must come from this D3 factory");
         }
         return new GdxModelInstance(
                 new com.badlogic.gdx.graphics.g3d.ModelInstance(((GdxModel) model).delegate));
+    }
+
+    @Override
+    public Model createModelFromLoaded(String path) {
+        if (path == null || path.trim().isEmpty()) {
+            throw new EngineException("Cannot bind mesh: path is null or blank");
+        }
+        if (!meshes.isMeshLoadedForBind(path)) {
+            throw new EngineException("Cannot bind mesh before load COMPLETE: " + path);
+        }
+        com.badlogic.gdx.graphics.g3d.Model gdx = meshes.gdxModelForBind(path);
+        if (gdx == null) {
+            throw new EngineException("Cannot bind mesh before load COMPLETE: " + path);
+        }
+        return new GdxModel(gdx, false);
     }
 }

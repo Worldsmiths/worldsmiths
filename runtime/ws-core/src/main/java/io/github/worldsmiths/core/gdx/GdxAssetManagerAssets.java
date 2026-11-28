@@ -52,6 +52,11 @@ final class GdxAssetManagerAssets implements GdxPumpableAssets {
     }
 
     @Override
+    public GdxMeshes meshesForD3Bind() {
+        return meshes;
+    }
+
+    @Override
     public LoadHandle request(String path, AssetKind kind) {
         String key = handleKey(kind, path);
         GdxLoadHandle existing = handlesByKey.get(key);

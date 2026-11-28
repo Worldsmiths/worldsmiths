@@ -1,6 +1,7 @@
 package io.github.worldsmiths.core.d3;
 
 import io.github.worldsmiths.core.EngineException;
+import io.github.worldsmiths.core.FakeAssets;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -13,12 +14,22 @@ import java.util.Queue;
  * Camera#getPickRay}; an empty seed queue throws {@link EngineException}.
  */
 public final class FakeD3 implements D3 {
+    private final FakeAssets assets;
     private final List<Command> commands = new ArrayList<Command>();
     private final Queue<Ray> seededPickRays = new ArrayDeque<Ray>();
     private boolean batchDisposed;
     private boolean modelsDisposed;
     private int nextModelId;
     private int nextInstanceId;
+
+    public FakeD3() {
+        this(null);
+    }
+
+    /** When wired to {@link FakeAssets}, bind consults the mesh registry after MESH COMPLETE. */
+    public FakeD3(FakeAssets assets) {
+        this.assets = assets;
+    }
 
     @Override
     public PerspectiveCamera createPerspectiveCamera(
@@ -53,10 +64,26 @@ public final class FakeD3 implements D3 {
 
     @Override
     public ModelInstance createInstance(Model model) {
-        int modelId = model instanceof FakeModel ? ((FakeModel) model).id : -1;
+        if (!(model instanceof FakeModel)) {
+            throw new IllegalArgumentException("model must come from this D3 factory");
+        }
+        int modelId = ((FakeModel) model).id;
         int instanceId = nextInstanceId++;
         commands.add(Command.createInstance(modelId, instanceId));
         return new FakeModelInstance(instanceId);
+    }
+
+    @Override
+    public Model createModelFromLoaded(String path) {
+        if (path == null || path.trim().isEmpty()) {
+            throw new EngineException("Cannot bind mesh: path is null or blank");
+        }
+        if (assets == null || !assets.isMeshLoaded(path)) {
+            throw new EngineException("Cannot bind mesh before load COMPLETE: " + path);
+        }
+        int id = nextModelId++;
+        commands.add(Command.createModelFromLoaded(path, id));
+        return new FakeModel(id);
     }
 
     /** Queues the next {@link Camera#getPickRay} return value (FIFO). */
@@ -297,6 +324,16 @@ public final class FakeD3 implements D3 {
             commands.add(
                     Command.instanceTrs(id, tx, ty, tz, eulerX, eulerY, eulerZ, sx, sy, sz));
         }
+
+        @Override
+        public void setDiffuse(float r, float g, float b, float a) {
+            commands.add(Command.setDiffuse(id, r, g, b, a));
+        }
+
+        @Override
+        public void setEmissive(float r, float g, float b, float a) {
+            commands.add(Command.setEmissive(id, r, g, b, a));
+        }
     }
 
     private final class FakeModelBatch implements ModelBatch {
@@ -344,10 +381,13 @@ public final class FakeD3 implements D3 {
             CREATE_SPHERE_EMISSIVE,
             CREATE_BOX,
             CREATE_BOX_EMISSIVE,
+            CREATE_MODEL_FROM_LOADED,
             CREATE_INSTANCE,
             INSTANCE_TRANSLATION,
             INSTANCE_TRANSFORM,
             INSTANCE_TRS,
+            SET_DIFFUSE,
+            SET_EMISSIVE,
             CREATE_BATCH,
             BATCH_BEGIN,
             BATCH_RENDER,
@@ -390,6 +430,8 @@ public final class FakeD3 implements D3 {
         public final float eulerZ;
         public final int i0;
         public final int i1;
+        /** Mesh path for {@link Kind#CREATE_MODEL_FROM_LOADED}; else {@code null}. */
+        public final String path;
 
         private Command(
                 Kind kind,
@@ -411,7 +453,8 @@ public final class FakeD3 implements D3 {
                 float eulerY,
                 float eulerZ,
                 int i0,
-                int i1) {
+                int i1,
+                String path) {
             this.kind = kind;
             this.x = x;
             this.y = y;
@@ -432,11 +475,12 @@ public final class FakeD3 implements D3 {
             this.eulerZ = eulerZ;
             this.i0 = i0;
             this.i1 = i1;
+            this.path = path;
         }
 
         static Command of(Kind kind) {
             return new Command(
-                    kind, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0, 0);
+                    kind, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0, 0, null);
         }
 
         static Command createCamera(float fov, float width, float height) {
@@ -460,7 +504,8 @@ public final class FakeD3 implements D3 {
                     0f,
                     0f,
                     0,
-                    0);
+                    0,
+                    null);
         }
 
         static Command createOrthoCamera(float width, float height) {
@@ -484,7 +529,8 @@ public final class FakeD3 implements D3 {
                     0f,
                     0f,
                     0,
-                    0);
+                    0,
+                    null);
         }
 
         static Command pickRay(float screenX, float screenY) {
@@ -508,22 +554,23 @@ public final class FakeD3 implements D3 {
                     0f,
                     0f,
                     0,
-                    0);
+                    0,
+                    null);
         }
 
         static Command scalar(Kind kind, float value) {
             return new Command(
-                    kind, value, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0, 0);
+                    kind, value, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0, 0, null);
         }
 
         static Command xyz(Kind kind, float x, float y, float z) {
             return new Command(
-                    kind, x, y, z, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0, 0);
+                    kind, x, y, z, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0, 0, null);
         }
 
         static Command rgba(Kind kind, float r, float g, float b, float a) {
             return new Command(
-                    kind, 0f, 0f, 0f, 0f, 0f, 0f, r, g, b, a, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0, 0);
+                    kind, 0f, 0f, 0f, 0f, 0f, 0f, r, g, b, a, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0, 0, null);
         }
 
         static Command directionalLight(
@@ -548,7 +595,8 @@ public final class FakeD3 implements D3 {
                     0f,
                     0f,
                     0,
-                    0);
+                    0,
+                    null);
         }
 
         static Command createSphere(
@@ -582,7 +630,8 @@ public final class FakeD3 implements D3 {
                     0f,
                     0f,
                     id,
-                    divisionsU + (divisionsV << 16));
+                    divisionsU + (divisionsV << 16),
+                    null);
         }
 
         static Command createBox(
@@ -607,7 +656,8 @@ public final class FakeD3 implements D3 {
                     0f,
                     0f,
                     id,
-                    0);
+                    0,
+                    null);
         }
 
         static Command createSphereEmissive(
@@ -645,7 +695,8 @@ public final class FakeD3 implements D3 {
                     0f,
                     0f,
                     id,
-                    divisionsU + (divisionsV << 16));
+                    divisionsU + (divisionsV << 16),
+                    null);
         }
 
         static Command createBoxEmissive(
@@ -681,7 +732,87 @@ public final class FakeD3 implements D3 {
                     0f,
                     0f,
                     id,
-                    0);
+                    0,
+                    null);
+        }
+
+        static Command createModelFromLoaded(String path, int modelId) {
+            return new Command(
+                    Kind.CREATE_MODEL_FROM_LOADED,
+                    0f,
+                    0f,
+                    0f,
+                    0f,
+                    0f,
+                    0f,
+                    0f,
+                    0f,
+                    0f,
+                    0f,
+                    0f,
+                    0f,
+                    0f,
+                    0f,
+                    0f,
+                    0f,
+                    0f,
+                    modelId,
+                    0,
+                    path);
+        }
+
+        static Command setDiffuse(int instanceId, float r, float g, float b, float a) {
+            return rgba(Kind.SET_DIFFUSE, r, g, b, a).withInstanceId(instanceId);
+        }
+
+        static Command setEmissive(int instanceId, float r, float g, float b, float a) {
+            return new Command(
+                    Kind.SET_EMISSIVE,
+                    0f,
+                    0f,
+                    0f,
+                    0f,
+                    0f,
+                    0f,
+                    r,
+                    g,
+                    b,
+                    a,
+                    0f,
+                    0f,
+                    0f,
+                    0f,
+                    0f,
+                    0f,
+                    0f,
+                    instanceId,
+                    0,
+                    null);
+        }
+
+        private Command withInstanceId(int instanceId) {
+            return new Command(
+                    kind,
+                    x,
+                    y,
+                    z,
+                    scaleX,
+                    scaleY,
+                    scaleZ,
+                    r,
+                    g,
+                    b,
+                    alpha,
+                    emissiveR,
+                    emissiveG,
+                    emissiveB,
+                    emissiveA,
+                    eulerX,
+                    eulerY,
+                    eulerZ,
+                    instanceId,
+                    i1,
+                    path);
         }
 
         static Command createInstance(int modelId, int instanceId) {
@@ -705,7 +836,8 @@ public final class FakeD3 implements D3 {
                     0f,
                     0f,
                     modelId,
-                    instanceId);
+                    instanceId,
+                    null);
         }
 
         static Command instanceTranslation(int instanceId, float x, float y, float z) {
@@ -729,7 +861,8 @@ public final class FakeD3 implements D3 {
                     0f,
                     0f,
                     instanceId,
-                    0);
+                    0,
+                    null);
         }
 
         static Command instanceTransform(
@@ -754,7 +887,8 @@ public final class FakeD3 implements D3 {
                     0f,
                     0f,
                     instanceId,
-                    0);
+                    0,
+                    null);
         }
 
         static Command instanceTrs(
@@ -788,7 +922,8 @@ public final class FakeD3 implements D3 {
                     eulerY,
                     eulerZ,
                     instanceId,
-                    0);
+                    0,
+                    null);
         }
 
         static Command batchRender(int instanceId) {
@@ -812,7 +947,8 @@ public final class FakeD3 implements D3 {
                     0f,
                     0f,
                     instanceId,
-                    0);
+                    0,
+                    null);
         }
 
         static Command modelDispose(int modelId) {
@@ -836,7 +972,8 @@ public final class FakeD3 implements D3 {
                     0f,
                     0f,
                     modelId,
-                    0);
+                    0,
+                    null);
         }
     }
 }
